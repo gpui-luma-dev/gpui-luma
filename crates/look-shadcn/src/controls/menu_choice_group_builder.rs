@@ -232,7 +232,10 @@ where
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ControlGroupBuilder<T> {
-        let self_builder = self.builder.motion_defaults(look.motion_defaults().control_group);
+        let self_builder = self
+            .builder
+            .stylesheet(&look.mode_tokens().stylesheet().common)
+            .motion_defaults(look.motion_defaults().control_group);
         let mut builder = self_builder;
         if let Some(row) = self.menu_row {
             let content = row.content;

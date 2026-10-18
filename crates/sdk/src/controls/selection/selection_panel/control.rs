@@ -739,13 +739,21 @@ where
             rows.into_any_element()
         };
 
-        let content_width = panel_min_width + if allow_scrolling { 16.0 } else { 0.0 };
+        let content_width = panel_min_width
+            + if allow_scrolling {
+                crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .shared_geometry()
+                    .selection_scrollbar_width
+                    .value_px
+            } else {
+                0.0
+            };
 
         let panel_shell = div()
             .min_w(px(content_width))
             .p(px(look.padding))
             .bg(look.background)
-            .border_1()
+            .border(px(look.border_width))
             .border_color(look.border)
             .rounded(px(look.radius))
             .shadow(look.shadow)

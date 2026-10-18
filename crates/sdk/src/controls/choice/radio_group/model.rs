@@ -121,6 +121,12 @@ where
         Self { callbacks: Default::default(), inner }
     }
 
+    /// Capture visual defaults for the group and its radio item templates.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        self.inner = self.inner.stylesheet(stylesheet);
+        self
+    }
+
     pub fn layout(self, layout: ControlGroupLayout) -> Self {
         Self { inner: self.inner.layout(layout), ..self }
     }
@@ -315,7 +321,16 @@ where
             + Sync
             + 'static,
     {
-        self.with_menu_row_item_content_sized(theme, ControlSize::Sm, 27.0, 4.0, content)
+        {
+            let geometry = crate::theme::stylesheet::CommonStylesheet::sdk_default().shared_geometry();
+            self.with_menu_row_item_content_sized(
+                theme,
+                ControlSize::Sm,
+                geometry.menu_row_height.value_px,
+                geometry.menu_row_gap.value_px,
+                content,
+            )
+        }
     }
 
     pub fn with_menu_row_item_content_sized<F>(
@@ -363,4 +378,22 @@ where
     T: ControlGroupItemLike + 'static,
 {
     new(id).horizontal()
+}
+
+#[cfg(test)]
+mod stylesheet_tests {
+    use super::*;
+
+    #[test]
+    fn radio_builder_forwards_snapshot_without_changing_selection_mode() {
+        let mut sheet = crate::theme::stylesheet::CommonStylesheet::resolve_layers(&[
+            "[common.radio_group.sizes.horizontal]\ngap=17",
+        ])
+        .unwrap();
+        let group = new::<ControlGroupItem>("radio").horizontal().stylesheet(&sheet);
+        sheet.radio_group.sizes.get_mut("horizontal").unwrap().gap = Some(23.0);
+        assert_eq!(group.inner.model.stylesheet.radio_group.authored_geometry("horizontal").gap, Some(17.0));
+        assert_eq!(group.inner.model.layout, ControlGroupLayout::Horizontal);
+        assert_eq!(group.inner.model.selection_mode, ControlSelectionMode::SingleRequired);
+    }
 }

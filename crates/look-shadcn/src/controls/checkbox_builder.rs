@@ -215,6 +215,7 @@ impl Checkbox {
         if self.without_elevation {
             builder = builder.without_elevation();
         }
+        builder = builder.icons(SelectionStatusIcons::from_stylesheet(&look.stylesheet().common));
         if let Some(icons) = self.icons {
             builder = builder.icons(icons);
         }

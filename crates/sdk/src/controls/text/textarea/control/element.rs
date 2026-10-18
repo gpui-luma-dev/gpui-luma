@@ -253,6 +253,7 @@ impl gpui::Element for TextAreaElement {
                     (start < end).then_some((start, end))
                 };
                 let decoration_key = TextAreaDecorationKey {
+                    composition_underline_width: look.helper_geometry.composition_underline_width.value_px,
                     line_index: line_ix,
                     selection: selection.and_then(local_range),
                     marked_range: input
@@ -271,7 +272,10 @@ impl gpui::Element for TextAreaElement {
                         &line.text,
                         0,
                         decoration_key.selection,
-                        decoration_key.marked_range.as_ref(),
+                        decoration_key
+                            .marked_range
+                            .as_ref()
+                            .map(|range| (range, decoration_key.composition_underline_width)),
                         text_font.clone(),
                         look.foreground,
                         look.selection_foreground,
@@ -308,8 +312,10 @@ impl gpui::Element for TextAreaElement {
                 if selection.is_none() && cursor >= start && cursor <= end {
                     let local_cursor = cursor.saturating_sub(start);
                     let x = line.line.x_for_index(TextArea::char_to_byte_offset(&line.text, local_cursor));
-                    caret_quad =
-                        Some(fill(Bounds::new(point(bounds.left() + x, top), size(px(1.5), line_height)), look.caret));
+                    caret_quad = Some(fill(
+                        Bounds::new(point(bounds.left() + x, top), size(px(look.caret_width), line_height)),
+                        look.caret,
+                    ));
                 }
             }
         }

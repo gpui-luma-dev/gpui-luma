@@ -56,8 +56,6 @@ pub struct Scrollbar {
     emitted_focused: bool,
 }
 
-const DEFAULT_MIN_THUMB_LENGTH: f32 = 28.0;
-
 impl EventEmitter<ScrollbarEvent> for Scrollbar {}
 
 impl Scrollbar {
@@ -369,7 +367,17 @@ impl Scrollbar {
     fn resolved_thumb_length(&self, track_length: f32) -> f32 {
         self.thumb_length
             .filter(|length| *length > 0.0)
-            .unwrap_or_else(|| thumb_length_for(track_length, self.model.thumb_fraction, DEFAULT_MIN_THUMB_LENGTH))
+            .unwrap_or_else(|| {
+                thumb_length_for(
+                    track_length,
+                    self.model.thumb_fraction,
+                    crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                        .scrollbar
+                        .authored_geometry(self.model.size.stylesheet_key())
+                        .min_thumb_length
+                        .unwrap_or_default(),
+                )
+            })
             .min(track_length)
     }
 

@@ -6,7 +6,7 @@ pub use crate::controls::control_group::{
     ControlGroupBuilder, ControlGroupControl, ControlGroupEvent, ControlGroupItem, ControlGroupItemLike,
     ControlGroupTheme,
 };
-use crate::controls::control_group::{self as control_group, control_group_template_with_theme};
+use crate::controls::control_group::{self as control_group, control_group_template_with_theme, ControlGroupTemplate};
 
 pub type IconGroup<T> = gpui::Entity<ControlGroupControl<T>>;
 pub type IconGroupEvent = ControlGroupEvent;
@@ -53,14 +53,39 @@ fn icon_toolbar_with_mode<T>(
 where
     T: ControlGroupItemLike + 'static,
 {
-    let mut builder = new(id)
-        .horizontal()
-        .template(control_group_template_with_theme(theme))
-        .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)));
+    let mut builder = new(id).horizontal().template(icon_toolbar_template(theme));
 
     if multiple {
         builder = builder.multiple();
     }
 
     builder
+}
+
+/// Capsule group chrome with independent overrides, resolved before consumer modifiers.
+pub fn icon_toolbar_template<T>(theme: Arc<dyn ControlGroupTheme>) -> ControlGroupTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    let base = control_group_template_with_theme(theme.clone());
+    Arc::new(move |model, handlers, window, cx| {
+        let mut look = theme.resolve_list(model.enabled);
+        if let Some(stylesheet) = model.shell_stylesheet {
+            look = look.with_stylesheet(&stylesheet.control_group);
+        }
+        let geometry = model.stylesheet.icon_group.resolve_geometry(
+            "toolbar",
+            crate::theme::stylesheet::IconGroupGeometry {
+                padding_x: look.padding_x,
+                padding_y: look.padding_y,
+                gap: look.gap,
+                radius: theme.metrics().radius.pill,
+            },
+        );
+        base(model, handlers, window, cx)
+            .rounded(px(geometry.radius.value_px))
+            .gap(px(geometry.gap.value_px))
+            .px(px(geometry.padding_x.value_px))
+            .py(px(geometry.padding_y.value_px))
+    })
 }

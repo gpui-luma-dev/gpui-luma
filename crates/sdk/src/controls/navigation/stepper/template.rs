@@ -89,14 +89,14 @@ impl StepperTemplate for ThemedStepperTemplate {
         };
 
         let root = if model.has_content_panel() {
-            let panel = render_content_panel(model, horizontal, window, cx);
+            let panel = render_content_panel(model, horizontal, &look, window, cx);
             if horizontal {
                 div()
                     .id((model.id.clone(), 0usize))
                     .w_full()
                     .flex()
                     .flex_col()
-                    .gap(px(16.0))
+                    .gap(px(look.geometry.content_gap.value_px))
                     .child(indicator)
                     .child(panel)
             } else {
@@ -106,7 +106,7 @@ impl StepperTemplate for ThemedStepperTemplate {
                     .w_full()
                     .flex()
                     .flex_row()
-                    .gap(px(16.0))
+                    .gap(px(look.geometry.content_gap.value_px))
                     .child(indicator)
                     .child(panel.flex_1())
             }
@@ -165,7 +165,7 @@ fn render_horizontal_stepper(
                 .flex()
                 .flex_col()
                 .items_center()
-                .gap(px(6.0))
+                .gap(px(look.geometry.label_gap.value_px))
                 .child(
                     div()
                         .w_full()
@@ -213,9 +213,9 @@ fn render_vertical_stepper(
         .h_full()
         .w_full()
         .min_w(px(if side_labels {
-            badge_size + 120.0
+            badge_size + look.geometry.side_label_width.value_px
         } else {
-            badge_size + 48.0
+            badge_size + look.geometry.label_width.value_px
         }))
         .flex()
         .flex_col()
@@ -281,7 +281,7 @@ fn render_vertical_stepper(
                 .flex()
                 .flex_row()
                 .items_center()
-                .gap(px(10.0))
+                .gap(px(look.geometry.side_label_gap.value_px))
                 .child(render_side_label_slot(label, look, true))
                 .child(badge_column)
                 .child(div().flex_1()),
@@ -292,7 +292,7 @@ fn render_vertical_stepper(
                 .flex()
                 .flex_row()
                 .items_center()
-                .gap(px(10.0))
+                .gap(px(look.geometry.side_label_gap.value_px))
                 .child(div().flex_1())
                 .child(badge_column)
                 .child(render_side_label_slot(label, look, false)),
@@ -305,6 +305,7 @@ fn render_vertical_stepper(
 fn render_content_panel(
     model: &StepperRenderModel<'_>,
     horizontal: bool,
+    look: &StepperLook,
     window: &mut Window,
     cx: &mut App,
 ) -> Stateful<Div> {
@@ -320,7 +321,7 @@ fn render_content_panel(
     if let Some(height) = model.content_height {
         host = host.h(px(height));
     } else {
-        host = host.h(px(120.0));
+        host = host.h(px(look.geometry.content_height.value_px));
     }
 
     if settled {
@@ -360,8 +361,8 @@ fn positioned_panel(content: AnyElement, horizontal: bool, offset: f32, key: &'s
 fn render_step_label(label: &SharedString, look: &StepperLook, align_end: bool) -> Stateful<Div> {
     let mut label_node = div()
         .id((label.clone(), 0usize))
-        .text_size(px(12.0))
-        .line_height(px(16.0))
+        .text_size(px(look.geometry.font_size.value_px))
+        .line_height(px(look.geometry.line_height.value_px))
         .text_color(look.incomplete_fg)
         .child(label.clone());
 
@@ -457,13 +458,18 @@ fn render_badge(
         .size(px(badge_size))
         .rounded(px(badge_radius))
         .bg(background)
-        .border_1()
+        .border(px(look.geometry.border_width.value_px))
         .border_color(border)
         .child(match state {
-            StepState::Complete => render_checkmark(foreground, badge_size * 0.45, &icons.completed),
-            StepState::InProgress | StepState::Incomplete => {
-                render_step_number(step_index + 1, foreground, badge_size * 0.38)
+            StepState::Complete => {
+                render_checkmark(foreground, badge_size * look.geometry.glyph_scale.value_px, &icons.completed)
             }
+            StepState::InProgress | StepState::Incomplete => render_step_number(
+                step_index + 1,
+                foreground,
+                badge_size * look.geometry.number_scale.value_px,
+                look.number_weight,
+            ),
         })
         .into_any_element()
 }
@@ -479,9 +485,9 @@ fn render_checkmark(color: gpui::Hsla, size: f32, icon: &crate::infra::icon::Ico
         .into_any_element()
 }
 
-fn render_step_number(step_number: usize, color: gpui::Hsla, size: f32) -> AnyElement {
+fn render_step_number(step_number: usize, color: gpui::Hsla, size: f32, weight: FontWeight) -> AnyElement {
     div()
-        .font_weight(FontWeight::MEDIUM)
+        .font_weight(weight)
         .text_color(color)
         .text_size(px(size))
         .child(step_number.to_string())

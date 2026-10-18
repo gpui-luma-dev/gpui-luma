@@ -7,8 +7,6 @@ use super::super::direction::{ProgressDirection, ProgressOrientation};
 use super::super::ProgressRenderModel;
 use crate::controls::progress::{ProgressTheme, default_progress_theme};
 
-const SHIMMER_BAND_FRACTION: f32 = 0.28;
-
 pub struct LinearProgressTemplate {
     theme: Arc<dyn ProgressTheme>,
     modifiers: Vec<ProgressTemplateModifier>,
@@ -72,6 +70,7 @@ impl ProgressTemplate for LinearProgressTemplate {
                         track_height,
                         track_radius,
                         look.progress_color,
+                        &look.geometry,
                     )
                 } else {
                     match model.direction {
@@ -134,6 +133,7 @@ impl ProgressTemplate for LinearProgressTemplate {
                         track_height,
                         track_radius,
                         look.progress_color,
+                        &look.geometry,
                     )
                 } else {
                     match model.direction {
@@ -184,9 +184,9 @@ impl ProgressTemplate for LinearProgressTemplate {
     }
 }
 
-fn shimmer_band_start(phase: f32) -> f32 {
-    let travel = 1.0 + SHIMMER_BAND_FRACTION;
-    (phase.clamp(0.0, 1.0) * travel) - SHIMMER_BAND_FRACTION
+fn shimmer_band_start(phase: f32, fraction: f32) -> f32 {
+    let travel = 1.0 + fraction;
+    (phase.clamp(0.0, 1.0) * travel) - fraction
 }
 
 fn with_alpha(color: Hsla, alpha: f32) -> Hsla {
@@ -200,10 +200,12 @@ fn render_horizontal_shimmer(
     track_height: f32,
     track_radius: gpui::Pixels,
     color: Hsla,
+    geometry: &crate::theme::stylesheet::ResolvedProgressGeometry,
 ) -> Div {
-    let start = shimmer_band_start(phase);
-    let soft = with_alpha(color, 0.35);
-    let mid = with_alpha(color, 0.85);
+    let fraction = geometry.indeterminate_fraction.value_px;
+    let start = shimmer_band_start(phase, fraction);
+    let soft = with_alpha(color, geometry.shimmer_soft_opacity.value_px);
+    let mid = with_alpha(color, geometry.shimmer_mid_opacity.value_px);
 
     let band = |offset: f32, width: f32, fill: Hsla| {
         let node = div()
@@ -226,9 +228,17 @@ fn render_horizontal_shimmer(
         .top(px(track_inset))
         .h(px(track_height))
         .overflow_hidden()
-        .child(band(start, SHIMMER_BAND_FRACTION, soft))
-        .child(band(start + SHIMMER_BAND_FRACTION * 0.2, SHIMMER_BAND_FRACTION * 0.6, mid))
-        .child(band(start + SHIMMER_BAND_FRACTION * 0.35, SHIMMER_BAND_FRACTION * 0.3, color))
+        .child(band(start, fraction, soft))
+        .child(band(
+            start + fraction * geometry.shimmer_mid_offset.value_px,
+            fraction * geometry.shimmer_mid_width.value_px,
+            mid,
+        ))
+        .child(band(
+            start + fraction * geometry.shimmer_core_offset.value_px,
+            fraction * geometry.shimmer_core_width.value_px,
+            color,
+        ))
 }
 
 fn render_vertical_shimmer(
@@ -238,10 +248,12 @@ fn render_vertical_shimmer(
     track_height: f32,
     track_radius: gpui::Pixels,
     color: Hsla,
+    geometry: &crate::theme::stylesheet::ResolvedProgressGeometry,
 ) -> Div {
-    let start = shimmer_band_start(phase);
-    let soft = with_alpha(color, 0.35);
-    let mid = with_alpha(color, 0.85);
+    let fraction = geometry.indeterminate_fraction.value_px;
+    let start = shimmer_band_start(phase, fraction);
+    let soft = with_alpha(color, geometry.shimmer_soft_opacity.value_px);
+    let mid = with_alpha(color, geometry.shimmer_mid_opacity.value_px);
 
     let band = |offset: f32, height: f32, fill: Hsla| {
         let node = div()
@@ -264,7 +276,15 @@ fn render_vertical_shimmer(
         .left(px(track_inset))
         .w(px(track_height))
         .overflow_hidden()
-        .child(band(start, SHIMMER_BAND_FRACTION, soft))
-        .child(band(start + SHIMMER_BAND_FRACTION * 0.2, SHIMMER_BAND_FRACTION * 0.6, mid))
-        .child(band(start + SHIMMER_BAND_FRACTION * 0.35, SHIMMER_BAND_FRACTION * 0.3, color))
+        .child(band(start, fraction, soft))
+        .child(band(
+            start + fraction * geometry.shimmer_mid_offset.value_px,
+            fraction * geometry.shimmer_mid_width.value_px,
+            mid,
+        ))
+        .child(band(
+            start + fraction * geometry.shimmer_core_offset.value_px,
+            fraction * geometry.shimmer_core_width.value_px,
+            color,
+        ))
 }

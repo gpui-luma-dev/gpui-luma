@@ -12,9 +12,6 @@ use super::{
     theme::ResizablePanelsLook,
 };
 
-/// Back-compat alias for [`super::math::MIN_HANDLE_LANE_PX`].
-pub const MIN_HIDDEN_HANDLE_HIT_TARGET_PX: f32 = super::math::MIN_HANDLE_LANE_PX;
-
 pub type ResizablePanelsTemplateModifier =
     Box<dyn Fn(Stateful<Div>, &ResizablePanelsRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
 
@@ -122,7 +119,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         window: &mut Window,
         cx: &mut Context<ResizablePanels>,
     ) -> Stateful<Div> {
-        let handle_metrics = model.resize_handle.metrics();
+        let handle_metrics = model.handle_metrics;
         let split_positions = split_positions_px(model.panel_sizes_px);
         let provisional_weight_layout = provisional_weight_layout(model);
 
@@ -158,7 +155,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         };
 
         if model.show_border {
-            root = root.border_1().border_color(look.border);
+            root = root.border(px(look.border_width)).border_color(look.border);
         }
 
         let mut track = div().relative().flex_1().min_h_0().min_w_0().w_full();
@@ -322,12 +319,20 @@ fn render_overlay_handle(
     };
 
     let divider = match orientation {
-        ResizablePanelsOrientation::Horizontal => {
-            div().absolute().left(px(divider_local_px)).top(px(0.0)).bottom(px(0.0)).w(px(1.0)).bg(look.divider)
-        }
-        ResizablePanelsOrientation::Vertical => {
-            div().absolute().top(px(divider_local_px)).left(px(0.0)).right(px(0.0)).h(px(1.0)).bg(look.divider)
-        }
+        ResizablePanelsOrientation::Horizontal => div()
+            .absolute()
+            .left(px(divider_local_px))
+            .top(px(0.0))
+            .bottom(px(0.0))
+            .w(px(look.divider_width))
+            .bg(look.divider),
+        ResizablePanelsOrientation::Vertical => div()
+            .absolute()
+            .top(px(divider_local_px))
+            .left(px(0.0))
+            .right(px(0.0))
+            .h(px(look.divider_width))
+            .bg(look.divider),
     };
 
     handle = handle.child(divider);
@@ -355,7 +360,7 @@ fn render_handle_grip(orientation: ResizablePanelsOrientation, grip_color: Hsla,
         })
         .child(
             div()
-                .rounded(px(8.0))
+                .rounded(px(metrics.grip_radius))
                 .bg(grip_color)
                 .when(orientation == ResizablePanelsOrientation::Horizontal, |this| this.w(px(cross)).h(px(main)))
                 .when(orientation == ResizablePanelsOrientation::Vertical, |this| this.w(px(main)).h(px(cross))),

@@ -360,7 +360,8 @@ impl Accordion {
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> AccordionBuilder {
-        let self_builder = self.builder.motion_defaults(look.motion_defaults().accordion);
+        let self_builder =
+            self.builder.stylesheet(&look.stylesheet().common).motion_defaults(look.motion_defaults().accordion);
         let builder = self_builder.size(self.size.control_size());
         if self.custom_template {
             builder

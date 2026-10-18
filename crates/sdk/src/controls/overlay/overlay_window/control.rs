@@ -6,7 +6,7 @@ use gpui::{
 
 use super::{
     OverlayWindowBuilder, OverlayWindowDismissPolicy, OverlayWindowEvent, OverlayWindowMode, OverlayWindowPosition,
-    OverlayWindowRenderModel, OverlayWindowTemplateHandlers, OverlayWindowTemplateParts, default_overlay_window_theme,
+    OverlayWindowRenderModel, OverlayWindowTemplateHandlers, OverlayWindowTemplateParts,
 };
 use super::model::ThemeInvalidator;
 use crate::theme::{ControlSize, observe_theme_revision};
@@ -184,7 +184,8 @@ impl OverlayWindowControl {
         }
 
         let viewport = window.viewport_size();
-        let origin = resolve_overlay_window_origin(self.model.position, viewport, self.model.size, self.model.width);
+        let look = self.model.template.resolve_look(self.model.size, self.model.mode);
+        let origin = resolve_overlay_window_origin(self.model.position, viewport, &look, self.model.width);
         self.dragging = Some(OverlayWindowDragState { pointer_origin: event.position, overlay_origin: origin });
     }
 
@@ -202,10 +203,11 @@ impl OverlayWindowControl {
         };
         let delta = event.event.position - dragging.pointer_origin;
         let origin = point(dragging.overlay_origin.x + delta.x, dragging.overlay_origin.y + delta.y);
+        let look = self.model.template.resolve_look(self.model.size, self.model.mode);
         self.model.position = OverlayWindowPosition::Absolute(clamp_overlay_window_origin(
             origin,
             _window.viewport_size(),
-            self.model.size,
+            &look,
             self.model.width,
         ));
         cx.notify();
@@ -266,7 +268,7 @@ impl Render for OverlayWindowControl {
             return div().into_any_element();
         }
 
-        let look = default_overlay_window_theme().resolve(self.model.size, self.model.mode);
+        let look = self.model.template.resolve_look(self.model.size, self.model.mode);
         let model = self.render_model(window);
         let header_drag_handle = self.model.draggable.then(|| {
             div()
@@ -275,7 +277,7 @@ impl Render for OverlayWindowControl {
                 .top_0()
                 .left_0()
                 .right_0()
-                .h(px(56.0))
+                .h(px(look.drag_header_height))
                 .occlude()
                 .cursor_grab()
                 .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_header_mouse_down))
@@ -320,7 +322,7 @@ impl Render for OverlayWindowControl {
                 &self.model.id,
                 shell,
                 self.model.position,
-                self.model.size,
+                &look,
                 self.model.width,
                 window.viewport_size(),
                 self.dragging.is_some(),
@@ -341,7 +343,7 @@ fn render_modal_overlay(
     viewport: Size<Pixels>,
     backdrop_mouse_down: OverlayWindowMouseDownHandler,
 ) -> gpui::AnyElement {
-    let content = render_modal_content(position, shell);
+    let content = render_modal_content(position, shell, look.viewport_padding);
 
     anchored()
         .snap_to_window_with_margin(px(0.0))
@@ -369,40 +371,89 @@ fn render_modal_overlay(
         .into_any_element()
 }
 
-fn render_modal_content(position: OverlayWindowPosition, shell: gpui::AnyElement) -> gpui::AnyElement {
+fn render_modal_content(
+    position: OverlayWindowPosition,
+    shell: gpui::AnyElement,
+    viewport_padding: f32,
+) -> gpui::AnyElement {
     match position {
         OverlayWindowPosition::Absolute(point) => div()
             .relative()
             .size_full()
             .child(div().absolute().left(point.x).top(point.y).child(shell))
             .into_any_element(),
-        OverlayWindowPosition::Center => {
-            div().size_full().flex().items_center().justify_center().p(px(24.0)).child(shell).into_any_element()
-        }
-        OverlayWindowPosition::Top => {
-            div().size_full().flex().items_center().justify_start().p(px(24.0)).child(shell).into_any_element()
-        }
-        OverlayWindowPosition::Bottom => {
-            div().size_full().flex().items_center().justify_end().p(px(24.0)).child(shell).into_any_element()
-        }
-        OverlayWindowPosition::Left => {
-            div().size_full().flex().items_start().justify_center().p(px(24.0)).child(shell).into_any_element()
-        }
-        OverlayWindowPosition::Right => {
-            div().size_full().flex().items_end().justify_center().p(px(24.0)).child(shell).into_any_element()
-        }
-        OverlayWindowPosition::TopLeft => {
-            div().size_full().flex().items_start().justify_start().p(px(24.0)).child(shell).into_any_element()
-        }
-        OverlayWindowPosition::TopRight => {
-            div().size_full().flex().items_end().justify_start().p(px(24.0)).child(shell).into_any_element()
-        }
-        OverlayWindowPosition::BottomLeft => {
-            div().size_full().flex().items_start().justify_end().p(px(24.0)).child(shell).into_any_element()
-        }
-        OverlayWindowPosition::BottomRight => {
-            div().size_full().flex().items_end().justify_end().p(px(24.0)).child(shell).into_any_element()
-        }
+        OverlayWindowPosition::Center => div()
+            .size_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .p(px(viewport_padding))
+            .child(shell)
+            .into_any_element(),
+        OverlayWindowPosition::Top => div()
+            .size_full()
+            .flex()
+            .items_center()
+            .justify_start()
+            .p(px(viewport_padding))
+            .child(shell)
+            .into_any_element(),
+        OverlayWindowPosition::Bottom => div()
+            .size_full()
+            .flex()
+            .items_center()
+            .justify_end()
+            .p(px(viewport_padding))
+            .child(shell)
+            .into_any_element(),
+        OverlayWindowPosition::Left => div()
+            .size_full()
+            .flex()
+            .items_start()
+            .justify_center()
+            .p(px(viewport_padding))
+            .child(shell)
+            .into_any_element(),
+        OverlayWindowPosition::Right => div()
+            .size_full()
+            .flex()
+            .items_end()
+            .justify_center()
+            .p(px(viewport_padding))
+            .child(shell)
+            .into_any_element(),
+        OverlayWindowPosition::TopLeft => div()
+            .size_full()
+            .flex()
+            .items_start()
+            .justify_start()
+            .p(px(viewport_padding))
+            .child(shell)
+            .into_any_element(),
+        OverlayWindowPosition::TopRight => div()
+            .size_full()
+            .flex()
+            .items_end()
+            .justify_start()
+            .p(px(viewport_padding))
+            .child(shell)
+            .into_any_element(),
+        OverlayWindowPosition::BottomLeft => div()
+            .size_full()
+            .flex()
+            .items_start()
+            .justify_end()
+            .p(px(viewport_padding))
+            .child(shell)
+            .into_any_element(),
+        OverlayWindowPosition::BottomRight => div()
+            .size_full()
+            .flex()
+            .items_end()
+            .justify_end()
+            .p(px(viewport_padding))
+            .child(shell)
+            .into_any_element(),
     }
 }
 
@@ -411,16 +462,16 @@ fn render_modeless_overlay(
     id: &SharedString,
     shell: gpui::AnyElement,
     position: OverlayWindowPosition,
-    size: ControlSize,
+    look: &super::OverlayWindowLook,
     width: Option<f32>,
     viewport: Size<Pixels>,
     dragging: bool,
     mouse_up: OverlayWindowMouseUpHandler,
     mouse_up_out: OverlayWindowMouseUpHandler,
 ) -> gpui::AnyElement {
-    let origin = resolve_overlay_window_origin(position, viewport, size, width);
+    let origin = resolve_overlay_window_origin(position, viewport, look, width);
     anchored()
-        .snap_to_window_with_margin(px(12.0))
+        .snap_to_window_with_margin(px(look.window_margin))
         .anchor(Anchor::TopLeft)
         .position(point(px(0.0), px(0.0)))
         .child(
@@ -448,16 +499,15 @@ fn render_modeless_overlay(
 fn resolve_overlay_window_origin(
     position: OverlayWindowPosition,
     viewport: Size<Pixels>,
-    size: ControlSize,
+    look: &super::OverlayWindowLook,
     width: Option<f32>,
 ) -> Point<Pixels> {
-    let look = default_overlay_window_theme().resolve(size, OverlayWindowMode::Modeless);
     let width = px(match width {
         Some(width) => width.max(look.min_width),
         None => look.min_width.clamp(look.min_width, look.max_width),
     });
     let height = px(look.estimated_height);
-    let inset = px(24.0);
+    let inset = px(look.viewport_padding);
 
     match position {
         OverlayWindowPosition::Center => point((viewport.width - width) * 0.5, (viewport.height - height) * 0.5),
@@ -476,14 +526,37 @@ fn resolve_overlay_window_origin(
 fn clamp_overlay_window_origin(
     origin: Point<Pixels>,
     viewport: Size<Pixels>,
-    size: ControlSize,
+    look: &super::OverlayWindowLook,
     width: Option<f32>,
 ) -> Point<Pixels> {
-    let look = default_overlay_window_theme().resolve(size, OverlayWindowMode::Modeless);
     let width = px(width.unwrap_or(look.min_width).max(look.min_width));
     let height = px(look.estimated_height);
-    let inset = px(12.0);
+    let inset = px(look.window_margin);
     let max_x = (viewport.width - width - inset).max(inset);
     let max_y = (viewport.height - height - inset).max(inset);
     point(origin.x.clamp(inset, max_x), origin.y.clamp(inset, max_y))
+}
+
+#[cfg(test)]
+mod geometry_tests {
+    use super::*;
+    #[test]
+    fn placement_and_drag_clamp_use_the_resolved_look() {
+        let mut look =
+            super::super::default_overlay_window_theme().resolve(ControlSize::Md, OverlayWindowMode::Modeless);
+        look.min_width = 100.0;
+        look.max_width = 100.0;
+        look.estimated_height = 80.0;
+        look.viewport_padding = 31.0;
+        look.window_margin = 5.0;
+        let viewport = gpui::size(px(300.0), px(200.0));
+        assert_eq!(
+            resolve_overlay_window_origin(OverlayWindowPosition::TopLeft, viewport, &look, None),
+            point(px(31.0), px(31.0))
+        );
+        assert_eq!(
+            clamp_overlay_window_origin(point(px(999.0), px(999.0)), viewport, &look, None),
+            point(px(195.0), px(115.0))
+        );
+    }
 }

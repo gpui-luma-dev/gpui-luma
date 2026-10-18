@@ -22,14 +22,23 @@ pub struct SidebarMetricScale {
 
 impl Default for SidebarMetricScale {
     fn default() -> Self {
+        Self::from_stylesheet(crate::theme::stylesheet::CommonStylesheet::sdk_default())
+    }
+}
+
+impl SidebarMetricScale {
+    /// Capture resolved sidebar dimensions; explicit host metrics can be edited afterward.
+    pub fn from_stylesheet(stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        let base = crate::theme::stylesheet::CommonStylesheet::sdk_default().sidebar.authored_geometry("md");
+        let geometry = stylesheet.sidebar.authored_geometry("md").with_fallback(&base);
         Self {
-            width_expanded: px(256.0),
-            width_icon_rail: px(48.0),
-            width_mobile: px(288.0),
-            item_height: px(32.0),
-            icon_size: px(16.0),
-            rail_hit_width: px(6.0),
-            popover_offset: px(8.0),
+            width_expanded: px(geometry.width_expanded.unwrap_or_default()),
+            width_icon_rail: px(geometry.width_icon_rail.unwrap_or_default()),
+            width_mobile: px(geometry.width_mobile.unwrap_or_default()),
+            item_height: px(geometry.item_height.unwrap_or_default()),
+            icon_size: px(geometry.item_icon_size.unwrap_or_default()),
+            rail_hit_width: px(geometry.rail_hit_width.unwrap_or_default()),
+            popover_offset: px(geometry.popover_offset.unwrap_or_default()),
         }
     }
 }

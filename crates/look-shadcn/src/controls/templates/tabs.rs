@@ -15,6 +15,7 @@ impl TabsTheme for ShadcnTabsTheme {
         let tokens = self.theme.mode_tokens();
         let palette = &tokens.palette;
         gpui_luma::infra::drag_drop::DragDropLook {
+            geometry: self.theme.stylesheet().common.shared_geometry(),
             background: self.theme.token_color("popover").unwrap_or(palette.panel_background),
             foreground: self.theme.token_color("popover-foreground").unwrap_or(palette.body_text),
             valid_marker: self.theme.token_color("ring").unwrap_or(palette.focus_ring),
@@ -59,7 +60,7 @@ mod drag_tests {
     use gpui_luma::theme::ThemeMode;
     #[test]
     fn navigation_drag_surfaces_follow_table_tokens_in_both_modes() {
-        let look = ShadcnLook::built_in();
+        let look = crate::test_support::fallback_look();
         for mode in [ThemeMode::Light, ThemeMode::Dark] {
             look.set_mode(mode);
             let tabs = tabs_theme(look.clone()).resolve_drag(ControlSize::Md);

@@ -15,6 +15,12 @@ impl TableTheme for ShadcnTableTheme {
         let tokens = self.theme.mode_tokens();
         let palette = &tokens.palette;
         gpui_luma::controls::table::TableDragLook {
+            geometry: tokens
+                .stylesheet()
+                .common
+                .table
+                .with_sdk_defaults()
+                .resolve_geometry(size.stylesheet_key(), Default::default()),
             background: self.theme.token_color("popover").unwrap_or(palette.panel_background),
             foreground: self.theme.token_color("popover-foreground").unwrap_or(palette.body_text),
             valid_marker: self.theme.token_color("ring").unwrap_or(palette.focus_ring),
@@ -36,6 +42,23 @@ impl TableTheme for ShadcnTableTheme {
     ) -> gpui_luma::controls::table::TableRowPalette {
         let tokens = self.theme.mode_tokens();
         table_row_palette(tokens.as_ref(), selected, state, size)
+    }
+
+    fn resolve_row_look(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: ControlSize,
+        scale: &gpui_luma::theme::ListRowScale,
+    ) -> gpui_luma::controls::table::TableRowLook {
+        let mut look = gpui_luma::controls::table::TableRowLook::from_palette(
+            &self.resolve_row(selected, state, size),
+            scale,
+            &self.theme.mode_tokens().stylesheet().common,
+            size,
+        );
+        look.column_emphasis_weight = self.theme.mode_tokens().typography.text.title.weight;
+        look
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {

@@ -10,7 +10,7 @@ pub fn bubble(model: &TooltipRenderModel) -> AnyElement {
         .block_mouse_except_scroll()
         .flex()
         .items_center()
-        .gap(px(16.0))
+        .gap(px(model.shortcut_gap))
         .max_w(px(model.max_width))
         .px(px(model.padding))
         .py(px(model.padding_y))
@@ -22,7 +22,13 @@ pub fn bubble(model: &TooltipRenderModel) -> AnyElement {
         .line_height(px(model.line_height))
         .child(div().min_w_0().child(model.text.clone()))
         .when_some(model.shortcut.clone(), |root, shortcut| {
-            root.child(div().flex_shrink_0().opacity(0.65).text_size(px(12.0)).child(shortcut))
+            root.child(
+                div()
+                    .flex_shrink_0()
+                    .opacity(model.shortcut_opacity)
+                    .text_size(px(model.shortcut_font_size))
+                    .child(shortcut),
+            )
         })
         .into_any_element()
 }

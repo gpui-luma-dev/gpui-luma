@@ -23,6 +23,10 @@ lightness/chroma/hue-degrees/alpha. Tags are `srgb`, `linear-srgb`, `display-p3`
 and `oklch`. This format preserves extended-range source values. CSS source formatting is a
 separate API; neither persistence path performs gamut mapping.
 
+Stylesheet palette and shadow defaults use readable `"hsla(h, s%, l%, a)"`
+strings; their shared build/runtime loader converts these into source colors.
+See [stylesheet authoring](shared-stylesheet.md) for an example.
+
 ## Preview bridge
 
 ```rust
@@ -179,6 +183,9 @@ source colors and unclamped conversion APIs remain unaffected.
 `ThemeTokens.elevation` is an immutable `SrgbElevation` snapshot: source colors
 remain available through `.source()`, and GPUI box shadows use prepared previews.
 `ThemeTokens::from_source` validates shadow colors/geometry and resolves them once.
+Each layer also stores its explicit `inset` flag; `LumaShadowLayer::new` and
+`LumaShadow::single` accept that flag as their final argument. Inset layers paint
+inside the surface and do not contribute to its outer projection extent.
 
 Shadcn `ShadowTokenParts` also retains source colors. `to_css_value` and
 `shadow_ladder_overrides` return `Result` and format source colors/geometry without

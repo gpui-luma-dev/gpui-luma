@@ -1,4 +1,4 @@
-use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
+use gpui::{AnyElement, App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
 use crate::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole};
 use crate::infra::shadow_layout::should_paint_shadow;
@@ -6,8 +6,6 @@ use crate::controls::button::{ButtonRenderModel, ButtonTemplate, button_content_
 use crate::controls::checkbox::{CheckboxData, CheckboxPalette, CheckboxTheme, default_checkbox_theme};
 use crate::infra::template::TemplateWithModifiers;
 use crate::define_control_template;
-
-const FOCUS_RING_GAP: f32 = 1.0;
 
 define_control_template!(
     ThemedCheckboxTemplate,
@@ -81,7 +79,7 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
         };
         let focus_metrics = self.theme.metrics().focus;
         let focus_ring_extent = if focus_palette.indicator_border.a > 0.0 {
-            FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+            focus_metrics.gap + focus_metrics.width.max(0.0)
         } else {
             0.0
         };
@@ -95,7 +93,7 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
                 .justify_center()
                 .size(px(scale.indicator_size))
                 .bg(palette.indicator_background)
-                .border_1()
+                .border(px(self.theme.metrics().border_width.default))
                 .border_color(palette.indicator_border)
                 .rounded(px(scale.indicator_radius))
                 .child(render_checkmark(
@@ -139,7 +137,7 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
                         .left_0()
                         .border(px(focus_metrics.width))
                         .border_color(focus_palette.indicator_border)
-                        .rounded(px(scale.indicator_radius + FOCUS_RING_GAP + focus_metrics.width)),
+                        .rounded(px(scale.indicator_radius + focus_metrics.gap + focus_metrics.width)),
                 );
             }
 
@@ -195,13 +193,13 @@ impl ButtonTemplate<CheckboxData> for ThemedCheckboxTemplate {
         }
 
         if let Some(border) = palette.control_border {
-            control = control.border_1().border_color(border);
+            control = control.border(px(self.theme.metrics().border_width.default)).border_color(border);
         }
 
         let mut root = self.apply_modifiers(control, model);
 
         if model.state.disabled {
-            root = root.opacity(0.56);
+            root = root.opacity(scale.disabled_opacity);
         } else {
             root = root.cursor_pointer();
         }
@@ -221,7 +219,6 @@ fn render_checkmark(progress: f32, size: f32, color: gpui::Hsla, icon: &crate::i
         .flex()
         .items_center()
         .justify_center()
-        .font_weight(FontWeight::NORMAL)
         .text_size(px(size))
         .line_height(px(size))
         .text_color(color)

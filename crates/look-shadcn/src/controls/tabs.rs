@@ -97,6 +97,7 @@ pub fn tabs_list_look_with_stylesheet(
 
     let geometry = crate::tables::metrics::resolve_common_tabs_geometry(mode, stylesheet, size);
     TabsListLook {
+        border_width: metrics.border_width.default,
         background: if enabled {
             None
         } else {
@@ -138,7 +139,10 @@ pub fn tabs_item_look_with_stylesheet(
         ControlSize::Lg => typography.text.body,
     };
 
+    let (accessory_size, accessory_gap) = stylesheet.common.tabs.accessory_metrics("");
     TabsItemLook {
+        accessory_size,
+        accessory_gap,
         label_color: colors.label_color.hsla(),
         indicator: colors.indicator.map(|color| color.hsla()),
         background: None,

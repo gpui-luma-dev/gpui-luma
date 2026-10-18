@@ -97,13 +97,15 @@ fn radio_scale_with_stylesheet(
             indicator_size: fallback.indicator_size,
             dot_size: fallback.dot_size,
             gap: fallback.gap,
+            ..Default::default()
         },
     );
     let box_size = geometry.indicator_size.value_px;
     RadioScale {
+        disabled_opacity: geometry.disabled_opacity.value_px,
         control_radius: box_size / 2.0,
-        control_padding_x: 0.0,
-        control_padding_y: 0.0,
+        control_padding_x: geometry.control_padding_x.value_px,
+        control_padding_y: geometry.control_padding_y.value_px,
         indicator_size: box_size,
         height: box_size,
         gap: geometry.gap.value_px,

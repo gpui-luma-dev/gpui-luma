@@ -6,6 +6,12 @@ use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct FloatingMenuLook {
+    /// Shared popup edge margin in logical pixels.
+    pub window_margin: f32,
+    /// Positive completion/status adornments.
+    pub positive: Hsla,
+    /// Popup border thickness in pixels.
+    pub border_width: f32,
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
@@ -78,36 +84,56 @@ impl FloatingMenuTheme for DefaultFloatingMenuTheme {
 }
 
 pub(crate) fn default_floating_menu_look(tokens: &ThemeTokens, size: ControlSize) -> FloatingMenuLook {
-    let palette = &tokens.palette;
+    let palette = tokens.stylesheet.recipes.palette("floating_menu", &tokens.palette);
     let metrics = &tokens.metrics;
     let typography = &tokens.typography;
     let elevation = &tokens.elevation;
     let item_typography = scaled_menu_item_typography(typography, size);
 
-    FloatingMenuLook {
+    let key = size.stylesheet_key();
+    let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().floating_menu.authored_geometry(key);
+    let recipe = tokens.stylesheet.floating_menu.authored_geometry(key).with_fallback(&baseline);
+    let mut look = FloatingMenuLook {
+        window_margin: tokens
+            .stylesheet
+            .with_sdk_defaults()
+            .popover
+            .authored_geometry("panel")
+            .window_margin
+            .unwrap_or_default(),
+        positive: tokens.stylesheet.recipes.palette("floating_menu", &tokens.palette).data.positive,
+        border_width: recipe.border_width.unwrap_or(metrics.border_width.default),
         background: palette.surface.floating.background,
         foreground: palette.surface.floating.foreground,
         border: palette.surface.floating.border,
         shadow: elevation.menu.to_box_shadows(),
         radius: metrics.radius.lg,
-        padding: metrics.padding_y(size) * 0.5,
-        min_width: 180.0,
+        padding: metrics.padding_y(size) * recipe.padding_scale.unwrap_or_default(),
+        min_width: recipe.min_width.unwrap_or_default(),
         item_disabled_foreground: palette.state.disabled.foreground,
         item_hover_background: palette.state.hover.background,
         item_hover_foreground: palette.state.hover.foreground,
         item_typography,
-        item_height: metrics.control_height(size) * 0.9,
-        item_padding_x: metrics.padding_x(size) * 0.75,
+        item_height: metrics.control_height(size) * recipe.item_height_scale.unwrap_or_default(),
+        item_padding_x: metrics.padding_x(size) * recipe.item_padding_scale.unwrap_or_default(),
         item_gap: metrics.gap(size),
         item_icon_size: metrics.icon_size(size),
         item_radius: metrics.radius.sm,
-        disabled_opacity: 0.56,
-        submenu_offset_x: metrics.gap(size) * 0.5,
+        disabled_opacity: recipe.disabled_opacity.unwrap_or_default(),
+        submenu_offset_x: metrics.gap(size) * recipe.submenu_offset_scale.unwrap_or_default(),
         separator_color: palette.surface.floating.border,
-        separator_thickness: 1.0,
-        separator_spacing: metrics.gap(size) * 0.5,
-        separator_inset: 0.0,
-    }
+        separator_thickness: recipe.separator_thickness.unwrap_or_default(),
+        separator_spacing: metrics.gap(size) * recipe.submenu_offset_scale.unwrap_or_default(),
+        separator_inset: recipe.separator_inset.unwrap_or_default(),
+    };
+    crate::theme::stylesheet::apply_common_geometry!(tokens.stylesheet.floating_menu, key, FloatingMenuGeometry, look,
+        [border_width => border_width, padding => padding, min_width => min_width, item_height => item_height,
+         item_padding_x => item_padding_x, item_gap => item_gap, item_icon_size => item_icon_size,
+         font_size => item_typography.size, line_height => item_typography.line_height,
+         submenu_offset_x => submenu_offset_x, separator_thickness => separator_thickness,
+         separator_spacing => separator_spacing, separator_inset => separator_inset,
+         disabled_opacity => disabled_opacity], defaults = Default::default());
+    look
 }
 
 fn scaled_menu_item_typography(typography: &crate::theme::LumaTypography, size: ControlSize) -> LumaTextStyle {

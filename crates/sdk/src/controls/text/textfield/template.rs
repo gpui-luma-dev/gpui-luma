@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, Bounds, Div, DragMoveEvent, FontWeight, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Stateful,
-    TextAlign, Window, canvas, div, fill, font, point, px, prelude::*, size, svg,
+    AnyElement, App, Bounds, Div, DragMoveEvent, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Stateful, TextAlign,
+    Window, canvas, div, fill, font, point, px, prelude::*, size, svg,
 };
 
 use super::{TextFieldDrag, TextFieldLook, TextFieldRenderModel, TextFieldState};
@@ -10,10 +10,7 @@ use crate::controls::button::ControlIcon;
 use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
 use crate::theme::{ControlSize, StandardBoxScale};
 
-const TEXTFIELD_CARET_WIDTH: f32 = 1.5;
-const TEXTFIELD_CARET_HEIGHT_EXTRA: f32 = 2.0;
 const CARET_EDGE_OFFSET: f32 = 0.0;
-const FOCUS_RING_GAP: f32 = 1.0;
 
 fn char_to_byte_offset(text: &str, char_offset: usize) -> usize {
     text.chars().take(char_offset).map(char::len_utf8).sum()
@@ -201,7 +198,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         let chars = model.value.chars().collect::<Vec<_>>();
         let cursor = model.state.cursor.min(chars.len());
         let selection = model.state.selection_range();
-        let caret_height = look.typography.size + TEXTFIELD_CARET_HEIGHT_EXTRA;
+        let caret_height = look.typography.size + look.caret_height_extra;
 
         let mut text_viewport = if show_placeholder {
             div()
@@ -246,7 +243,9 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                                 value.as_ref(),
                                 0,
                                 selection,
-                                marked_range.as_ref(),
+                                marked_range.as_ref().map(|range| {
+                                    (range, canvas_look.helper_geometry.composition_underline_width.value_px)
+                                }),
                                 {
                                     let mut font = font(canvas_look.font_family.clone());
                                     font.weight = canvas_look.typography.weight;
@@ -275,7 +274,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                             Some(fill(
                                 Bounds::new(
                                     point(bounds.left() + x - px(horizontal_scroll + CARET_EDGE_OFFSET), bounds.top()),
-                                    size(px(TEXTFIELD_CARET_WIDTH), bounds.size.height),
+                                    size(px(canvas_look.caret_width), bounds.size.height),
                                 ),
                                 canvas_look.caret,
                             ))
@@ -322,7 +321,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         let focused = model.state.focused && model.state.focus_visible && model.enabled;
         let focus_border = look.focus_border.unwrap_or(look.border);
         let focus_extent = if look.focus_border.is_some() {
-            FOCUS_RING_GAP + look.border_width.max(0.0)
+            self.theme.metrics().focus.gap + look.border_width.max(0.0)
         } else {
             0.0
         };
@@ -346,7 +345,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             .font_family(look.font_family.clone())
             .font_weight(look.typography.weight)
             .when(model.enabled, |root| root.cursor_text())
-            .when(!model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
+            .when(!model.enabled, |root| root.cursor_not_allowed().opacity(look.disabled_opacity))
             .child(text_viewport);
 
         if model.enabled
@@ -391,7 +390,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                     .left(px(0.0))
                     .border(px(look.border_width))
                     .border_color(focus_border)
-                    .rounded(px(look.radius + FOCUS_RING_GAP + look.border_width)),
+                    .rounded(px(look.radius + self.theme.metrics().focus.gap + look.border_width)),
             );
         }
 
@@ -406,7 +405,6 @@ fn render_prefix_icon(icon: &ControlIcon, color: gpui::Hsla, size: f32) -> AnyEl
             .flex()
             .items_center()
             .justify_center()
-            .font_weight(FontWeight::NORMAL)
             .text_size(px(size))
             .line_height(px(size))
             .text_color(color)

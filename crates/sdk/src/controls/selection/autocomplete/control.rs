@@ -409,6 +409,17 @@ impl Render for AutocompleteControl {
         self.presence.sync();
         self.presence.schedule_frame(window, cx);
         let autocomplete_look = self.model.autocomplete_theme.resolve(self.model.size);
+        let geometry = self.model.stylesheet.resolve_geometry(
+            self.model.size.stylesheet_key(),
+            crate::theme::stylesheet::AutocompleteGeometry {
+                status_font_size: autocomplete_look.status_typography.size,
+                status_line_height: autocomplete_look.status_typography.line_height,
+                ..Default::default()
+            },
+        );
+        let mut status_typography = autocomplete_look.status_typography;
+        status_typography.size = geometry.status_font_size.value_px;
+        status_typography.line_height = geometry.status_line_height.value_px;
         let look = (self.model.popup_look_provider)(self.model.size);
         let selected_label = self
             .behavior
@@ -455,7 +466,8 @@ impl Render for AutocompleteControl {
             self.last_keyboard_event
         ));
 
-        let trigger_width = self.trigger_bounds.map(|bounds| bounds.size.width).unwrap_or(px(240.0));
+        let trigger_width =
+            self.trigger_bounds.map(|bounds| bounds.size.width).unwrap_or(px(geometry.trigger_width.value_px));
         let popup_width = {
             let mut text_font = font(".SystemUIFont");
             text_font.weight = look.item_typography.weight;
@@ -476,7 +488,8 @@ impl Render for AutocompleteControl {
                 .max_by(|a, b| a.as_f32().total_cmp(&b.as_f32()))
                 .unwrap_or(px(0.0));
 
-            let horizontal_chrome = px((look.padding * 2.0) + (look.item_padding_x * 2.0) + 24.0);
+            let horizontal_chrome =
+                px((look.padding * 2.0) + (look.item_padding_x * 2.0) + geometry.popup_extra_width.value_px);
             trigger_width.max(max_label_width + horizontal_chrome)
         };
 
@@ -484,8 +497,8 @@ impl Render for AutocompleteControl {
             let menu_id = SharedString::from("autocomplete-menu");
             let row_height = px(look.item_height);
             let content_top_padding = px(look.padding);
-            let min_visible_rows = 7.0;
-            let max_visible_rows = 14.0;
+            let min_visible_rows = self.model.row_limits.0.max(1) as f32;
+            let max_visible_rows = (self.model.row_limits.1 as f32).max(min_visible_rows);
             let visible_rows = (menu_items.len() as f32).clamp(min_visible_rows, max_visible_rows);
             let viewport_height = px((look.padding * 2.0) + (look.item_height * visible_rows));
 
@@ -519,6 +532,9 @@ impl Render for AutocompleteControl {
         };
 
         let render_model = AutocompleteRenderModel {
+            icons: self.model.icons.clone(),
+            geometry,
+            status_typography,
             id: self.model.id.clone(),
             textfield: self.textfield.clone().into_any_element(),
             query_is_empty: self.behavior.state.query.is_empty(),

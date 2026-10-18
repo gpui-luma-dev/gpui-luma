@@ -251,6 +251,7 @@ impl ShadcnLook {
         size: gpui_luma::controls::slide_panel::SlidePanelSizeConfig,
     ) -> gpui_luma::controls::slide_panel::SlidePanelState {
         gpui_luma::controls::slide_panel::SlidePanelState::new(anchor, size)
+            .stylesheet(&self.mode_tokens().stylesheet().common)
             .motion_defaults(self.motion_defaults().slide_panel)
     }
 

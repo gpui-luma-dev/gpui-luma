@@ -18,6 +18,11 @@ impl OverlayWindowTheme for OverlayWindowThemeAdapter {
         let metrics = self.look.metrics();
         let fallback = gpui_luma::controls::overlay_window::default_overlay_window_theme().resolve(size, mode);
         let mut resolved = OverlayWindowLook {
+            viewport_padding: fallback.viewport_padding,
+            window_margin: fallback.window_margin,
+            drag_header_height: fallback.drag_header_height,
+
+            border_width: fallback.border_width,
             background: self.look.resolve_role(SemanticRole::Surface).hsla(),
             border: self.look.resolve_role(SemanticRole::Border).hsla(),
             foreground: self.look.resolve_role(SemanticRole::Foreground).hsla(),
@@ -55,12 +60,27 @@ impl OverlayWindowTheme for OverlayWindowThemeAdapter {
                 estimated_height: resolved.estimated_height,
                 font_size: resolved.body.size,
                 line_height: resolved.body.line_height,
+                backdrop_opacity: resolved.backdrop_background.a,
+                border_width: resolved.border_width,
+                viewport_padding: resolved.viewport_padding,
+                window_margin: resolved.window_margin,
+                drag_header_height: resolved.drag_header_height,
+
+                radius: resolved.radius,
             },
         );
+        resolved.viewport_padding = geometry.viewport_padding.value_px;
+        resolved.window_margin = geometry.window_margin.value_px;
+        resolved.drag_header_height = geometry.drag_header_height.value_px;
+        resolved.border_width = geometry.border_width.value_px;
+        resolved.radius = geometry.radius.value_px;
         resolved.padding = geometry.padding.value_px;
         resolved.min_width = geometry.min_width.value_px;
         resolved.max_width = geometry.max_width.value_px;
         resolved.estimated_height = geometry.estimated_height.value_px;
+        if mode == OverlayWindowMode::Modal {
+            resolved.backdrop_background.a = geometry.backdrop_opacity.value_px;
+        }
         resolved.body.size = geometry.font_size.value_px;
         resolved.body.line_height = geometry.line_height.value_px;
         resolved
@@ -69,4 +89,23 @@ impl OverlayWindowTheme for OverlayWindowThemeAdapter {
 
 pub fn overlay_window_theme(look: &Look) -> Arc<dyn OverlayWindowTheme> {
     Arc::new(OverlayWindowThemeAdapter { look: look.clone() })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn overlay_chrome_uses_selected_common_stylesheet() {
+        let look = Look::built_in();
+        look.set_common_stylesheet(
+            gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[
+                "[common.overlay_window.geometry]\nborder_width=0\nradius=19",
+            ])
+            .unwrap(),
+        );
+        for mode in [OverlayWindowMode::Modal, OverlayWindowMode::Modeless] {
+            let resolved = overlay_window_theme(&look).resolve(ControlSize::Md, mode);
+            assert_eq!((resolved.border_width, resolved.radius), (0.0, 19.0));
+        }
+    }
 }

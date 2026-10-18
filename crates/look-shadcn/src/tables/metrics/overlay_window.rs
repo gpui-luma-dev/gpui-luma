@@ -38,6 +38,7 @@ pub fn resolve_overlay_window_metrics(
     let geometry = look.mode_tokens().stylesheet().common.overlay_window.resolve_geometry(
         size_key,
         gpui_luma::theme::stylesheet::OverlayWindowGeometry {
+            radius: table.radius.value_px,
             padding: table.padding.value_px,
             min_width: table.min_width.value_px,
             max_width: table.max_width.value_px,
@@ -45,6 +46,7 @@ pub fn resolve_overlay_window_metrics(
             ..Default::default()
         },
     );
+    table.radius = super::helpers::prefer_shared_metric(geometry.radius, table.radius);
     table.padding = super::helpers::prefer_shared_metric(geometry.padding, table.padding);
     table.min_width = super::helpers::prefer_shared_metric(geometry.min_width, table.min_width);
     table.max_width = super::helpers::prefer_shared_metric(geometry.max_width, table.max_width);

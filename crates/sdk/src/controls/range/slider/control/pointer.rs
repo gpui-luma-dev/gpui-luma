@@ -81,13 +81,9 @@ impl SliderControl {
 
     pub(super) fn thumb_size_px(&self) -> f32 {
         self.model
+            .template
+            .resolve_look(self.model.size, self.model.thumb_size, Default::default())
             .thumb_size
-            .map(|size| match size {
-                crate::controls::slider::SliderThumbSize::Sm => 14.0,
-                crate::controls::slider::SliderThumbSize::Md => 18.0,
-                crate::controls::slider::SliderThumbSize::Lg => 22.0,
-            })
-            .unwrap_or(18.0)
     }
 
     pub(super) fn handle_track_bounds(

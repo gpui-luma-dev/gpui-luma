@@ -7,6 +7,8 @@ use crate::theme::{ControlSize, InteractionState, LumaTextStyle, MetricTokens, T
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SwitchScale {
+    /// Whole-control opacity when disabled.
+    pub disabled_opacity: f32,
     pub track_width: f32,
     pub track_height: f32,
     pub track_padding: f32,
@@ -18,23 +20,54 @@ pub struct SwitchScale {
 
 impl SwitchScale {
     pub fn compute(size: ControlSize, metrics: &MetricTokens, scale_factor: f32) -> Self {
-        let control_height = metrics.control_height(size);
-        // Keep the switch cross-axis aligned with checkbox/radio indicators while
-        // preserving a longer movement axis for the thumb.
-        let (track_length_ratio, track_thickness_ratio, thumb_ratio) = match size {
-            ControlSize::Sm => (32.0 / 28.0, 13.0 / 28.0, 9.0 / 28.0),
-            ControlSize::Md => (40.0 / 36.0, 18.0 / 36.0, 14.0 / 36.0),
-            ControlSize::Lg => (48.0 / 44.0, 24.0 / 44.0, 20.0 / 44.0),
-        };
+        Self::compute_with_stylesheet(
+            size,
+            metrics,
+            scale_factor,
+            crate::theme::stylesheet::CommonStylesheet::sdk_default(),
+        )
+    }
 
-        Self {
-            track_width: snap_to_pixel(control_height * track_length_ratio, scale_factor),
-            track_height: snap_to_pixel(control_height * track_thickness_ratio, scale_factor),
-            track_padding: snap_to_pixel(2.0, scale_factor),
-            thumb_size: snap_to_pixel(control_height * thumb_ratio, scale_factor),
+    /// Resolve a snapshot's shared dimensions without changing control behavior.
+    pub fn compute_with_stylesheet(
+        size: ControlSize,
+        metrics: &MetricTokens,
+        scale_factor: f32,
+        stylesheet: &crate::theme::stylesheet::CommonStylesheet,
+    ) -> Self {
+        let key = size.stylesheet_key();
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().switch.authored_geometry(key);
+        let recipe = stylesheet.switch.authored_geometry(key);
+        // Authored scales are dimension / control height, preserving proportional
+        // sizing when metric tokens change. Explicit dimensions take precedence below.
+        let height = metrics.control_height(size);
+        let fallback = Self {
+            disabled_opacity: recipe.disabled_opacity.or(baseline.disabled_opacity).unwrap_or_default(),
+            track_width: snap_to_pixel(
+                height * recipe.track_width_scale.or(baseline.track_width_scale).unwrap_or_default(),
+                scale_factor,
+            ),
+            track_height: snap_to_pixel(
+                height * recipe.track_height_scale.or(baseline.track_height_scale).unwrap_or_default(),
+                scale_factor,
+            ),
+            track_padding: snap_to_pixel(baseline.track_padding.unwrap_or_default(), scale_factor),
+            thumb_size: snap_to_pixel(
+                height * recipe.thumb_scale.or(baseline.thumb_scale).unwrap_or_default(),
+                scale_factor,
+            ),
             track_radius: metrics.radius.pill,
             gap: snap_to_pixel(metrics.gap(size), scale_factor),
-            label_baseline_shift: label_baseline_shift(size),
+            label_baseline_shift: label_baseline_shift(size, stylesheet),
+        };
+        let geometry = stylesheet.switch.resolve_geometry(key, fallback, scale_factor);
+        Self {
+            track_width: geometry.track_width.value_px,
+            track_height: geometry.track_height.value_px,
+            track_padding: geometry.track_padding.value_px,
+            thumb_size: geometry.thumb_size.value_px,
+            gap: geometry.gap.value_px,
+            ..fallback
         }
     }
 }
@@ -81,7 +114,7 @@ impl DefaultSwitchTheme {
 
 impl SwitchTheme for DefaultSwitchTheme {
     fn resolve(&self, on: bool, state: InteractionState, size: ControlSize) -> SwitchPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("switch", &self.tokens.palette);
         let typography = &self.tokens.typography;
         let elevation = &self.tokens.elevation;
         let selected = palette.state.selected;
@@ -133,5 +166,9 @@ impl SwitchTheme for DefaultSwitchTheme {
 
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
+    }
+
+    fn scale(&self, size: ControlSize, scale_factor: f32) -> SwitchScale {
+        SwitchScale::compute_with_stylesheet(size, &self.tokens.metrics, scale_factor, &self.tokens.stylesheet)
     }
 }

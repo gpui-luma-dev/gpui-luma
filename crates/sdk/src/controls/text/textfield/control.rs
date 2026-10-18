@@ -316,8 +316,9 @@ impl TextFieldControl {
             cx,
         );
         if self.model.compact {
-            look.padding_y = 2.0;
-            look.min_height = 22.0;
+            let geometry = &look.helper_geometry;
+            look.padding_y = geometry.compact_textfield_padding_y.value_px;
+            look.min_height = geometry.compact_textfield_height.value_px;
         }
         if let Some(override_fn) = &self.model.look_override {
             look = override_fn(look);

@@ -216,6 +216,7 @@ impl Checkbox {
     fn into_sdk_builder(self, look: Look) -> CheckboxBuilder {
         let template = checkbox_template_for(&look, self.variant, self.paint, self.size, self.radius);
         let mut builder = gpui_luma::controls::checkbox::new(self.id)
+            .stylesheet(&look.common_stylesheet())
             .motion_defaults(look.motion_defaults().checkbox)
             .with_motion_overrides(self.motion)
             .template(template)

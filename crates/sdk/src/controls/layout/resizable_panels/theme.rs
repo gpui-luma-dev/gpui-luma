@@ -7,6 +7,10 @@ use crate::theme::{InteractionLayer, InteractionState, ThemeTokens};
 #[derive(Clone, Debug)]
 pub struct ResizablePanelsLook {
     pub border: Hsla,
+    /// Outer frame thickness in pixels, when the frame is enabled.
+    pub border_width: f32,
+    /// Painted split divider thickness in pixels; independent of the resize hit target.
+    pub divider_width: f32,
     pub divider: Hsla,
     pub grip: Hsla,
     pub grip_emphasis: Hsla,
@@ -14,6 +18,11 @@ pub struct ResizablePanelsLook {
 }
 
 pub trait ResizablePanelsTheme: Send + Sync {
+    /// Shared visual preset; custom looks resolve it through their stylesheet.
+    fn resize_handle_metrics(&self, size: super::ResizeHandleSize) -> super::ResizeHandleMetrics {
+        size.metrics()
+    }
+
     fn resolve(&self, state: InteractionState) -> ResizablePanelsLook;
 }
 
@@ -35,12 +44,19 @@ impl DefaultResizablePanelsTheme {
 }
 
 impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
+    fn resize_handle_metrics(&self, size: super::ResizeHandleSize) -> super::ResizeHandleMetrics {
+        size.metrics_with_stylesheet(&self.tokens.stylesheet)
+    }
+
     fn resolve(&self, state: InteractionState) -> ResizablePanelsLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("resizable_panels", &self.tokens.palette);
         let disabled = state.layer() == InteractionLayer::Disabled;
+        let geometry = self.tokens.stylesheet.resizable_panels.resolve_geometry("md", Default::default());
 
         ResizablePanelsLook {
             border: palette.border.default,
+            border_width: geometry.border_width.value_px,
+            divider_width: geometry.divider_width.value_px,
             divider: if disabled {
                 palette.state.disabled.background
             } else {
@@ -56,7 +72,11 @@ impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
             } else {
                 palette.state.hover.background
             },
-            disabled_opacity: if disabled { 0.45 } else { 1.0 },
+            disabled_opacity: if disabled {
+                geometry.disabled_opacity.value_px
+            } else {
+                1.0
+            },
         }
     }
 }

@@ -70,6 +70,16 @@ impl From<SliderTemplateHandlers> for (SliderBoundsHandler, SliderInteractionHan
 }
 
 pub trait SliderTemplate: Send + Sync {
+    /// Resolve the same geometry for pointer hit testing and painted chrome.
+    fn resolve_look(
+        &self,
+        size: crate::theme::ControlSize,
+        thumb_size: Option<super::SliderThumbSize>,
+        state: crate::theme::InteractionState,
+    ) -> super::SliderLook {
+        super::theme::default_slider_theme().resolve(size, thumb_size, state)
+    }
+
     fn render(
         &self,
         model: &SliderRenderModel<'_>,
@@ -111,6 +121,15 @@ where
 }
 
 impl SliderTemplate for ModifiedSliderTemplate {
+    fn resolve_look(
+        &self,
+        size: crate::theme::ControlSize,
+        thumb_size: Option<super::SliderThumbSize>,
+        state: crate::theme::InteractionState,
+    ) -> super::SliderLook {
+        self.base.resolve_look(size, thumb_size, state)
+    }
+
     fn render(
         &self,
         model: &SliderRenderModel<'_>,
@@ -123,10 +142,6 @@ impl SliderTemplate for ModifiedSliderTemplate {
         self.apply_modifiers(root, model)
     }
 }
-
-pub(crate) const DISABLED_OPACITY: f32 = 0.56;
-pub(crate) const DIAL_SIZE: f32 = 200.0;
-pub(crate) const TRACK_RADIUS: f32 = 72.0;
 
 pub(crate) fn uses_static_track_surface(model: &SliderRenderModel<'_>) -> bool {
     model.thumb_policy.is_multi_thumb() || model.presentation == super::model::TrackPresentation::Domain
@@ -179,7 +194,7 @@ pub(crate) fn render_slider_thumb_at(
             div()
                 .size(px(look.thumb_size))
                 .bg(thumb_fill)
-                .border_1()
+                .border(px(look.thumb_border_width))
                 .border_color(look.thumb_border)
                 .rounded(px(thumb_radius))
                 .shadow(look.thumb_shadow.clone()),
@@ -214,7 +229,7 @@ pub(crate) fn render_linear_thumb(
             div()
                 .size(px(look.thumb_size))
                 .bg(thumb_fill)
-                .border_1()
+                .border(px(look.thumb_border_width))
                 .border_color(look.thumb_border)
                 .rounded(px(thumb_radius))
                 .shadow(look.thumb_shadow.clone()),
@@ -329,9 +344,9 @@ pub fn attach_thumb_drag(
     thumb
 }
 
-pub(crate) fn arc_annulus_radii(arc_thickness: f32) -> (f32, f32) {
-    let outer = TRACK_RADIUS + arc_thickness * 0.5;
-    let inner = (TRACK_RADIUS - arc_thickness * 0.5).max(0.0);
+pub(crate) fn arc_annulus_radii(arc_thickness: f32, track_radius: f32) -> (f32, f32) {
+    let outer = track_radius + arc_thickness * 0.5;
+    let inner = (track_radius - arc_thickness * 0.5).max(0.0);
     (inner, outer)
 }
 
@@ -342,6 +357,7 @@ fn arc_shape_angles(start_angle: f32, end_angle: f32) -> (f32, f32) {
 
 pub(crate) fn paint_radial_annulus(
     bounds: Bounds<Pixels>,
+    track_radius: f32,
     start_angle: f32,
     end_angle: f32,
     color: Hsla,
@@ -352,7 +368,7 @@ pub(crate) fn paint_radial_annulus(
         return;
     }
 
-    let (inner, outer) = arc_annulus_radii(arc_thickness);
+    let (inner, outer) = arc_annulus_radii(arc_thickness, track_radius);
     let (start_angle, end_angle) = arc_shape_angles(start_angle, end_angle);
     let arc_shape = ShapeArc::new().inner_radius(inner).outer_radius(outer);
     let data = ArcData { data: &(), index: 0, value: 1.0, start_angle, end_angle, pad_angle: 0.0 };
@@ -362,6 +378,7 @@ pub(crate) fn paint_radial_annulus(
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn paint_radial_fill_track(
     bounds: Bounds<Pixels>,
+    track_radius: f32,
     min_angle: f32,
     max_angle: f32,
     percentage: f32,
@@ -373,11 +390,11 @@ pub(crate) fn paint_radial_fill_track(
     let span = max_angle - min_angle;
     let percentage = percentage.clamp(0.0, 1.0);
 
-    paint_radial_annulus(bounds, min_angle, max_angle, track_background, arc_thickness, window);
+    paint_radial_annulus(bounds, track_radius, min_angle, max_angle, track_background, arc_thickness, window);
 
     if percentage > f32::EPSILON {
         let fill_end = min_angle + span * percentage;
-        paint_radial_annulus(bounds, min_angle, fill_end, fill_background, arc_thickness, window);
+        paint_radial_annulus(bounds, track_radius, min_angle, fill_end, fill_background, arc_thickness, window);
     }
 
     let center = bounds.center();
@@ -385,7 +402,7 @@ pub(crate) fn paint_radial_fill_track(
     let segment_count = if percentage >= 1.0 - f32::EPSILON { 1 } else { 2 };
     let (start_color, end_color) =
         arc_fill_end_cap_colors(fill_segments, segment_count, track_background, fill_background);
-    paint_arc_open_end_caps(center, TRACK_RADIUS, min_angle, max_angle, start_color, end_color, arc_thickness, window);
+    paint_arc_open_end_caps(center, track_radius, min_angle, max_angle, start_color, end_color, arc_thickness, window);
 }
 
 pub(crate) fn paint_arc_round_cap(

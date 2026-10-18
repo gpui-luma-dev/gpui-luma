@@ -370,6 +370,20 @@ pub fn render_control_group_item_elements<T>(
 where
     T: ControlGroupItemLike + 'static,
 {
+    let opacity = model.stylesheet.control_group.geometry.disabled_opacity.unwrap_or_default();
+    render_control_group_item_elements_with_opacity(model, handlers, window, cx, opacity)
+}
+
+fn render_control_group_item_elements_with_opacity<T>(
+    model: &ControlGroupRenderModel<'_, T>,
+    handlers: ControlGroupTemplateHandlers,
+    window: &mut Window,
+    cx: &mut App,
+    disabled_opacity: f32,
+) -> ControlGroupItemElements
+where
+    T: ControlGroupItemLike + 'static,
+{
     let mut items = Vec::with_capacity(model.items.len());
 
     for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
@@ -383,7 +397,7 @@ where
         if item.enabled {
             element = element.cursor_pointer();
         } else if model.item_element_template.is_none() {
-            element = element.opacity(0.56);
+            element = element.opacity(disabled_opacity);
         }
 
         if model.scroll_handle.is_some() {
@@ -416,9 +430,12 @@ pub(crate) fn render_control_group_items<T>(
     handlers: ControlGroupTemplateHandlers,
     window: &mut Window,
     cx: &mut App,
+    disabled_opacity: f32,
 ) -> Vec<AnyElement>
 where
     T: ControlGroupItemLike + 'static,
 {
-    render_control_group_item_elements(model, handlers, window, cx).into_elements().collect()
+    render_control_group_item_elements_with_opacity(model, handlers, window, cx, disabled_opacity)
+        .into_elements()
+        .collect()
 }

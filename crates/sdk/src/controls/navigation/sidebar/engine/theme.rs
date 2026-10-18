@@ -26,6 +26,20 @@ pub struct SidebarItemLook {
 }
 
 pub trait SidebarTheme: Send + Sync {
+    /// Shared title/subtitle typography and section OpenType treatment.
+    fn typography(&self) -> crate::theme::LumaTypography {
+        crate::theme::LumaTypography::default()
+    }
+    fn section_font_features(&self) -> gpui::FontFeatures {
+        crate::theme::stylesheet::CommonStylesheet::sdk_default().font_features.resolve("sidebar_section")
+    }
+
+    /// Shared shell and row decoration used by the stock template.
+    fn geometry(&self) -> crate::theme::stylesheet::ResolvedSidebarGeometry {
+        crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .sidebar
+            .resolve_geometry("", Default::default())
+    }
     /// Appearance of native drag previews and insertion feedback.
     fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
         let mut drag = crate::infra::drag_drop::DragDropLook::from_tokens(&ThemeTokens::default(), size);
@@ -66,7 +80,7 @@ impl DefaultSidebarTheme {
     }
 
     fn base_item(&self, state: InteractionState, size: ControlSize) -> SidebarItemLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("sidebar", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let size_metrics = metrics.for_size(size);
@@ -83,33 +97,49 @@ impl DefaultSidebarTheme {
             icon_color: foreground,
             typography: typography.text.label,
             radius: metrics.radius(size),
-            height: 30.0,
-            padding_x: 8.0,
+            height: self.geometry().engine_item_height.value_px,
+            padding_x: self.geometry().engine_item_padding_x.value_px,
             gap: size_metrics.gap,
-            icon_size: 16.0,
+            icon_size: self.geometry().item_icon_size.value_px,
         }
     }
 }
 
 impl SidebarTheme for DefaultSidebarTheme {
+    fn typography(&self) -> crate::theme::LumaTypography {
+        self.tokens.typography.clone()
+    }
+    fn section_font_features(&self) -> gpui::FontFeatures {
+        self.tokens.stylesheet.font_features.resolve("sidebar_section")
+    }
+
+    fn geometry(&self) -> crate::theme::stylesheet::ResolvedSidebarGeometry {
+        self.tokens.stylesheet.sidebar.resolve_geometry("", Default::default())
+    }
     fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
         crate::infra::drag_drop::DragDropLook::from_tokens(&self.tokens, size)
     }
     fn foreground(&self) -> Hsla {
-        self.tokens.palette.navigation.foreground
+        self.tokens.stylesheet.recipes.palette("sidebar", &self.tokens.palette).navigation.foreground
     }
 
     fn resolve_section(&self) -> SidebarSectionLook {
         SidebarSectionLook {
-            label_color: self.tokens.palette.navigation.muted_foreground,
+            label_color: self
+                .tokens
+                .stylesheet
+                .recipes
+                .palette("sidebar", &self.tokens.palette)
+                .navigation
+                .muted_foreground,
             typography: self.tokens.typography.text.caption,
-            height: 20.0,
+            height: self.geometry().engine_section_height.value_px,
         }
     }
 
     fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> SidebarItemLook {
         let mut look = self.base_item(state, size);
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("sidebar", &self.tokens.palette);
 
         look.background = match state.layer() {
             InteractionLayer::Disabled | InteractionLayer::Default => None,
@@ -122,7 +152,7 @@ impl SidebarTheme for DefaultSidebarTheme {
 
     fn resolve_item(&self, selected: bool, state: InteractionState, size: ControlSize) -> SidebarItemLook {
         let mut look = self.base_item(state, size);
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("sidebar", &self.tokens.palette);
 
         look.background = match (selected, state.layer()) {
             (_, InteractionLayer::Disabled) => None,

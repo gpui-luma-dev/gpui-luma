@@ -740,6 +740,18 @@ where
     selected_index.and_then(|index| items.get(index)).map_or(fallback_label, SelectorItemLike::label)
 }
 
+impl<T: SelectorItemLike + 'static> AttachmentTarget for Selector<T> {
+    fn attachments(&self) -> &AttachmentHost {
+        &self.attachments
+    }
+    fn attachments_mut(&mut self) -> &mut AttachmentHost {
+        &mut self.attachments
+    }
+    fn attachment_anchor(&self, bounds: Bounds<Pixels>) -> Bounds<Pixels> {
+        self.trigger_bounds.unwrap_or(bounds)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -804,15 +816,3 @@ mod tests {
 #[cfg(all(test, feature = "test-support"))]
 #[path = "wheel_tests.rs"]
 mod wheel_tests;
-
-impl<T: SelectorItemLike + 'static> AttachmentTarget for Selector<T> {
-    fn attachments(&self) -> &AttachmentHost {
-        &self.attachments
-    }
-    fn attachments_mut(&mut self) -> &mut AttachmentHost {
-        &mut self.attachments
-    }
-    fn attachment_anchor(&self, bounds: Bounds<Pixels>) -> Bounds<Pixels> {
-        self.trigger_bounds.unwrap_or(bounds)
-    }
-}

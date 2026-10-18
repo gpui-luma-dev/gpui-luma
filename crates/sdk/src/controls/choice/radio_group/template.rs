@@ -1,7 +1,7 @@
 use std::cell::Cell;
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Window, div, prelude::*};
+use gpui::{AnyElement, App, Window, div, px, prelude::*};
 
 use crate::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use crate::controls::button::{ButtonRenderModel, ButtonTemplate};
@@ -13,8 +13,6 @@ use crate::controls::control_group::{
 use crate::controls::radio_button::RadioButtonData;
 
 use super::model::RadioGroupTemplate;
-
-const DISABLED_OPACITY: f32 = 0.56;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RadioGroupLayout {
@@ -32,11 +30,15 @@ where
     Arc::new(move |model, handlers, window, cx| {
         let rows = render_radio_button_rows(model, handlers, &button_template, window, cx);
 
+        let key = match layout {
+            RadioGroupLayout::Vertical => "vertical",
+            RadioGroupLayout::Horizontal => "horizontal",
+        };
+        let recipe = model.stylesheet.radio_group.authored_geometry(key);
+        let root = div().id(model.id.clone()).flex().gap(px(recipe.gap.unwrap_or_default()));
         match layout {
-            RadioGroupLayout::Vertical => {
-                div().id(model.id.clone()).flex().flex_col().gap_2().items_start().children(rows)
-            }
-            RadioGroupLayout::Horizontal => div().id(model.id.clone()).flex().items_center().gap_3().children(rows),
+            RadioGroupLayout::Vertical => root.flex_col().items_start().children(rows),
+            RadioGroupLayout::Horizontal => root.items_center().children(rows),
         }
     })
 }
@@ -84,7 +86,15 @@ where
             .id((gpui::ElementId::from(item.group_id.clone()), item.item.id().clone()))
             .flex()
             .items_center()
-            .gap_2()
+            .gap(px(item
+                .stylesheet
+                .radio_group
+                .authored_geometry(match item.layout {
+                    ControlGroupLayout::Vertical => "vertical",
+                    ControlGroupLayout::Horizontal => "horizontal",
+                })
+                .item_gap
+                .unwrap_or_default()))
             .child(indicator)
             .child(div().flex_1().min_w_0().child(content))
     } else {
@@ -133,7 +143,17 @@ where
         if item.enabled {
             row = row.cursor_pointer();
         } else {
-            row = row.opacity(DISABLED_OPACITY);
+            row = row.opacity(
+                model
+                    .stylesheet
+                    .radio_group
+                    .authored_geometry(match model.layout {
+                        ControlGroupLayout::Vertical => "vertical",
+                        ControlGroupLayout::Horizontal => "horizontal",
+                    })
+                    .disabled_opacity
+                    .unwrap_or_default(),
+            );
         }
 
         rows.push(row.into_any_element());

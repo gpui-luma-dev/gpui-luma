@@ -9,8 +9,10 @@ use std::{
 
 /// Semantic source colors; the default component type retains Palette color spaces.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LumaPalette<C = ColorValue> {
     pub app: AppPalette<C>,
+    pub shell: ShellPalette<C>,
     pub surface: SurfacePalette<C>,
     pub state: StatePalette<C>,
     pub form: FormPalette<C>,
@@ -21,6 +23,20 @@ pub struct LumaPalette<C = ColorValue> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ShellPalette<C = ColorValue> {
+    pub background: C,
+    pub foreground: C,
+    pub border: C,
+    pub hover_background: C,
+    pub active_background: C,
+    pub close_hover_background: C,
+    pub close_active_background: C,
+    pub close_foreground: C,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AppPalette<C = ColorValue> {
     pub background: C,
     pub foreground: C,
@@ -28,6 +44,7 @@ pub struct AppPalette<C = ColorValue> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SurfacePalette<C = ColorValue> {
     pub panel: SurfaceWithBorderPalette<C>,
     pub floating: SurfaceWithBorderPalette<C>,
@@ -35,6 +52,7 @@ pub struct SurfacePalette<C = ColorValue> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SurfaceWithBorderPalette<C = ColorValue> {
     pub background: C,
     pub foreground: C,
@@ -42,12 +60,14 @@ pub struct SurfaceWithBorderPalette<C = ColorValue> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SurfaceTonePalette<C = ColorValue> {
     pub background: C,
     pub foreground: C,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StatePalette<C = ColorValue> {
     pub hover: StateTonePalette<C>,
     pub pressed: StateBackgroundPalette<C>,
@@ -56,22 +76,26 @@ pub struct StatePalette<C = ColorValue> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StateTonePalette<C = ColorValue> {
     pub background: C,
     pub foreground: C,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StateBackgroundPalette<C = ColorValue> {
     pub background: C,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FormPalette<C = ColorValue> {
     pub input: FormInputPalette<C>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FormInputPalette<C = ColorValue> {
     pub background: C,
     pub foreground: C,
@@ -81,17 +105,20 @@ pub struct FormInputPalette<C = ColorValue> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FocusPalette<C = ColorValue> {
     pub ring: C,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BorderPalette<C = ColorValue> {
     pub default: C,
     pub strong: C,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct NavigationPalette<C = ColorValue> {
     pub background: C,
     pub foreground: C,
@@ -103,7 +130,10 @@ pub struct NavigationPalette<C = ColorValue> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DataPalette<C = ColorValue> {
+    /// Positive completion/status affordances.
+    pub positive: C,
     pub accent_1: C,
     pub accent_2: C,
     pub accent_3: C,
@@ -119,10 +149,10 @@ impl Default for LumaPalette<ColorValue> {
 
 impl LumaPalette<ColorValue> {
     pub fn light() -> Self {
-        Self::light_with(hex_source)
+        Self::light_with(|c| ColorValue::srgb(c[0], c[1], c[2], c[3]))
     }
     pub fn dark() -> Self {
-        Self::dark_with(hex_source)
+        Self::dark_with(|c| ColorValue::srgb(c[0], c[1], c[2], c[3]))
     }
 
     /// Validate and retain the source palette, with an immutable sRGB preview.
@@ -133,132 +163,32 @@ impl LumaPalette<ColorValue> {
     }
 }
 
-fn hex_source(hex: u32) -> ColorValue {
-    ColorValue::srgb(
-        ((hex >> 16) & 255) as f32 / 255.0,
-        ((hex >> 8) & 255) as f32 / 255.0,
-        (hex & 255) as f32 / 255.0,
-        1.0,
-    )
-}
-
 impl<C> LumaPalette<C> {
-    fn light_with(color: impl Fn(u32) -> C) -> Self {
-        Self {
-            app: AppPalette {
-                background: color(0xf8fafc),
-                foreground: color(0x0f172a),
-                muted_foreground: color(0x64748b),
-            },
-            surface: SurfacePalette {
-                panel: SurfaceWithBorderPalette {
-                    background: color(0xffffff),
-                    foreground: color(0x0f172a),
-                    border: color(0xcbd5e1),
-                },
-                floating: SurfaceWithBorderPalette {
-                    background: color(0xffffff),
-                    foreground: color(0x0f172a),
-                    border: color(0xcbd5e1),
-                },
-                subtle: SurfaceTonePalette { background: color(0xf1f5f9), foreground: color(0x334155) },
-            },
-            state: StatePalette {
-                hover: StateTonePalette { background: color(0xe2e8f0), foreground: color(0x0f172a) },
-                pressed: StateBackgroundPalette { background: color(0xcbd5e1) },
-                selected: StateTonePalette { background: color(0x2563eb), foreground: color(0xffffff) },
-                disabled: StateTonePalette { background: color(0xf1f5f9), foreground: color(0x94a3b8) },
-            },
-            form: FormPalette {
-                input: FormInputPalette {
-                    background: color(0xffffff),
-                    foreground: color(0x0f172a),
-                    border: color(0x94a3b8),
-                    invalid_border: color(0xdb2777),
-                    placeholder: color(0x94a3b8),
-                },
-            },
-            focus: FocusPalette { ring: color(0xf59e0b) },
-            border: BorderPalette { default: color(0xcbd5e1), strong: color(0x64748b) },
-            navigation: NavigationPalette {
-                background: color(0xffffff),
-                foreground: color(0x0f172a),
-                muted_foreground: color(0x64748b),
-                hover_background: color(0xf1f5f9),
-                selected_background: color(0x2563eb),
-                selected_foreground: color(0xffffff),
-                border: color(0xcbd5e1),
-            },
-            data: DataPalette {
-                accent_1: color(0x2563eb),
-                accent_2: color(0x0f766e),
-                accent_3: color(0xc2410c),
-                accent_4: color(0x7c3aed),
-                accent_5: color(0xbe123c),
-            },
-        }
+    fn light_with(color: impl Fn([f32; 4]) -> C) -> Self {
+        include!(concat!(env!("OUT_DIR"), "/palette_light.rs"))
     }
 
-    fn dark_with(color: impl Fn(u32) -> C) -> Self {
-        Self {
-            app: AppPalette {
-                background: color(0x0b1120),
-                foreground: color(0xf8fafc),
-                muted_foreground: color(0x94a3b8),
-            },
-            surface: SurfacePalette {
-                panel: SurfaceWithBorderPalette {
-                    background: color(0x111827),
-                    foreground: color(0xf8fafc),
-                    border: color(0x334155),
-                },
-                floating: SurfaceWithBorderPalette {
-                    background: color(0x111827),
-                    foreground: color(0xf8fafc),
-                    border: color(0x334155),
-                },
-                subtle: SurfaceTonePalette { background: color(0x1e293b), foreground: color(0xcbd5e1) },
-            },
-            state: StatePalette {
-                hover: StateTonePalette { background: color(0x334155), foreground: color(0xf8fafc) },
-                pressed: StateBackgroundPalette { background: color(0x475569) },
-                selected: StateTonePalette { background: color(0x60a5fa), foreground: color(0x082f49) },
-                disabled: StateTonePalette { background: color(0x1e293b), foreground: color(0x64748b) },
-            },
-            form: FormPalette {
-                input: FormInputPalette {
-                    background: color(0x0f172a),
-                    foreground: color(0xf8fafc),
-                    border: color(0x475569),
-                    invalid_border: color(0xf472b6),
-                    placeholder: color(0x64748b),
-                },
-            },
-            focus: FocusPalette { ring: color(0xfbbf24) },
-            border: BorderPalette { default: color(0x334155), strong: color(0x94a3b8) },
-            navigation: NavigationPalette {
-                background: color(0x111827),
-                foreground: color(0xf8fafc),
-                muted_foreground: color(0x94a3b8),
-                hover_background: color(0x1e293b),
-                selected_background: color(0x60a5fa),
-                selected_foreground: color(0x082f49),
-                border: color(0x334155),
-            },
-            data: DataPalette {
-                accent_1: color(0x60a5fa),
-                accent_2: color(0x2dd4bf),
-                accent_3: color(0xfb923c),
-                accent_4: color(0xa78bfa),
-                accent_5: color(0xfb7185),
-            },
-        }
+    fn dark_with(color: impl Fn([f32; 4]) -> C) -> Self {
+        include!(concat!(env!("OUT_DIR"), "/palette_dark.rs"))
     }
 }
 
 impl<C> LumaPalette<C> {
     fn map_colors<D>(self, map: &mut impl FnMut(C) -> Result<D>) -> Result<LumaPalette<D>> {
         Ok(LumaPalette {
+            shell: ShellPalette {
+                background: map(self.shell.background).with_context(|| "palette.shell.background")?,
+                foreground: map(self.shell.foreground).with_context(|| "palette.shell.foreground")?,
+                border: map(self.shell.border).with_context(|| "palette.shell.border")?,
+                hover_background: map(self.shell.hover_background).with_context(|| "palette.shell.hover_background")?,
+                active_background: map(self.shell.active_background)
+                    .with_context(|| "palette.shell.active_background")?,
+                close_hover_background: map(self.shell.close_hover_background)
+                    .with_context(|| "palette.shell.close_hover_background")?,
+                close_active_background: map(self.shell.close_active_background)
+                    .with_context(|| "palette.shell.close_active_background")?,
+                close_foreground: map(self.shell.close_foreground).with_context(|| "palette.shell.close_foreground")?,
+            },
             app: AppPalette {
                 background: map(self.app.background).with_context(|| "palette.app.background")?,
                 foreground: map(self.app.foreground).with_context(|| "palette.app.foreground")?,
@@ -337,6 +267,7 @@ impl<C> LumaPalette<C> {
                 border: map(self.navigation.border).with_context(|| "palette.navigation.border")?,
             },
             data: DataPalette {
+                positive: map(self.data.positive).with_context(|| "palette.data.positive")?,
                 accent_1: map(self.data.accent_1).with_context(|| "palette.data.accent_1")?,
                 accent_2: map(self.data.accent_2).with_context(|| "palette.data.accent_2")?,
                 accent_3: map(self.data.accent_3).with_context(|| "palette.data.accent_3")?,
@@ -370,7 +301,9 @@ impl SrgbPalette {
         PALETTE
             .get_or_init(|| Self {
                 source: Arc::new(LumaPalette::light()),
-                preview: Arc::new(LumaPalette::light_with(|hex| gpui::rgb(hex).into())),
+                preview: Arc::new(LumaPalette::light_with(|c| {
+                    gpui::Rgba { r: c[0], g: c[1], b: c[2], a: c[3] }.into()
+                })),
                 policy: GamutMapping::CssLocalMinde,
             })
             .clone()
@@ -380,7 +313,7 @@ impl SrgbPalette {
         PALETTE
             .get_or_init(|| Self {
                 source: Arc::new(LumaPalette::dark()),
-                preview: Arc::new(LumaPalette::dark_with(|hex| gpui::rgb(hex).into())),
+                preview: Arc::new(LumaPalette::dark_with(|c| gpui::Rgba { r: c[0], g: c[1], b: c[2], a: c[3] }.into())),
                 policy: GamutMapping::CssLocalMinde,
             })
             .clone()

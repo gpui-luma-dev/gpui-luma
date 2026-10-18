@@ -52,27 +52,19 @@ pub fn control_group_list_look(mode: &ShadcnModeTokens, enabled: bool) -> Contro
     let colors = resolve_control_group_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| ControlGroupListColorTable::fallback());
 
-    let mut look = ControlGroupListLook {
+    let baseline = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default().control_group.authored_geometry("md");
+    let recipe = mode.stylesheet().common.control_group.authored_geometry("md").with_fallback(&baseline);
+    ControlGroupListLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
-        radius: metrics.radius(ControlSize::Md),
-        padding_x: 6.0,
-        padding_y: 4.0,
-        gap: 6.0,
-    };
-    let geometry = mode.stylesheet().common.control_group.resolve_geometry(
-        "md",
-        gpui_luma::theme::stylesheet::ControlGroupGeometry {
-            padding_x: look.padding_x,
-            padding_y: look.padding_y,
-            gap: look.gap,
-        },
-    );
-    look.padding_x = geometry.padding_x.value_px;
-    look.padding_y = geometry.padding_y.value_px;
-    look.gap = geometry.gap.value_px;
-
-    look
+        radius: recipe.radius.unwrap_or(metrics.radius(ControlSize::Md)),
+        padding_x: recipe.padding_x.unwrap_or_default(),
+        padding_y: recipe.padding_y.unwrap_or_default(),
+        gap: recipe.gap.unwrap_or_default(),
+        vertical_gap: recipe.vertical_gap.unwrap_or_default(),
+        border_width: recipe.border_width.unwrap_or_default(),
+        disabled_opacity: recipe.disabled_opacity.unwrap_or_default(),
+    }
 }
 
 #[cfg(test)]

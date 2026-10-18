@@ -275,7 +275,10 @@ impl SearchSelector {
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> SearchSelectorBuilder {
-        let self_builder = self.builder.motion_defaults(look.motion_defaults().search_selector);
+        let self_builder = self
+            .builder
+            .stylesheet(&look.mode_tokens().stylesheet().common)
+            .motion_defaults(look.motion_defaults().search_selector);
         let theme = look.clone();
         self_builder
             .size(self.size.control_size())

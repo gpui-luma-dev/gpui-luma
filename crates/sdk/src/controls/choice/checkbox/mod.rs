@@ -218,6 +218,7 @@ pub struct CheckboxBuilder {
     button: ButtonBuilder<CheckboxData>,
     motion_enabled: bool,
     motion: crate::motion::MotionConfig<CheckboxMotion>,
+    icons_explicit: bool,
     icons: SelectionStatusIcons,
 }
 
@@ -316,6 +317,14 @@ impl CheckboxBuilder {
         self
     }
 
+    /// Capture shared selection glyphs without replacing explicit icons.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        if !self.icons_explicit {
+            self.icons = SelectionStatusIcons::from_stylesheet(stylesheet);
+        }
+        self
+    }
+
     pub fn icons(mut self, icons: SelectionStatusIcons) -> Self {
         self.icons = icons.clone();
         self.button.model.data.icons = icons;
@@ -346,6 +355,7 @@ pub fn new(id: impl Into<SharedString>) -> CheckboxBuilder {
         button: ButtonBuilder::new(id).typed(CheckboxData::default()).template(default_checkbox_template()),
         motion_enabled: true,
         motion: Default::default(),
+        icons_explicit: false,
         icons: SelectionStatusIcons::default(),
     }
 }

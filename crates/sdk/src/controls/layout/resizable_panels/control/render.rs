@@ -18,6 +18,7 @@ impl ResizablePanels {
             hovered_handle: self.hovered_handle,
             dragging_handle: self.dragging_handle,
             resize_handle: self.model.resize_handle,
+            handle_metrics: self.model.theme.resize_handle_metrics(self.model.resize_handle),
             handle_grip: self.model.handle_grip,
             panel_sizes_px: &self.panel_sizes_px,
             panel_hidden: self.panel_hide_restore.iter().map(Option::is_some).collect(),

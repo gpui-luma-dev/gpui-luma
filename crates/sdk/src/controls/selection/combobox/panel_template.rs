@@ -80,16 +80,16 @@ impl ComboBoxPanelTemplate for DefaultComboBoxPanelTemplate {
 
             return deferred(
                 anchored()
-                    .snap_to_window_with_margin(px(8.0))
+                    .snap_to_window_with_margin(px(look.window_margin))
                     .anchor(gpui::Anchor::TopLeft)
                     .position(point(bounds.left(), bounds.bottom()))
-                    .offset(point(px(0.0), px(4.0)))
+                    .offset(point(px(0.0), px(look.popup_offset_y)))
                     .child(
                         div()
                             .id((model.id.clone(), 1usize))
                             .w(bounds.size.width)
                             .bg(look.background)
-                            .border_1()
+                            .border(px(look.border_width))
                             .border_color(look.border)
                             .rounded(px(look.radius))
                             .shadow(look.shadow)
@@ -107,7 +107,7 @@ impl ComboBoxPanelTemplate for DefaultComboBoxPanelTemplate {
             .id((model.id.clone(), 0usize))
             .w_full()
             .bg(look.background)
-            .border_1()
+            .border(px(look.border_width))
             .border_color(look.border)
             .rounded(px(look.radius))
             .shadow(look.shadow)

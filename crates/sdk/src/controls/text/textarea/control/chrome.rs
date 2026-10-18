@@ -5,10 +5,8 @@ use gpui::{
 };
 
 use super::element::TextAreaElement;
-use super::{FOCUS_RING_GAP, TextArea, TextAreaDrag, TextAreaResizeDrag};
+use super::{TextArea, TextAreaDrag, TextAreaResizeDrag};
 use crate::theme::StandardBoxScale;
-
-pub(super) const TEXTAREA_RESIZE_ICON_SIZE: f32 = 10.0;
 
 impl TextArea {
     pub(super) fn resize_drag_id(&self) -> SharedString {
@@ -16,7 +14,11 @@ impl TextArea {
     }
 
     pub(super) fn resize_line_height(&self) -> f32 {
-        self.layout_cache.as_ref().map(|cache| cache.line_height.as_f32()).unwrap_or(20.0).max(1.0)
+        self.layout_cache
+            .as_ref()
+            .map(|cache| cache.line_height.as_f32())
+            .unwrap_or_else(|| crate::theme::LumaTypography::default().text.body.line_height)
+            .max(1.0)
     }
 
     pub(super) fn stop_resize_drag(&mut self) {
@@ -122,7 +124,7 @@ impl Render for TextArea {
         let mut look = self.resolved_look(&scale);
         let focused = self.state.focused && self.state.focus_visible && self.model.enabled;
         let focus_extent = if look.focus_border.is_some() {
-            FOCUS_RING_GAP + look.border_width.max(0.0)
+            self.model.theme.metrics().focus.gap + look.border_width.max(0.0)
         } else {
             0.0
         };
@@ -134,14 +136,15 @@ impl Render for TextArea {
                 window.blur(cx);
             }
         }
-        let scrollbar_width = px(12.0);
+        let geometry = &look.helper_geometry;
+        let scrollbar_width = px(geometry.textarea_scrollbar_width.value_px);
         let resize_handle = div()
             .id("resize-handle")
             .absolute()
-            .right(px(3.0))
-            .bottom(px(3.0))
-            .w(px(12.0))
-            .h(px(12.0))
+            .right(px(geometry.textarea_resize_inset.value_px))
+            .bottom(px(geometry.textarea_resize_inset.value_px))
+            .w(px(geometry.textarea_resize_hit_size.value_px))
+            .h(px(geometry.textarea_resize_hit_size.value_px))
             .cursor_pointer()
             .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_resize_mouse_down))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_resize_mouse_up))
@@ -153,17 +156,17 @@ impl Render for TextArea {
             .on_drag_move(cx.listener(Self::handle_resize_drag_move))
             .child(
                 div()
-                    .size(px(TEXTAREA_RESIZE_ICON_SIZE))
+                    .size(px(geometry.textarea_resize_icon_size.value_px))
                     .flex()
                     .items_center()
                     .justify_center()
-                    .text_size(px(TEXTAREA_RESIZE_ICON_SIZE))
-                    .line_height(px(TEXTAREA_RESIZE_ICON_SIZE))
-                    .text_color(look.border.opacity(0.75))
+                    .text_size(px(geometry.textarea_resize_icon_size.value_px))
+                    .line_height(px(geometry.textarea_resize_icon_size.value_px))
+                    .text_color(look.border.opacity(geometry.textarea_resize_opacity.value_px))
                     .child(crate::infra::icon::render_icon_source(
                         &self.model.resize_handle_icon,
-                        look.border.opacity(0.75),
-                        TEXTAREA_RESIZE_ICON_SIZE,
+                        look.border.opacity(geometry.textarea_resize_opacity.value_px),
+                        geometry.textarea_resize_icon_size.value_px,
                     )),
             );
 
@@ -186,7 +189,7 @@ impl Render for TextArea {
             .font_weight(look.typography.weight)
             .when(self.model.full_width, |root| root.w_full())
             .when(self.model.enabled, |root| root.cursor_text())
-            .when(!self.model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
+            .when(!self.model.enabled, |root| root.cursor_not_allowed().opacity(look.disabled_opacity))
             .child(
                 div()
                     .relative()
@@ -200,9 +203,9 @@ impl Render for TextArea {
                 root.child(
                     div()
                         .absolute()
-                        .top(px(2.0))
-                        .right(px(2.0))
-                        .bottom(px(2.0))
+                        .top(px(geometry.textarea_scrollbar_inset.value_px))
+                        .right(px(geometry.textarea_scrollbar_inset.value_px))
+                        .bottom(px(geometry.textarea_scrollbar_inset.value_px))
                         .w(scrollbar_width)
                         .flex()
                         .justify_center()
@@ -238,7 +241,7 @@ impl Render for TextArea {
                     .left(px(0.0))
                     .border(px(look.border_width))
                     .border_color(look.focus_border.unwrap_or(look.border))
-                    .rounded(px(look.radius + FOCUS_RING_GAP + look.border_width)),
+                    .rounded(px(look.radius + self.model.theme.metrics().focus.gap + look.border_width)),
             );
         }
 

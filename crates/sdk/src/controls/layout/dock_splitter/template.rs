@@ -218,14 +218,14 @@ fn render_splitter(
         hit_target = hit_target.child(
             div().absolute().inset_0().flex().justify_center().items_center().child(
                 div()
-                    .rounded(px(8.0))
+                    .rounded(px(look.geometry.thumb_radius.value_px))
                     .bg(if model.hovered || model.dragging || model.focused {
                         look.thumb_color
                     } else {
-                        look.thumb_color.opacity(0.4)
+                        look.thumb_color.opacity(look.geometry.thumb_rest_opacity.value_px)
                     })
-                    .w(px(4.0))
-                    .h(px(36.0)),
+                    .w(px(look.geometry.thumb_width.value_px))
+                    .h(px(look.geometry.thumb_height.value_px)),
             ),
         );
     }

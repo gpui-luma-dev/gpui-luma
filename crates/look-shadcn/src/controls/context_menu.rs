@@ -53,7 +53,19 @@ pub fn context_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: 
     let size = ControlSize::Md;
     let colors = resolve_context_menu_colors(mode, theme_mode, state);
 
+    let baseline = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default()
+        .context_menu
+        .authored_geometry(size.stylesheet_key());
+    let recipe = mode
+        .stylesheet()
+        .common
+        .context_menu
+        .authored_geometry(size.stylesheet_key())
+        .with_fallback(&baseline);
     let mut look = ContextMenuLook {
+        border_width: recipe.border_width.unwrap_or_default(),
+        disabled_opacity: recipe.disabled_opacity.unwrap_or_default(),
+        window_margin: recipe.window_margin.unwrap_or_default(),
         target_background: colors.background.hsla(),
         target_foreground: colors.foreground.hsla(),
         target_border: colors.border.hsla(),
@@ -72,6 +84,7 @@ pub fn context_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: 
             padding_y: look.target_padding_y,
             font_size: look.target_typography.size,
             line_height: look.target_typography.line_height,
+            ..Default::default()
         },
     );
     look.target_min_width = geometry.min_width.value_px;

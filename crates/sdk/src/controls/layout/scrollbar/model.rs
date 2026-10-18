@@ -209,7 +209,11 @@ impl ScrollbarBuilder {
                 step: 1.0,
                 page_step: 10.0,
                 value: 0.0,
-                thumb_fraction: 0.25,
+                thumb_fraction: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .scrollbar
+                    .geometry
+                    .thumb_fraction
+                    .unwrap_or_default(),
                 length: None,
                 size: ControlSize::Md,
                 style: ScrollbarStyle::Ghost,
@@ -340,7 +344,11 @@ pub(crate) fn normalized_thumb_fraction(value: f32) -> f32 {
     if value.is_finite() {
         value.clamp(0.05, 1.0)
     } else {
-        0.25
+        crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .scrollbar
+            .geometry
+            .thumb_fraction
+            .unwrap_or_default()
     }
 }
 

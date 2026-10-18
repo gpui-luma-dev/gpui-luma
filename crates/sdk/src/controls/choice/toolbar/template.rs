@@ -102,14 +102,17 @@ impl ToolbarTemplate for ThemedToolbarTemplate {
             .bg(look.background);
 
         if model.variant == ToolbarVariant::Outline {
-            root = root.border_1().border_color(look.border);
+            root = root.border(px(look.border_width)).border_color(look.border);
         }
 
         for item in items {
             let child = match item.kind {
-                ToolbarItemKind::Separator => {
-                    div().w(px(1.0)).h(px(look.separator_height)).flex_none().bg(look.separator).into_any_element()
-                }
+                ToolbarItemKind::Separator => div()
+                    .w(px(look.separator_width))
+                    .h(px(look.separator_height))
+                    .flex_none()
+                    .bg(look.separator)
+                    .into_any_element(),
                 ToolbarItemKind::Hosted => item.element,
             };
             root = root.child(child);

@@ -5,27 +5,38 @@ use serde::{Serialize, Deserialize};
 use std::{ops::Deref, sync::Arc};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LumaElevation<C = ColorValue> {
     pub none: LumaShadow<C>,
+    pub drag_preview: LumaShadow<C>,
     pub control: LumaShadow<C>,
     pub thumb: LumaShadow<C>,
     pub menu: LumaShadow<C>,
     pub popover: LumaShadow<C>,
     pub panel: LumaShadow<C>,
     pub dialog: LumaShadow<C>,
+    /// Nonmodal overlay-window elevation, independent of dialog elevation.
+    pub overlay_window: LumaShadow<C>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LumaShadow<C = ColorValue> {
     pub layers: Vec<LumaShadowLayer<C>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LumaShadowLayer<C = ColorValue> {
     pub color: C,
+    pub inset: bool,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_finite")]
     pub offset_x: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_finite")]
     pub offset_y: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
     pub blur: f32,
+    #[serde(deserialize_with = "crate::theme::stylesheet::required_finite")]
     pub spread: f32,
 }
 
@@ -63,6 +74,7 @@ impl LumaElevation<ColorValue> {
                         layer.offset_y,
                         layer.blur,
                         layer.spread,
+                        layer.inset,
                     ))
                 })
                 .collect::<Result<Vec<_>>>()?;
@@ -70,12 +82,14 @@ impl LumaElevation<ColorValue> {
         };
         let preview = LumaElevation {
             none: resolve(&self.none, "none", &mut cache)?,
+            drag_preview: resolve(&self.drag_preview, "drag_preview", &mut cache)?,
             control: resolve(&self.control, "control", &mut cache)?,
             thumb: resolve(&self.thumb, "thumb", &mut cache)?,
             menu: resolve(&self.menu, "menu", &mut cache)?,
             popover: resolve(&self.popover, "popover", &mut cache)?,
             panel: resolve(&self.panel, "panel", &mut cache)?,
             dialog: resolve(&self.dialog, "dialog", &mut cache)?,
+            overlay_window: resolve(&self.overlay_window, "overlay_window", &mut cache)?,
         };
         Ok(SrgbElevation { source: Arc::new(self), preview: Arc::new(preview), policy })
     }
@@ -83,45 +97,11 @@ impl LumaElevation<ColorValue> {
 
 impl<C> LumaElevation<C> {
     fn light_with(color: impl Fn(f32) -> C) -> Self {
-        Self {
-            none: LumaShadow::default(),
-            control: LumaShadow::single(color(0.05), 0.0, 1.0, 2.0, 0.0),
-            thumb: LumaShadow::single(color(0.14), 0.0, 1.0, 2.0, 0.0),
-            menu: LumaShadow::new(vec![
-                LumaShadowLayer::new(color(0.10), 0.0, 1.0, 3.0, 0.0),
-                LumaShadowLayer::new(color(0.10), 0.0, 1.0, 2.0, -1.0),
-            ]),
-            popover: LumaShadow::new(vec![
-                LumaShadowLayer::new(color(0.12), 0.0, 4.0, 8.0, -2.0),
-                LumaShadowLayer::new(color(0.06), 0.0, 2.0, 4.0, -1.0),
-            ]),
-            panel: LumaShadow::single(color(0.06), 0.0, 1.0, 3.0, 0.0),
-            dialog: LumaShadow::new(vec![
-                LumaShadowLayer::new(color(0.16), 0.0, 18.0, 32.0, -8.0),
-                LumaShadowLayer::new(color(0.08), 0.0, 6.0, 12.0, -4.0),
-            ]),
-        }
+        include!(concat!(env!("OUT_DIR"), "/elevation_light.rs"))
     }
 
     fn dark_with(color: impl Fn(f32) -> C) -> Self {
-        Self {
-            none: LumaShadow::default(),
-            control: LumaShadow::single(color(0.18), 0.0, 1.0, 2.0, 0.0),
-            thumb: LumaShadow::single(color(0.28), 0.0, 1.0, 2.0, 0.0),
-            menu: LumaShadow::new(vec![
-                LumaShadowLayer::new(color(0.28), 0.0, 6.0, 16.0, -6.0),
-                LumaShadowLayer::new(color(0.18), 0.0, 2.0, 6.0, -2.0),
-            ]),
-            popover: LumaShadow::new(vec![
-                LumaShadowLayer::new(color(0.34), 0.0, 10.0, 24.0, -8.0),
-                LumaShadowLayer::new(color(0.18), 0.0, 2.0, 6.0, -2.0),
-            ]),
-            panel: LumaShadow::single(color(0.20), 0.0, 1.0, 3.0, 0.0),
-            dialog: LumaShadow::new(vec![
-                LumaShadowLayer::new(color(0.42), 0.0, 18.0, 32.0, -8.0),
-                LumaShadowLayer::new(color(0.24), 0.0, 6.0, 12.0, -4.0),
-            ]),
-        }
+        include!(concat!(env!("OUT_DIR"), "/elevation_dark.rs"))
     }
 }
 
@@ -136,8 +116,9 @@ impl<C> LumaShadow<C> {
         Self { layers }
     }
 
-    pub fn single(color: C, offset_x: f32, offset_y: f32, blur: f32, spread: f32) -> Self {
-        Self::new(vec![LumaShadowLayer::new(color, offset_x, offset_y, blur, spread)])
+    /// Construct an explicit shadow; `inset` selects inner versus outer painting.
+    pub fn single(color: C, offset_x: f32, offset_y: f32, blur: f32, spread: f32, inset: bool) -> Self {
+        Self::new(vec![LumaShadowLayer::new(color, offset_x, offset_y, blur, spread, inset)])
     }
 }
 
@@ -148,8 +129,9 @@ impl LumaShadow<Hsla> {
 }
 
 impl<C> LumaShadowLayer<C> {
-    pub fn new(color: C, offset_x: f32, offset_y: f32, blur: f32, spread: f32) -> Self {
-        Self { color, offset_x, offset_y, blur, spread }
+    /// Construct one explicit layer, including its inner/outer painting mode.
+    pub fn new(color: C, offset_x: f32, offset_y: f32, blur: f32, spread: f32, inset: bool) -> Self {
+        Self { color, inset, offset_x, offset_y, blur, spread }
     }
 }
 
@@ -160,7 +142,7 @@ impl LumaShadowLayer<Hsla> {
             offset: point(px(self.offset_x), px(self.offset_y)),
             blur_radius: px(self.blur),
             spread_radius: px(self.spread),
-            inset: false,
+            inset: self.inset,
         }
     }
 }

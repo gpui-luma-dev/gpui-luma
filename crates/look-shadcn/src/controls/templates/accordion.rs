@@ -11,6 +11,14 @@ struct ShadcnAccordionTheme {
 }
 
 impl AccordionTheme for ShadcnAccordionTheme {
+    fn drag_handle_icon(&self) -> gpui_luma::infra::icon::IconSource {
+        self.theme
+            .mode_tokens()
+            .stylesheet()
+            .common
+            .icons
+            .resolve(gpui_luma::theme::stylesheet::IconRole::DragHandle)
+    }
     fn drag_tooltip_theme(&self) -> Arc<dyn gpui_luma::controls::tooltip::TooltipTheme> {
         crate::tooltip_theme(&self.theme)
     }
@@ -19,6 +27,7 @@ impl AccordionTheme for ShadcnAccordionTheme {
         let tokens = self.theme.mode_tokens();
         let palette = &tokens.palette;
         gpui_luma::infra::drag_drop::DragDropLook {
+            geometry: self.theme.stylesheet().common.shared_geometry(),
             background: self.theme.token_color("popover").unwrap_or(palette.panel_background),
             foreground: self.theme.token_color("popover-foreground").unwrap_or(palette.body_text),
             valid_marker: self.theme.token_color("ring").unwrap_or(palette.focus_ring),

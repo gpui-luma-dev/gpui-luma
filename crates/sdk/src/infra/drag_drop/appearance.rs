@@ -4,6 +4,7 @@ use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct DragDropLook {
+    pub geometry: crate::theme::stylesheet::ResolvedSharedGeometry,
     pub background: Hsla,
     pub foreground: Hsla,
     pub valid_marker: Hsla,
@@ -14,11 +15,13 @@ pub struct DragDropLook {
 }
 impl DragDropLook {
     pub fn from_tokens(tokens: &ThemeTokens, size: ControlSize) -> Self {
+        let palette = tokens.stylesheet.recipes.palette("drag_drop", &tokens.palette);
         Self {
-            background: tokens.palette.surface.floating.background,
-            foreground: tokens.palette.surface.floating.foreground,
-            valid_marker: tokens.palette.focus.ring,
-            invalid_marker: tokens.palette.form.input.invalid_border,
+            geometry: tokens.stylesheet.shared_geometry(),
+            background: palette.surface.floating.background,
+            foreground: palette.surface.floating.foreground,
+            valid_marker: palette.focus.ring,
+            invalid_marker: palette.form.input.invalid_border,
             radius: tokens.metrics.radius(size),
             typography: tokens.typography.text.label,
             font_family: tokens.typography.font.sans.family.clone().into(),
@@ -38,15 +41,15 @@ impl Render for DragPreview {
             div()
                 .debug_selector(move || selector.to_owned())
                 .relative()
-                .left(self.offset.x + px(12.))
-                .top(self.offset.y + px(12.))
-                .w(px(220.))
-                .px(px(12.))
-                .py(px(8.))
+                .left(self.offset.x + px(self.look.geometry.drag_offset.value_px))
+                .top(self.offset.y + px(self.look.geometry.drag_offset.value_px))
+                .w(px(self.look.geometry.drag_preview_width.value_px))
+                .px(px(self.look.geometry.drag_padding_x.value_px))
+                .py(px(self.look.geometry.drag_padding_y.value_px))
                 .rounded(px(self.look.radius))
                 .bg(self.look.background)
                 .text_color(self.look.foreground)
-                .border_1()
+                .border(px(self.look.geometry.drag_border_width.value_px))
                 .border_color(self.look.valid_marker)
                 .font_family(self.look.font_family.clone())
                 .text_size(px(self.look.typography.size))

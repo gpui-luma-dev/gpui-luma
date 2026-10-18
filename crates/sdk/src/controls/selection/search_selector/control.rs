@@ -79,6 +79,9 @@ impl SearchSelectorControl {
         let motion_enabled = builder.model.motion.enabled();
         let model = builder.model;
         let enabled = model.enabled;
+        let geometry = model.stylesheet.resolve_geometry(model.size.stylesheet_key(), Default::default());
+        let padding_reduction = geometry.search_padding_reduction.value_px;
+        let height_floor = geometry.search_input_height_floor.value_px;
 
         let popup_search_textfield = text_selection::new(format!("{}-popup-search", model.id))
             .placeholder(model.search_placeholder.clone())
@@ -87,11 +90,11 @@ impl SearchSelectorControl {
             .full_width(true)
             .clean_on_escape(model.clean_on_escape)
             .propagate_home_end_to_parent(true)
-            .look_override(|mut look| {
-                look.padding_y = (look.padding_y - 3.0).max(0.0);
+            .look_override(move |mut look| {
+                look.padding_y = (look.padding_y - padding_reduction).max(0.0);
                 look.background = gpui::hsla(0.0, 0.0, 0.0, 0.0);
                 look.typography.line_height = look.typography.size;
-                look.min_height = (look.typography.line_height + (look.padding_y * 2.0)).max(18.0);
+                look.min_height = (look.typography.line_height + (look.padding_y * 2.0)).max(height_floor);
                 look
             })
             .template(model.textfield_template.clone())
@@ -707,6 +710,7 @@ impl Render for SearchSelectorControl {
 
         let trigger_focused = self.interaction.focus_handle().is_focused(window);
         let autocomplete_look = self.model.autocomplete_theme.resolve(self.model.size);
+        let geometry = self.model.stylesheet.resolve_geometry(self.model.size.stylesheet_key(), Default::default());
         let look = (self.model.popup_look_provider)(self.model.size);
         let selected_label = self
             .committed_selection
@@ -735,8 +739,8 @@ impl Render for SearchSelectorControl {
             let placeholder_width = placeholder_line.width().as_f32();
 
             let textfield_side_padding = (textfield_look.padding_x * 2.0) + textfield_look.border_width;
-            let search_icon_width = 18.0 + 10.0;
-            let spacing = 8.0;
+            let search_icon_width = geometry.search_icon_width.value_px + geometry.trigger_icon_extra_width.value_px;
+            let spacing = geometry.trigger_extra_gap.value_px;
 
             px(textfield_side_padding + placeholder_width + search_icon_width + spacing)
         };
@@ -781,6 +785,7 @@ impl Render for SearchSelectorControl {
                     window.viewport_size().height,
                     &look,
                     min_visible_rows,
+                    geometry.search_chrome_height.value_px,
                 )
             } else {
                 max_visible_rows
@@ -810,6 +815,7 @@ impl Render for SearchSelectorControl {
                     .items_template
                     .render(
                         &SearchSelectorItemsRenderModel {
+                            trailing_icon_size: geometry.trailing_icon_size.value_px,
                             menu_id: &list_id,
                             search_selector_id: &self.model.id,
                             items: &self.model.items,
@@ -829,6 +835,7 @@ impl Render for SearchSelectorControl {
 
             let panel_content = self.model.panel_template.render(
                 SearchSelectorPanelRenderModel {
+                    geometry: geometry.clone(),
                     id: &self.model.id,
                     items: &self.model.items,
                     visible_indices: &visible_indices,
@@ -882,6 +889,8 @@ impl Render for SearchSelectorControl {
             self.model.without_elevation,
         );
         let render_model = SearchSelectorRenderModel {
+            icons: self.model.icons.clone(),
+            geometry,
             id: self.model.id.clone(),
             trigger_label: selected_label.map(SharedString::from).unwrap_or_else(|| self.model.placeholder.clone()),
             trigger_label_is_placeholder: self.committed_selection.is_none(),
@@ -924,22 +933,22 @@ impl Render for SearchSelectorControl {
     }
 }
 
-const POPUP_SEARCH_CHROME_HEIGHT: f32 = 57.0;
-const POPUP_OFFSET_Y: f32 = 4.0;
-const POPUP_VIEWPORT_MARGIN: f32 = 8.0;
-
 fn max_visible_rows_for_viewport(
     trigger_bounds: Option<Bounds<Pixels>>,
     viewport_height: Pixels,
     look: &SelectorItemsPanelLook,
     min_visible_rows: usize,
+    search_chrome_height: f32,
 ) -> usize {
-    let viewport_bottom = viewport_height - px(POPUP_VIEWPORT_MARGIN);
+    if look.item_height <= 0.0 {
+        return min_visible_rows.max(1);
+    }
+    let viewport_bottom = viewport_height - px(look.window_margin);
     let available_below = trigger_bounds
-        .map(|bounds| (viewport_bottom - (bounds.bottom() + px(POPUP_OFFSET_Y))).max(px(0.0)))
+        .map(|bounds| (viewport_bottom - (bounds.bottom() + px(look.popup_offset_y))).max(px(0.0)))
         .unwrap_or(viewport_bottom)
         .as_f32();
-    let list_area = (available_below - POPUP_SEARCH_CHROME_HEIGHT - (look.padding * 2.0)).max(look.item_height);
+    let list_area = (available_below - search_chrome_height - (look.padding * 2.0)).max(look.item_height);
     ((list_area / look.item_height).floor() as usize).max(min_visible_rows).max(1)
 }
 
@@ -983,5 +992,27 @@ impl AttachmentTarget for SearchSelectorControl {
     }
     fn attachment_anchor(&self, bounds: Bounds<Pixels>) -> Bounds<Pixels> {
         self.trigger_bounds.unwrap_or(bounds)
+    }
+}
+
+#[cfg(test)]
+mod geometry_tests {
+    use super::*;
+
+    #[test]
+    fn viewport_row_budget_uses_resolved_placement_and_handles_zero_row_height() {
+        let mut look = crate::controls::selector_list::default_selector_items_panel_look(
+            &crate::theme::ThemeTokens::default(),
+            crate::theme::ControlSize::Md,
+        );
+        look.item_height = 10.0;
+        look.padding = 2.0;
+        let trigger = Some(Bounds::new(gpui::point(px(0.0), px(10.0)), gpui::size(px(80.0), px(20.0))));
+        assert_eq!(max_visible_rows_for_viewport(trigger, px(100.0), &look, 1, 57.0), 1);
+        look.window_margin = 0.0;
+        look.popup_offset_y = 0.0;
+        assert_eq!(max_visible_rows_for_viewport(trigger, px(100.0), &look, 1, 10.0), 5);
+        look.item_height = 0.0;
+        assert_eq!(max_visible_rows_for_viewport(trigger, px(100.0), &look, 3, 0.0), 3);
     }
 }

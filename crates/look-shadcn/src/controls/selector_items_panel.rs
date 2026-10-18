@@ -11,31 +11,12 @@ pub fn selector_items_panel_look(
     theme_mode: ThemeMode,
     size: ControlSize,
 ) -> SelectorItemsPanelLook {
-    let menu = floating_menu_look(mode, theme_mode, size);
-    selector_items_panel_from_floating_menu(menu)
-}
-
-pub fn selector_items_panel_from_floating_menu(
-    menu: gpui_luma::controls::floating_menu::FloatingMenuLook,
-) -> SelectorItemsPanelLook {
-    SelectorItemsPanelLook {
-        background: menu.background,
-        foreground: menu.foreground,
-        border: menu.border,
-        shadow: menu.shadow,
-        radius: menu.radius,
-        padding: menu.padding,
-        min_width: menu.min_width,
-        item_disabled_foreground: menu.item_disabled_foreground,
-        item_hover_background: menu.item_hover_background,
-        item_hover_foreground: menu.item_hover_foreground,
-        item_typography: menu.item_typography,
-        item_height: menu.item_height,
-        item_padding_x: menu.item_padding_x,
-        item_gap: menu.item_gap,
-        item_icon_size: menu.item_icon_size,
-        item_radius: menu.item_radius,
-    }
+    SelectorItemsPanelLook::from_menu(
+        floating_menu_look(mode, theme_mode, size),
+        &mode.metrics,
+        &mode.stylesheet().common,
+        size.stylesheet_key(),
+    )
 }
 
 #[cfg(test)]

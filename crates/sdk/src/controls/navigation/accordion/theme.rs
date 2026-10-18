@@ -7,6 +7,9 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyl
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct AccordionScale {
+    /// Drag-handle padding in pixels and disabled-trigger opacity.
+    pub drag_handle_padding: f32,
+    pub disabled_opacity: f32,
     pub trigger_height: f32,
     pub padding_x: f32,
     pub padding_y: f32,
@@ -20,18 +23,45 @@ pub struct AccordionScale {
 
 impl AccordionScale {
     pub fn compute(size: ControlSize, metrics: &MetricTokens, scale_factor: f32) -> Self {
-        let base_height = metrics.control_height(size);
+        Self::compute_with_stylesheet(
+            size,
+            metrics,
+            scale_factor,
+            crate::theme::stylesheet::CommonStylesheet::sdk_default(),
+        )
+    }
 
+    /// Derive the row layout from common appearance and shared metric tokens.
+    pub fn compute_with_stylesheet(
+        size: ControlSize,
+        metrics: &MetricTokens,
+        scale_factor: f32,
+        stylesheet: &crate::theme::stylesheet::CommonStylesheet,
+    ) -> Self {
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .accordion
+            .authored_geometry(size.stylesheet_key());
+        let geometry = stylesheet.accordion.authored_geometry(size.stylesheet_key()).with_fallback(&baseline);
         Self {
-            trigger_height: snap_to_pixel(base_height, scale_factor),
-            padding_x: snap_to_pixel(metrics.padding_x(size), scale_factor),
-            padding_y: snap_to_pixel(metrics.padding_y(size), scale_factor),
-            content_padding_y: snap_to_pixel(metrics.padding_y(size) * 1.5, scale_factor),
-            radius: metrics.radius(size),
-            item_gap: 0.0,
-            inner_gap: snap_to_pixel(metrics.gap(size), scale_factor),
-            icon_size: 16.0,
-            chevron_size: 14.0,
+            drag_handle_padding: geometry.drag_handle_padding.unwrap_or_default(),
+            disabled_opacity: geometry.disabled_opacity.unwrap_or_default(),
+            trigger_height: snap_to_pixel(
+                geometry.trigger_height.unwrap_or_else(|| metrics.control_height(size)),
+                scale_factor,
+            ),
+            padding_x: snap_to_pixel(geometry.padding_x.unwrap_or_else(|| metrics.padding_x(size)), scale_factor),
+            padding_y: snap_to_pixel(geometry.padding_y.unwrap_or_else(|| metrics.padding_y(size)), scale_factor),
+            content_padding_y: snap_to_pixel(
+                geometry
+                    .content_padding_y
+                    .unwrap_or_else(|| metrics.padding_y(size) * geometry.content_padding_scale.unwrap_or_default()),
+                scale_factor,
+            ),
+            radius: geometry.radius.unwrap_or_else(|| metrics.radius(size)),
+            item_gap: snap_to_pixel(geometry.item_gap.unwrap_or_default(), scale_factor),
+            inner_gap: snap_to_pixel(geometry.inner_gap.unwrap_or_else(|| metrics.gap(size)), scale_factor),
+            icon_size: geometry.icon_size.unwrap_or_default(),
+            chevron_size: geometry.chevron_size.unwrap_or_default(),
         }
     }
 }
@@ -54,6 +84,12 @@ pub struct AccordionContentPalette {
 }
 
 pub trait AccordionTheme: Send + Sync {
+    /// Default reorder handle glyph, resolved independently of item icons.
+    fn drag_handle_icon(&self) -> crate::infra::icon::IconSource {
+        crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .icons
+            .resolve(crate::theme::stylesheet::IconRole::DragHandle)
+    }
     /// Look-owned help for the drag handle.
     fn drag_tooltip_theme(&self) -> Arc<dyn crate::controls::tooltip::TooltipTheme> {
         crate::controls::tooltip::default_tooltip_theme()
@@ -70,7 +106,7 @@ pub trait AccordionTheme: Send + Sync {
     }
 
     /// Resolve pixel-snapped layout. Themes may share this result with inspection tools.
-    /// The result must depend only on `metrics()`, `size`, and `scale_factor`, which key the layout cache.
+    /// Resolve against the selected theme snapshot; live looks refresh this on render.
     fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> AccordionScale {
         AccordionScale::compute(size, &self.metrics(), scale_factor)
     }
@@ -94,11 +130,14 @@ impl DefaultAccordionTheme {
 }
 
 impl AccordionTheme for DefaultAccordionTheme {
+    fn drag_handle_icon(&self) -> crate::infra::icon::IconSource {
+        self.tokens.stylesheet.icons.resolve(crate::theme::stylesheet::IconRole::DragHandle)
+    }
     fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
         crate::infra::drag_drop::DragDropLook::from_tokens(&self.tokens, size)
     }
     fn resolve_trigger(&self, state: InteractionState, size: ControlSize) -> AccordionPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("accordion", &self.tokens.palette);
         let typography = &self.tokens.typography;
         let layer = state.layer();
 
@@ -129,12 +168,16 @@ impl AccordionTheme for DefaultAccordionTheme {
     }
 
     fn resolve_content(&self, _expanded: bool) -> AccordionContentPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("accordion", &self.tokens.palette);
 
         AccordionContentPalette { background: None, foreground: palette.app.foreground }
     }
 
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
+    }
+
+    fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> AccordionScale {
+        AccordionScale::compute_with_stylesheet(size, &self.tokens.metrics, scale_factor, &self.tokens.stylesheet)
     }
 }

@@ -4,9 +4,6 @@ use gpui::{AnyElement, App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::model::TableRenderModel;
 
-/// GPUI draws `border_1` inset; match section fills to the inner curve.
-pub(crate) const SHELL_BORDER_WIDTH: f32 = 1.0;
-
 pub type TableTemplateModifier =
     Box<dyn Fn(Stateful<Div>, &TableRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
 
@@ -28,7 +25,7 @@ pub struct DefaultTableShellTemplate;
 impl DefaultTableShellTemplate {
     pub fn paint_shell(model: &TableRenderModel<'_>, header: Option<AnyElement>, body: AnyElement) -> Stateful<Div> {
         let list = &model.look;
-        let inner_radius = list.inner_radius(SHELL_BORDER_WIDTH);
+        let inner_radius = list.inner_radius(list.border_width);
         let has_header = header.is_some();
 
         let mut root = div()
@@ -39,7 +36,7 @@ impl DefaultTableShellTemplate {
             .flex_col()
             .overflow_hidden()
             .rounded(px(list.radius))
-            .border_1()
+            .border(px(list.border_width))
             .border_color(list.border)
             .bg(if has_header {
                 list.header_background
@@ -61,8 +58,8 @@ impl DefaultTableShellTemplate {
                 .flex_none()
                 .px(px(list.padding_x))
                 .pt(px(list.padding_y))
-                .pb(px(list.padding_y * 0.75))
-                .border_b_1()
+                .pb(px(list.padding_y * list.header_padding_bottom_scale))
+                .border_b(px(list.header_divider_width))
                 .border_color(list.border)
                 .text_color(list.header_label_color)
                 .text_size(px(list.header_typography.size))

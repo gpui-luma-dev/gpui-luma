@@ -5,12 +5,11 @@ use gpui::{
     anchored, deferred, div, point, prelude::*, px,
 };
 
-use crate::infra::icon::lucide_icon;
 use crate::controls::selector_list::{
     SelectorItem, SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler,
 };
 use crate::motion::overlay_presence::OverlayPresence;
-use crate::theme::LumaTypography;
+use crate::theme::LumaTextStyle;
 
 pub type AutocompleteKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type AutocompleteScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -43,6 +42,10 @@ impl Default for AutocompleteTemplateHandlers {
 }
 
 pub struct AutocompleteRenderModel {
+    /// Captured shared default glyph choices.
+    pub icons: crate::theme::stylesheet::IconsStylesheet,
+    /// Captured and size-resolved affordance geometry.
+    pub geometry: crate::theme::stylesheet::ResolvedAutocompleteGeometry,
     pub id: SharedString,
     pub textfield: AnyElement,
     pub query_is_empty: bool,
@@ -50,6 +53,7 @@ pub struct AutocompleteRenderModel {
     pub status_label: SharedString,
     pub status_detail: SharedString,
     pub status_color: Hsla,
+    pub status_typography: LumaTextStyle,
     pub muted_text_color: Hsla,
     pub popup_bounds: Option<Bounds<Pixels>>,
     pub popup_look: SelectorItemsPanelLook,
@@ -160,13 +164,13 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
         let AutocompleteTemplateHandlers { key_down, scroll_wheel, clear_click, trigger_bounds } = handlers;
 
         let has_status_text = !model.status_label.is_empty() || !model.status_detail.is_empty();
-        let status_style = LumaTypography::default().text.scale.sm;
+        let status_style = model.status_typography;
 
         let status_row = div()
             .flex()
             .items_center()
             .justify_between()
-            .gap(px(10.0))
+            .gap(px(model.geometry.status_gap.value_px))
             .child(
                 div()
                     .text_size(px(status_style.size))
@@ -189,7 +193,7 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
             .w_full()
             .flex()
             .flex_col()
-            .gap(px(10.0))
+            .gap(px(model.geometry.gap.value_px))
             .when(has_status_text, |root| root.child(status_row))
             .on_key_down(key_down)
             .on_scroll_wheel(scroll_wheel)
@@ -209,9 +213,9 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
                                 .id("prototype-autocomplete-clear")
                                 .absolute()
                                 .top(px(0.0))
-                                .right(px(10.0))
+                                .right(px(model.geometry.clear_inset.value_px))
                                 .h_full()
-                                .w(px(18.0))
+                                .w(px(model.geometry.clear_width.value_px))
                                 .flex()
                                 .items_center()
                                 .justify_center()
@@ -219,7 +223,11 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
                                 .text_color(model.muted_text_color)
                                 .hover(|style| style.text_color(model.status_color))
                                 .on_click(clear_click)
-                                .child(lucide_icon(lucide_svg_static::Icon::X, model.muted_text_color, 12.0)),
+                                .child(crate::infra::icon::render_icon_source(
+                                    &model.icons.resolve(crate::theme::stylesheet::IconRole::Clear),
+                                    model.muted_text_color,
+                                    model.geometry.clear_icon_size.value_px,
+                                )),
                         )
                     }),
             )
@@ -228,16 +236,16 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
                     root.child(
                         deferred(
                             anchored()
-                                .snap_to_window_with_margin(px(8.0))
+                                .snap_to_window_with_margin(px(model.popup_look.window_margin))
                                 .anchor(gpui::Anchor::TopLeft)
                                 .position(point(bounds.left(), bounds.bottom()))
-                                .offset(point(px(0.0), px(4.0)))
+                                .offset(point(px(0.0), px(model.popup_look.popup_offset_y)))
                                 .child(
                                     div()
                                         .id("prototype-autocomplete-popup-shell")
                                         .w(model.popup_width)
                                         .bg(model.popup_look.background)
-                                        .border_1()
+                                        .border(px(model.popup_look.border_width))
                                         .border_color(model.popup_look.border)
                                         .rounded(px(model.popup_look.radius))
                                         .shadow(model.popup_look.shadow)
@@ -411,7 +419,7 @@ impl AutocompleteItemsTemplate for DefaultAutocompleteItemsTemplate {
                     row = row.on_click(click);
                 }
             } else {
-                row = row.opacity(0.56);
+                row = row.opacity(look.disabled_opacity);
             }
 
             root = root.child(row);

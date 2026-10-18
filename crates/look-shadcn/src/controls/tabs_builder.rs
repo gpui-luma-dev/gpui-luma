@@ -431,6 +431,7 @@ impl Tabs {
         if let Some(active_id) = self.active_id {
             builder = builder.active(active_id);
         }
+        builder = builder.disclosure_icons(DisclosureIcons::menu_from_stylesheet(&look.stylesheet().common));
         if let Some(icons) = self.disclosure_icons {
             builder = builder.disclosure_icons(icons);
         }

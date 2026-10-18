@@ -2,17 +2,18 @@
 
 use std::sync::Arc;
 
-use gpui::{Background, BoxShadow, Hsla, SharedString, black, linear_color_stop, linear_gradient, point, prelude::*, px};
+use gpui::{Background, BoxShadow, Hsla, black, linear_color_stop, linear_gradient, point, prelude::*, px};
 use gpui_luma::controls::button::{ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate};
 use gpui_luma::controls::button_family::{
     ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, compose_button_family_look,
 };
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale};
-use gpui::FontWeight;
+use gpui_luma::theme::{ControlSize, InteractionState, MetricTokens, StandardBoxScale};
 
 use crate::button_layout::{ButtonSize, Radius, apply_button_box, button_box_with_stylesheet};
 use crate::look::Look;
+#[cfg(test)]
 use crate::scale::ScaleFamily;
+#[cfg(test)]
 use crate::semantic::SemanticRole;
 use crate::tone::Tone;
 
@@ -166,197 +167,16 @@ fn resolve_button_palette(
     role: ButtonFamilyRole,
     state: InteractionState,
 ) -> ButtonFamilyPalette {
-    let layer = state.layer();
-    let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
-    // Quiet ghosts share Ghost foregrounds; their face stays transparent in every state.
-    let quiet = matches!(variant, ButtonVariant::GhostQuiet);
-    let page = matches!(variant, ButtonVariant::Page);
-    let variant = if quiet { ButtonVariant::Ghost } else { variant };
-    let high_contrast = paint.high_contrast;
-    let tone = paint.tone;
-    let step = |n| tone.step(look, n);
-
-    // Page / selected chrome stay on semantic roles (app chrome, not Radix color prop).
-    // Border stays None in every state: the SDK paints a focus ring from `look.border`,
-    // so any opaque edge on the selected pill becomes a ring when focused.
-    let (mut background, mut foreground, mut border) = if page {
-        if selected {
-            match look.mode() {
-                gpui_luma::theme::ThemeMode::Light => (
-                    look.resolve_role(SemanticRole::Foreground).hsla(),
-                    look.resolve_role(SemanticRole::Background).hsla(),
-                    None,
-                ),
-                gpui_luma::theme::ThemeMode::Dark => (
-                    look.resolve_role(SemanticRole::PrimaryForeground).hsla(),
-                    look.resolve_role(SemanticRole::Background).hsla(),
-                    None,
-                ),
-            }
-        } else {
-            (
-                look.resolve_role(SemanticRole::Background).hsla(),
-                look.resolve_role(SemanticRole::MutedForeground).hsla(),
-                None,
-            )
-        }
-    } else if selected {
-        (step(9), tone.contrast(look), Some(step(9)))
-    } else {
-        match variant {
-            ButtonVariant::Classic | ButtonVariant::Solid => {
-                if high_contrast {
-                    // Radix: accent-12 on gray-1.
-                    (step(12), solid_high_contrast_label(look), Some(step(12)))
-                } else {
-                    (step(9), tone.contrast(look), Some(step(9)))
-                }
-            }
-            ButtonVariant::Soft => {
-                let fg = if high_contrast { step(12) } else { step(11) };
-                (step(3), fg, Some(step(3)))
-            }
-            ButtonVariant::Surface => {
-                let fg = if high_contrast { step(12) } else { step(11) };
-                (step(2), fg, Some(step(7)))
-            }
-            ButtonVariant::Outline => {
-                let fg = if high_contrast {
-                    step(12)
-                } else {
-                    look.resolve_role(SemanticRole::Foreground).hsla()
-                };
-                let edge = if high_contrast {
-                    step(11)
-                } else {
-                    look.resolve_role(SemanticRole::Border).hsla()
-                };
-                (transparent(), fg, Some(edge))
-            }
-            ButtonVariant::Ghost | ButtonVariant::GhostQuiet => {
-                let fg = if high_contrast {
-                    step(12)
-                } else {
-                    look.resolve_role(SemanticRole::Foreground).hsla()
-                };
-                (transparent(), fg, None)
-            }
-            ButtonVariant::Page => unreachable!(),
-        }
-    };
-
-    if matches!(variant, ButtonVariant::Ghost | ButtonVariant::Outline | ButtonVariant::Page) && !selected {
-        background = transparent();
-        // Page and Ghost are borderless chrome; Outline keeps its edge.
-        if matches!(variant, ButtonVariant::Ghost | ButtonVariant::Page) {
-            border = None;
-        }
-    }
-
-    match layer {
-        InteractionLayer::Disabled if !page => {
-            background = look.resolve_role(SemanticRole::Surface).hsla();
-            foreground = look.resolve_role(SemanticRole::MutedForeground).hsla();
-            border = Some(look.resolve_role(SemanticRole::Border).hsla());
-        }
-        InteractionLayer::Disabled => {
-            foreground = look.resolve_role(SemanticRole::MutedForeground).hsla();
-        }
-        // Page toggles are binary off|on — ignore hover / press / focus paint.
-        InteractionLayer::Pressed | InteractionLayer::Hovered if page => {}
-        InteractionLayer::Pressed => {
-            background = shift_for_press(look, variant, tone, high_contrast, selected, background);
-        }
-        InteractionLayer::Hovered => {
-            background = shift_for_hover(look, variant, tone, high_contrast, selected, background);
-            if matches!(variant, ButtonVariant::Surface) && !selected {
-                border = Some(step(8));
-            }
-        }
-        InteractionLayer::Default => {}
-    }
-
-    // Classic's edge tracks whatever the face settled on, so hover and press keep a
-    // consistent outline instead of snapping back to the resting accent.
-    if matches!(variant, ButtonVariant::Classic) && !matches!(layer, InteractionLayer::Disabled) {
-        border = Some(shift_lightness(background, look.classic_params().border_delta));
-    }
-
-    if state.focused && !state.disabled && !quiet && !page {
-        border = Some(look.resolve_role(SemanticRole::Focus).hsla());
-    }
-
-    if quiet {
-        background = transparent();
-        border = None;
-    }
-
+    let colors = super::button_recipes::resolve(look, variant, paint, role, state);
+    let tokens = look.common_stylesheet().tokens.typography;
     ButtonFamilyPalette {
-        background,
-        foreground,
-        muted_foreground: foreground,
-        border,
-        typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight::MEDIUM },
-        font_family: SharedString::from("System UI"),
+        background: colors.background,
+        foreground: colors.foreground,
+        muted_foreground: colors.foreground,
+        border: colors.border,
+        typography: tokens.text.label,
+        font_family: tokens.font.sans.family.into(),
     }
-}
-
-/// Solid high-contrast labels always use gray-1, matching Radix `color: var(--gray-1)`.
-fn solid_high_contrast_label(look: &Look) -> Hsla {
-    look.resolve_step(ScaleFamily::Gray, 1).hsla()
-}
-
-/// Recipes that tint toward accent 3/4 on hover and press instead of the solid steps.
-fn is_tinted(variant: ButtonVariant) -> bool {
-    matches!(
-        variant,
-        ButtonVariant::Soft | ButtonVariant::Surface | ButtonVariant::Ghost | ButtonVariant::Outline
-    )
-}
-
-fn shift_for_hover(
-    look: &Look,
-    variant: ButtonVariant,
-    tone: Tone,
-    high_contrast: bool,
-    selected: bool,
-    base: Hsla,
-) -> Hsla {
-    if selected || matches!(variant, ButtonVariant::Solid | ButtonVariant::Classic) {
-        // HC solids stay on step 12; Radix uses a CSS filter we approximate with a lighten.
-        return if high_contrast {
-            shift_lightness(tone.step(look, 12), 0.04)
-        } else {
-            tone.step(look, 10)
-        };
-    }
-    if is_tinted(variant) {
-        return tone.step(look, 3);
-    }
-    let _ = look;
-    base
-}
-
-fn shift_for_press(
-    look: &Look,
-    variant: ButtonVariant,
-    tone: Tone,
-    high_contrast: bool,
-    selected: bool,
-    base: Hsla,
-) -> Hsla {
-    if selected || matches!(variant, ButtonVariant::Solid | ButtonVariant::Classic) {
-        return if high_contrast {
-            shift_lightness(tone.step(look, 12), -0.03)
-        } else {
-            tone.step(look, 10)
-        };
-    }
-    if is_tinted(variant) {
-        return tone.step(look, 4);
-    }
-    let _ = look;
-    base
 }
 
 fn inset_shadow(offset_y: f32, blur: f32, spread: f32, color: Hsla) -> BoxShadow {
@@ -378,8 +198,15 @@ fn inset_shadow(offset_y: f32, blur: f32, spread: f32, color: Hsla) -> BoxShadow
 ///
 /// `*_delta` and `rim_lighten` are lightness offsets applied to the accent fill,
 /// `*_alpha` are `0..1`, and the rest are `px`.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ClassicButtonParams {
+    /// Pressed rim shading relative to the resting highlight.
+    pub pressed_rim_lightness_scale: f32,
+    pub pressed_rim_alpha_scale: f32,
+    /// Preserve pigment near black and white while shifting lightness.
+    pub lightness_min: f32,
+    pub lightness_max: f32,
     /// Corner radius for every Classic button, replacing the size-scale radius. The
     /// rim shadows trace this curve, so the two have to be tuned together.
     pub radius: f32,
@@ -408,41 +235,55 @@ pub struct ClassicButtonParams {
     pub drop_alpha: f32,
 }
 
-impl Default for ClassicButtonParams {
-    fn default() -> Self {
+impl ClassicButtonParams {
+    pub(crate) fn zero() -> Self {
         Self {
-            // Radix size-2 + medium radius (`--radius-2` at factor 1).
-            radius: 4.0,
+            pressed_rim_lightness_scale: 0.0,
+            pressed_rim_alpha_scale: 0.0,
+            lightness_min: 0.0,
+            lightness_max: 1.0,
+            radius: 0.0,
             fill_top_delta: 0.0,
-            fill_bottom_delta: 0.067,
-            border_delta: -0.022,
-            bevel_darken: 0.045,
-            bevel_offset: 1.0,
-            bevel_alpha: 1.0,
-            rim_lighten: 0.30,
-            rim_offset: 1.0,
-            rim_alpha: 0.95,
-            fade_offset: 4.0,
-            fade_blur: 4.0,
-            fade_spread: -2.0,
-            fade_alpha: 0.35,
-            drop_offset: 1.0,
-            drop_blur: 2.0,
-            drop_alpha: 0.08,
+            fill_bottom_delta: 0.0,
+            border_delta: 0.0,
+            bevel_darken: 0.0,
+            bevel_offset: 0.0,
+            bevel_alpha: 0.0,
+            rim_lighten: 0.0,
+            rim_offset: 0.0,
+            rim_alpha: 0.0,
+            fade_offset: 0.0,
+            fade_blur: 0.0,
+            fade_spread: 0.0,
+            fade_alpha: 0.0,
+            drop_offset: 0.0,
+            drop_blur: 0.0,
+            drop_alpha: 0.0,
         }
     }
 }
 
-fn shift_lightness(color: Hsla, delta: f32) -> Hsla {
-    Hsla { l: (color.l + delta).clamp(0.02, 0.98), ..color }
+impl Default for ClassicButtonParams {
+    fn default() -> Self {
+        super::button_recipes::embedded().classic
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn shift_lightness(color: Hsla, delta: f32) -> Hsla {
+    shift_lightness_with_params(color, delta, super::button_recipes::embedded().classic)
+}
+
+pub(crate) fn shift_lightness_with_params(color: Hsla, delta: f32, params: ClassicButtonParams) -> Hsla {
+    Hsla { l: (color.l + delta).clamp(params.lightness_min, params.lightness_max), ..color }
 }
 
 /// Vertical wash stops for the Classic face: the light source is overhead, so the top
 /// sits at the accent and the bottom lifts. Pressing flips them so the face reads
 /// recessed.
 fn classic_wash(params: ClassicButtonParams, base: Hsla, pressed: bool) -> (Hsla, Hsla) {
-    let top = shift_lightness(base, params.fill_top_delta);
-    let bottom = shift_lightness(base, params.fill_bottom_delta);
+    let top = shift_lightness_with_params(base, params.fill_top_delta, params);
+    let bottom = shift_lightness_with_params(base, params.fill_bottom_delta, params);
     if pressed { (bottom, top) } else { (top, bottom) }
 }
 
@@ -461,12 +302,12 @@ fn classic_fill(look: &Look, paint: Paint, role: ButtonFamilyRole, state: Intera
 /// lip and inverts the rim so the light reads as coming from below.
 fn classic_shadow(look: &Look, fill: Hsla, state: InteractionState) -> Vec<BoxShadow> {
     let params = look.classic_params();
-    let tint = |delta: f32, alpha: f32| Hsla { a: alpha, ..shift_lightness(fill, delta) };
+    let tint = |delta: f32, alpha: f32| Hsla { a: alpha, ..shift_lightness_with_params(fill, delta, params) };
 
     if state.pressed {
-        let shade = -params.rim_lighten * 0.5;
+        let shade = -params.rim_lighten * params.pressed_rim_lightness_scale;
         return vec![
-            inset_shadow(params.rim_offset, 0.0, 0.0, tint(shade, params.rim_alpha * 0.6)),
+            inset_shadow(params.rim_offset, 0.0, 0.0, tint(shade, params.rim_alpha * params.pressed_rim_alpha_scale)),
             inset_shadow(params.fade_offset, params.fade_blur, params.fade_spread, tint(shade, params.fade_alpha)),
         ];
     }
@@ -520,10 +361,6 @@ pub fn classic_button_template_with<D: Clone + 'static>(look: &Look, paint: Pain
     Arc::new(DefaultButtonTemplate::new(theme).with_modifier(move |root, model: &ButtonRenderModel<D>| {
         root.bg(classic_fill(&look, paint, model.role, model.state))
     }))
-}
-
-fn transparent() -> Hsla {
-    gpui::hsla(0.0, 0.0, 0.0, 0.0)
 }
 
 #[cfg(test)]

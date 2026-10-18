@@ -19,13 +19,6 @@ use crate::stylesheet::{
     StylesheetConfig, find_scrollbar_color_rule, resolve_scrollbar_color_rule, resolve_scrollbar_metrics,
 };
 
-const DEFAULT_SCROLLBAR_THICKNESS: f32 = 12.0;
-const DEFAULT_SCROLLBAR_TRACK_THICKNESS: f32 = 4.0;
-const DEFAULT_SCROLLBAR_THUMB_THICKNESS: f32 = 8.0;
-const DEFAULT_SCROLLBAR_MIN_THUMB_LENGTH: f32 = 28.0;
-const DEFAULT_SCROLLBAR_LENGTH_H: f32 = 260.0;
-const DEFAULT_SCROLLBAR_LENGTH_V: f32 = 180.0;
-
 #[derive(Clone, Debug)]
 pub struct ScrollbarColorTable {
     pub track_background: ResolvedColor,
@@ -78,9 +71,12 @@ pub fn scrollbar_look(
     let colors = resolve_scrollbar_colors(&resolver, style, state.disabled, layer)
         .unwrap_or_else(|_| ScrollbarColorTable::fallback());
 
+    let baseline = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default()
+        .scrollbar
+        .resolve_geometry(size.stylesheet_key(), Default::default());
     let length = match orientation {
-        ScrollbarOrientation::Horizontal => DEFAULT_SCROLLBAR_LENGTH_H,
-        ScrollbarOrientation::Vertical => DEFAULT_SCROLLBAR_LENGTH_V,
+        ScrollbarOrientation::Horizontal => baseline.length_h.value_px,
+        ScrollbarOrientation::Vertical => baseline.length_v.value_px,
     };
     let stylesheet = mode.stylesheet();
     let (thickness, track_thickness, thumb_thickness, min_thumb_length) = stylesheet
@@ -89,12 +85,19 @@ pub fn scrollbar_look(
         .map(resolve_scrollbar_metrics)
         .map(|metrics| (metrics.thickness, metrics.track_thickness, metrics.thumb_thickness, metrics.min_thumb_length))
         .unwrap_or((
-            DEFAULT_SCROLLBAR_THICKNESS,
-            DEFAULT_SCROLLBAR_TRACK_THICKNESS,
-            DEFAULT_SCROLLBAR_THUMB_THICKNESS,
-            DEFAULT_SCROLLBAR_MIN_THUMB_LENGTH,
+            baseline.thickness.value_px,
+            baseline.track_thickness.value_px,
+            baseline.thumb_thickness.value_px,
+            baseline.min_thumb_length.value_px,
         ));
     let mut look = ScrollbarLook {
+        disabled_opacity: mode
+            .stylesheet()
+            .common
+            .scrollbar
+            .resolve_geometry(size.stylesheet_key(), Default::default())
+            .disabled_opacity
+            .value_px,
         track_background: colors.track_background.hsla(),
         thumb_background: colors.thumb_background.hsla(),
         length,
@@ -111,8 +114,9 @@ pub fn scrollbar_look(
             track_thickness: look.track_thickness,
             thumb_thickness: look.thumb_thickness,
             min_thumb_length: look.min_thumb_length,
-            length_h: DEFAULT_SCROLLBAR_LENGTH_H,
-            length_v: DEFAULT_SCROLLBAR_LENGTH_V,
+            length_h: baseline.length_h.value_px,
+            length_v: baseline.length_v.value_px,
+            ..Default::default()
         },
     );
     look.thickness = geometry.thickness.value_px;

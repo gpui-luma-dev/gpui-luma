@@ -1,6 +1,6 @@
 # Vanilla SDK stylesheet. Looks overlay only the values they customize.
-# Motion values live here; Rust declares roles and implements transitions.
-# Geometry and palette continue to use the SDK template/theme factories.
+# Shared tokens and migrated geometry live here alongside motion.
+# Rust resolves, validates, projects colors, and calculates derived geometry.
 
 # Default for standalone transition helpers. Controls have explicit roles below.
 [common.motion.transition]
@@ -102,3 +102,1227 @@ indicator = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
 content = { kind = "instant" }
 disclosure = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
 drop_layout = { kind = "timed", duration_ms = 200, easing = "out_cubic" }
+
+[common.tokens.metrics]
+disabled_opacity = 0.56
+
+[common.tokens.metrics.spacing]
+s0 = 0.0
+s1 = 4.0
+s2 = 6.0
+s3 = 8.0
+s4 = 12.0
+s5 = 16.0
+s6 = 24.0
+
+[common.tokens.metrics.radius]
+none = 0.0
+sm = 3.0
+md = 6.0
+lg = 8.0
+xl = 12.0
+pill = 999.0
+
+[common.tokens.metrics.border_width]
+hairline = 0.5
+default = 1.0
+strong = 2.0
+
+[common.tokens.metrics.focus]
+gap = 1.0
+width = 1.0
+offset = 0.0
+
+[common.tokens.metrics.control.sm]
+height = 28.0
+control_height = 28.0
+padding_x = 10.0
+padding_y = 5.0
+gap = 6.0
+radius = 5.0
+icon_size = 14.0
+
+[common.tokens.metrics.control.md]
+height = 36.0
+control_height = 36.0
+padding_x = 14.0
+padding_y = 8.0
+gap = 8.0
+radius = 6.0
+icon_size = 16.0
+
+[common.tokens.metrics.control.lg]
+height = 44.0
+control_height = 44.0
+padding_x = 18.0
+padding_y = 10.0
+gap = 10.0
+radius = 8.0
+icon_size = 18.0
+
+[common.tokens.palette.light.app]
+background = "hsla(210, 40%, 98.04%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+muted_foreground = "hsla(215.38, 16.32%, 46.86%, 1)"
+
+[common.tokens.palette.light.surface.panel]
+background = "hsla(0, 0%, 100%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+border = "hsla(212.73, 26.83%, 83.92%, 1)"
+
+[common.tokens.palette.light.surface.floating]
+background = "hsla(0, 0%, 100%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+border = "hsla(212.73, 26.83%, 83.92%, 1)"
+
+[common.tokens.palette.light.surface.subtle]
+background = "hsla(210, 40%, 96.08%, 1)"
+foreground = "hsla(215.29, 25%, 26.67%, 1)"
+
+[common.tokens.palette.light.state.hover]
+background = "hsla(214.29, 31.82%, 91.37%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+
+[common.tokens.palette.light.state.pressed]
+background = "hsla(212.73, 26.83%, 83.92%, 1)"
+
+[common.tokens.palette.light.state.selected]
+background = "hsla(221.21, 83.19%, 53.33%, 1)"
+foreground = "hsla(0, 0%, 100%, 1)"
+
+[common.tokens.palette.light.state.disabled]
+background = "hsla(210, 40%, 96.08%, 1)"
+foreground = "hsla(215, 20.22%, 65.1%, 1)"
+
+[common.tokens.palette.light.form.input]
+background = "hsla(0, 0%, 100%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+border = "hsla(215, 20.22%, 65.1%, 1)"
+invalid_border = "hsla(333.33, 71.43%, 50.59%, 1)"
+placeholder = "hsla(215, 20.22%, 65.1%, 1)"
+
+[common.tokens.palette.light.focus]
+ring = "hsla(37.69, 92.13%, 50.2%, 1)"
+
+[common.tokens.palette.light.border]
+default = "hsla(212.73, 26.83%, 83.92%, 1)"
+strong = "hsla(215.38, 16.32%, 46.86%, 1)"
+
+[common.tokens.palette.light.navigation]
+background = "hsla(0, 0%, 100%, 1)"
+foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+muted_foreground = "hsla(215.38, 16.32%, 46.86%, 1)"
+hover_background = "hsla(210, 40%, 96.08%, 1)"
+selected_background = "hsla(221.21, 83.19%, 53.33%, 1)"
+selected_foreground = "hsla(0, 0%, 100%, 1)"
+border = "hsla(212.73, 26.83%, 83.92%, 1)"
+
+[common.tokens.palette.light.data]
+positive = "hsla(136.8, 65%, 48%, 1)"
+accent_1 = "hsla(221.21, 83.19%, 53.33%, 1)"
+accent_2 = "hsla(175.34, 77.44%, 26.08%, 1)"
+accent_3 = "hsla(17.47, 88.35%, 40.39%, 1)"
+accent_4 = "hsla(262.12, 83.26%, 57.84%, 1)"
+accent_5 = "hsla(345.35, 82.69%, 40.78%, 1)"
+
+[common.tokens.palette.dark.app]
+background = "hsla(222.86, 48.84%, 8.43%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+muted_foreground = "hsla(215, 20.22%, 65.1%, 1)"
+
+[common.tokens.palette.dark.surface.panel]
+background = "hsla(220.91, 39.29%, 10.98%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+border = "hsla(215.29, 25%, 26.67%, 1)"
+
+[common.tokens.palette.dark.surface.floating]
+background = "hsla(220.91, 39.29%, 10.98%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+border = "hsla(215.29, 25%, 26.67%, 1)"
+
+[common.tokens.palette.dark.surface.subtle]
+background = "hsla(217.24, 32.58%, 17.45%, 1)"
+foreground = "hsla(212.73, 26.83%, 83.92%, 1)"
+
+[common.tokens.palette.dark.state.hover]
+background = "hsla(215.29, 25%, 26.67%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+
+[common.tokens.palette.dark.state.pressed]
+background = "hsla(215.29, 19.32%, 34.51%, 1)"
+
+[common.tokens.palette.dark.state.selected]
+background = "hsla(213.12, 93.9%, 67.84%, 1)"
+foreground = "hsla(204, 80.25%, 15.88%, 1)"
+
+[common.tokens.palette.dark.state.disabled]
+background = "hsla(217.24, 32.58%, 17.45%, 1)"
+foreground = "hsla(215.38, 16.32%, 46.86%, 1)"
+
+[common.tokens.palette.dark.form.input]
+background = "hsla(222.22, 47.37%, 11.18%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+border = "hsla(215.29, 19.32%, 34.51%, 1)"
+invalid_border = "hsla(328.62, 85.53%, 70.2%, 1)"
+placeholder = "hsla(215.38, 16.32%, 46.86%, 1)"
+
+[common.tokens.palette.dark.focus]
+ring = "hsla(43.26, 96.41%, 56.27%, 1)"
+
+[common.tokens.palette.dark.border]
+default = "hsla(215.29, 25%, 26.67%, 1)"
+strong = "hsla(215, 20.22%, 65.1%, 1)"
+
+[common.tokens.palette.dark.navigation]
+background = "hsla(220.91, 39.29%, 10.98%, 1)"
+foreground = "hsla(210, 40%, 98.04%, 1)"
+muted_foreground = "hsla(215, 20.22%, 65.1%, 1)"
+hover_background = "hsla(217.24, 32.58%, 17.45%, 1)"
+selected_background = "hsla(213.12, 93.9%, 67.84%, 1)"
+selected_foreground = "hsla(204, 80.25%, 15.88%, 1)"
+border = "hsla(215.29, 25%, 26.67%, 1)"
+
+[common.tokens.palette.dark.data]
+positive = "hsla(136.8, 65%, 48%, 1)"
+accent_1 = "hsla(213.12, 93.9%, 67.84%, 1)"
+accent_2 = "hsla(172.46, 66.01%, 50.39%, 1)"
+accent_3 = "hsla(27.02, 95.98%, 60.98%, 1)"
+accent_4 = "hsla(255.14, 91.74%, 76.27%, 1)"
+accent_5 = "hsla(351.3, 94.52%, 71.37%, 1)"
+
+[common.tokens.typography.font.sans]
+family = "System UI"
+
+[common.tokens.typography.font.mono]
+family = "Monaco"
+
+[common.tokens.typography.font.serif]
+family = "New York"
+
+[common.tokens.typography.text.scale.xs]
+size = 11.0
+line_height = 16.0
+weight = 500.0
+
+[common.tokens.typography.text.scale.sm]
+size = 12.5
+line_height = 18.0
+weight = 400.0
+
+[common.tokens.typography.text.scale.md]
+size = 14.0
+line_height = 20.0
+weight = 400.0
+
+[common.tokens.typography.text.scale.lg]
+size = 16.0
+line_height = 22.0
+weight = 500.0
+
+[common.tokens.typography.text.scale.xl]
+size = 18.0
+line_height = 24.0
+weight = 600.0
+
+[common.tokens.typography.text.scale.two_xl]
+size = 20.0
+line_height = 28.0
+weight = 600.0
+
+[common.tokens.typography.text.role.h1]
+size = 44.0
+line_height = 52.0
+weight = 700.0
+
+[common.tokens.typography.text.role.h2]
+size = 28.0
+line_height = 36.0
+weight = 600.0
+
+[common.tokens.typography.text.role.h3]
+size = 20.0
+line_height = 28.0
+weight = 600.0
+
+[common.tokens.typography.text.role.h4]
+size = 16.0
+line_height = 22.0
+weight = 500.0
+
+[common.tokens.typography.text.role.p]
+size = 14.0
+line_height = 20.0
+weight = 400.0
+
+[common.tokens.typography.text.body]
+size = 14.0
+line_height = 20.0
+weight = 400.0
+
+[common.tokens.typography.text.label]
+size = 12.5
+line_height = 18.0
+weight = 500.0
+
+[common.tokens.typography.text.caption]
+size = 11.0
+line_height = 16.0
+weight = 500.0
+
+[common.tokens.typography.text.title]
+size = 20.0
+line_height = 28.0
+weight = 600.0
+
+[common.tokens.typography.text.code]
+size = 13.0
+line_height = 18.0
+weight = 400.0
+
+[common.tokens.elevation.light.none]
+layers = [
+]
+
+[common.tokens.elevation.light.control]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.05)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.light.thumb]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.14)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.light.menu]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0.0, offset_y = 1.0, blur = 3.0, spread = 0.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = -1.0, inset = false },
+]
+
+[common.tokens.elevation.light.popover]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.12)", offset_x = 0.0, offset_y = 4.0, blur = 8.0, spread = -2.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.06)", offset_x = 0.0, offset_y = 2.0, blur = 4.0, spread = -1.0, inset = false },
+]
+
+[common.tokens.elevation.light.panel]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.06)", offset_x = 0.0, offset_y = 1.0, blur = 3.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.light.dialog]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.16)", offset_x = 0.0, offset_y = 18.0, blur = 32.0, spread = -8.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.08)", offset_x = 0.0, offset_y = 6.0, blur = 12.0, spread = -4.0, inset = false },
+]
+
+[common.tokens.elevation.dark.none]
+layers = [
+]
+
+[common.tokens.elevation.dark.control]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.18)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.dark.thumb]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.14)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.dark.menu]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.28)", offset_x = 0.0, offset_y = 1.0, blur = 3.0, spread = 0.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.18)", offset_x = 0.0, offset_y = 1.0, blur = 2.0, spread = -1.0, inset = false },
+]
+
+[common.tokens.elevation.dark.popover]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.32)", offset_x = 0.0, offset_y = 4.0, blur = 8.0, spread = -2.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.22)", offset_x = 0.0, offset_y = 2.0, blur = 4.0, spread = -1.0, inset = false },
+]
+
+[common.tokens.elevation.dark.panel]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.2)", offset_x = 0.0, offset_y = 1.0, blur = 3.0, spread = 0.0, inset = false },
+]
+
+[common.tokens.elevation.dark.dialog]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.42)", offset_x = 0.0, offset_y = 18.0, blur = 32.0, spread = -8.0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.24)", offset_x = 0.0, offset_y = 6.0, blur = 12.0, spread = -4.0, inset = false },
+]
+
+[common.progress.sizes.sm]
+track_height = 4.0
+size = 48.0
+stroke_width = 5.0
+thumb_size = 12.0
+
+[common.progress.sizes.md]
+track_height = 6.0
+size = 64.0
+stroke_width = 6.0
+thumb_size = 16.0
+
+[common.progress.sizes.lg]
+track_height = 8.0
+size = 80.0
+stroke_width = 8.0
+thumb_size = 20.0
+
+[common.stepper.sizes.sm]
+step_badge_size = 24.0
+track_thickness = 2.0
+
+[common.stepper.sizes.md]
+step_badge_size = 32.0
+track_thickness = 2.0
+
+[common.stepper.sizes.lg]
+step_badge_size = 40.0
+track_thickness = 3.0
+
+[common.scrollbar.sizes.sm]
+thickness = 10.0
+track_thickness = 3.0
+thumb_thickness = 6.0
+min_thumb_length = 24.0
+length_h = 260.0
+length_v = 180.0
+
+[common.scrollbar.sizes.md]
+thickness = 12.0
+track_thickness = 4.0
+thumb_thickness = 8.0
+min_thumb_length = 28.0
+length_h = 260.0
+length_v = 180.0
+
+[common.scrollbar.sizes.lg]
+thickness = 14.0
+track_thickness = 5.0
+thumb_thickness = 10.0
+min_thumb_length = 32.0
+length_h = 260.0
+length_v = 180.0
+
+[common.tooltip.geometry]
+# Placement gap/margin and pointer triangle size/corner clearance (pixels).
+target_gap = 10.0
+window_margin = 8.0
+pointer_size = 6.0
+pointer_inset = 12.0
+# Shortcut spacing/font size in pixels, with separate de-emphasis opacity.
+shortcut_gap = 16.0
+shortcut_font_size = 12.0
+shortcut_opacity = 0.65
+padding = 12.0
+padding_y = 8.0
+max_width = 260.0
+font_size = 14.0
+line_height = 20.0
+
+[common.tooltip.sizes.compact]
+padding = 8.0
+padding_y = 4.0
+font_size = 12.0
+line_height = 16.0
+
+[common.tabs.geometry]
+# Accessory glyph size and label gap, in pixels.
+accessory_size = 12.0
+accessory_gap = 4.0
+list_padding = 0.0
+indicator_height = 2.0
+
+[common.checkbox.geometry]
+# Whole-control opacity when disabled (0 transparent, 1 opaque).
+disabled_opacity = 0.56
+control_padding_x = 0.0
+control_padding_y = 0.0
+
+[common.radio.geometry]
+# Whole-control opacity when disabled (0 transparent, 1 opaque).
+disabled_opacity = 0.56
+control_padding_x = 0.0
+control_padding_y = 0.0
+
+[common.switch.geometry]
+# Whole-control opacity when disabled (0 transparent, 1 opaque).
+disabled_opacity = 0.56
+track_padding = 2.0
+
+[common.checkbox.sizes.sm]
+indicator_scale = 0.45
+indicator_radius = 2.0
+glyph_inset = 2.0
+
+[common.radio.sizes.sm]
+indicator_scale = 0.45
+dot_scale = 0.24
+
+[common.switch.sizes.sm]
+track_width_scale = "math(32 / 28)" # 32px track width at the default 28px control height
+track_height_scale = "math(13 / 28)" # 13px track height at the default 28px control height
+thumb_scale = "math(9 / 28)" # 9px thumb at the default 28px control height
+
+[common.checkbox.sizes.md]
+indicator_scale = 0.5
+indicator_radius = 4.0
+glyph_inset = 3.0
+
+[common.radio.sizes.md]
+indicator_scale = 0.5
+dot_scale = 0.24
+
+[common.switch.sizes.md]
+track_width_scale = "math(40 / 36)" # 40px track width at the default 36px control height
+track_height_scale = "math(18 / 36)" # 18px track height at the default 36px control height
+thumb_scale = "math(14 / 36)" # 14px thumb at the default 36px control height
+
+[common.checkbox.sizes.lg]
+indicator_scale = 0.55
+indicator_radius = 6.0
+glyph_inset = 4.0
+
+[common.radio.sizes.lg]
+indicator_scale = 0.55
+dot_scale = 0.24
+
+[common.switch.sizes.lg]
+track_width_scale = "math(48 / 44)" # 48px track width at the default 44px control height
+track_height_scale = "math(24 / 44)" # 24px track height at the default 44px control height
+thumb_scale = "math(20 / 44)" # 20px thumb at the default 44px control height
+
+[common.floating_menu.geometry]
+min_width = 180.0
+padding_scale = 0.5
+item_height_scale = 0.9
+item_padding_scale = 0.75
+submenu_offset_scale = 0.5
+disabled_opacity = 0.56
+separator_thickness = 1.0
+separator_inset = 0.0
+
+[common.context_menu.geometry]
+# Target border and popup window margin in pixels.
+border_width = 1.0
+window_margin = 8.0
+# Whole-target opacity when disabled (0 transparent, 1 opaque).
+disabled_opacity = 0.56
+min_width = 200.0
+
+[common.control_group.geometry]
+vertical_gap = 8.0
+border_width = 1.0
+disabled_opacity = 0.56
+padding_x = 6.0
+padding_y = 4.0
+gap = 6.0
+
+[common.dock_splitter.geometry]
+# Vertical grip dimensions and resting opacity.
+thumb_width = 4.0
+thumb_height = 36.0
+thumb_radius = 8.0
+thumb_rest_opacity = 0.4
+hit_target = 8.0
+visible_line = 1.0
+
+[common.resizable_panels.geometry]
+# Outer frame and split divider thickness in pixels; zero hides the stroke.
+border_width = 1.0
+divider_width = 1.0
+grip_radius = 8.0
+disabled_opacity = 0.45
+
+[common.slider.geometry]
+# Radial dial extent/track radius in pixels; disabled active-track opacity.
+dial_size = 200.0
+track_radius = 72.0
+disabled_opacity = 0.56
+width = 260.0
+height_floor_scale = 0.5
+thumb_scale = 0.5
+
+[common.overlay_window.geometry]
+# Initial placement inset, drag clamp/window margin and header hit height (pixels).
+viewport_padding = 24.0
+window_margin = 12.0
+drag_header_height = 56.0
+# Shell border thickness in pixels; radius inherits theme tokens unless overridden.
+border_width = 1.0
+backdrop_opacity = 0.44
+
+[common.overlay_window.sizes.sm]
+min_width = 320.0
+max_width = 440.0
+estimated_height = 196.0
+
+[common.overlay_window.sizes.md]
+min_width = 400.0
+max_width = 520.0
+estimated_height = 228.0
+
+[common.overlay_window.sizes.lg]
+min_width = 480.0
+max_width = 600.0
+estimated_height = 264.0
+
+[common.tokens.elevation.light.overlay_window]
+layers = [{ color = "hsla(0, 0%, 0%, 0.2)", offset_x = 0.0, offset_y = 18.0, blur = 38.0, spread = -16.0, inset = false }]
+
+[common.tokens.elevation.dark.overlay_window]
+layers = [{ color = "hsla(0, 0%, 0%, 0.2)", offset_x = 0.0, offset_y = 18.0, blur = 38.0, spread = -16.0, inset = false }]
+
+[common.sidebar.geometry]
+# Rail indicator size and outward overhang, in pixels.
+rail_branch_indicator_size = 18.0
+rail_branch_overhang = 10.0
+# Engine shell, title, row and rail-popup defaults in pixels.
+container_gap = 8.0
+region_gap = 4.0
+header_padding_bottom = 8.0
+footer_padding_top = 8.0
+title_gap = 2.0
+title_padding_bottom = 4.0
+section_padding_top = 8.0
+disclosure_icon_size = 14.0
+rail_submenu_offset_x = 12.0
+window_margin = 8.0
+engine_item_height = 30.0
+engine_section_height = 20.0
+engine_item_padding_x = 8.0
+subtitle_opacity = 0.72
+disabled_opacity = 0.56
+width_expanded = 256.0
+width_icon_rail = 48.0
+width_mobile = 288.0
+item_height = 32.0
+item_icon_size = 16.0
+rail_hit_width = 6.0
+popover_offset = 8.0
+
+[common.tree_view.geometry]
+drag_marker_width = 1
+drag_insert_width = 2
+drag_opacity = 0.12
+scrollbar_width = 12
+# Whole disabled-row opacity and compact drag-preview padding (pixels).
+disabled_opacity = 0.4
+preview_padding_x = 12.0
+preview_padding_y = 4.0
+row_height_scale = 0.85
+indentation_width = 16.0
+chevron_inset = 2.0
+
+[common.accordion.geometry]
+# Drag-handle padding in pixels and disabled trigger opacity.
+drag_handle_padding = 2.0
+disabled_opacity = 0.56
+content_padding_scale = 1.5
+item_gap = 0.0
+icon_size = 16.0
+chevron_size = 14.0
+
+# Table surface padding scales with shared control metrics; row hover is accent alpha.
+[common.table.geometry]
+# Inter-row stroke thickness in pixels, shared by paint and row budgeting.
+row_divider_width = 1.0
+# Horizontal inset for text columns (header and body), in pixels.
+column_padding_x = 12.0
+# Opacity of the default muted-cell template (0 transparent, 1 opaque).
+column_muted_opacity = 0.65
+# Column resize hit target width, painted stroke and vertical hit extension (pixels).
+column_resize_hit_width = 10.0
+column_resize_line_width = 1.0
+column_resize_vertical_extension = 4.0
+# Compact drag preview dimensions, padding and pointer offset in pixels.
+drag_offset = 12.0
+drag_width = 220.0
+drag_padding_x = 12.0
+drag_padding_y = 8.0
+drag_border_width = 1.0
+# Insertion feedback stroke thickness in pixels.
+drag_marker_width = 2.0
+# Frame and header separator thickness in pixels; zero hides the stroke.
+border_width = 1.0
+header_divider_width = 1.0
+# Header bottom padding as a fraction of the resolved vertical padding.
+header_padding_bottom_scale = "math(3 / 4)"
+padding_x = 0.0
+padding_y_scale = "math(1 / 2)"
+row_radius = 0.0
+row_hover_opacity = 0.4
+# Whole-row opacity when the row is disabled (0 transparent, 1 opaque).
+row_disabled_opacity = 0.56
+
+# Popup separation scales with the trigger's gap unless menu_offset_y is explicit.
+[common.selector.geometry]
+menu_offset_scale = "math(1 / 2)"
+
+# Pager recipes are relative to small-control metrics; explicit geometry wins.
+[common.pager.geometry]
+gap_icon_size = 16.0
+# Page-size trigger/popup strokes, spacing and radius reduction (pixels).
+border_width = 1.0
+page_size_label_gap = 8.0
+popup_offset_y = 4.0
+popup_gap = 2.0
+popup_padding = 4.0
+popup_item_padding_y = 4.0
+popup_item_radius_inset = 2.0
+padding_x_inset_scale = "math(1 / 2)"
+padding_y_gap_scale = "math(1 / 2)"
+button_extra_width_scale = 1.0
+disabled_opacity = 0.56
+
+[common.pager.sizes.minimal]
+button_extra_width_scale = 0.0
+
+[common.popup_menu.geometry]
+menu_offset_scale = "math(1 / 2)"
+
+# Placement defaults are captured by builders; explicit offsets/margins win.
+[common.popover.geometry]
+window_margin = 8.0
+
+[common.popover.sizes.button]
+offset_y = 0.0
+
+[common.popover.sizes.panel]
+offset_y = 4.0
+
+[common.slide_panel.geometry]
+side_width = 360.0
+edge_height = 420.0
+edge_max_viewport_ratio = 0.72
+
+
+[common.resizable_panels.sizes.sm]
+lane_width = 8.0
+hit_target = 12.0
+grip_cross_axis = 4.0
+grip_main_axis = 36.0
+
+[common.resizable_panels.sizes.md]
+lane_width = 12.0
+hit_target = 14.0
+grip_cross_axis = 6.0
+grip_main_axis = 40.0
+
+[common.resizable_panels.sizes.lg]
+lane_width = 18.0
+hit_target = 20.0
+grip_cross_axis = 8.0
+grip_main_axis = 44.0
+
+[common.radio_group.geometry]
+item_gap = 8.0
+disabled_opacity = 0.56
+
+[common.radio_group.sizes.vertical]
+gap = 8.0
+
+[common.radio_group.sizes.horizontal]
+gap = 12.0
+
+# Composite input affordances; dimensions are logical pixels.
+[common.autocomplete.geometry]
+gap = 10.0
+status_gap = 10.0
+clear_inset = 10.0
+clear_width = 18.0
+clear_icon_size = 12.0
+trigger_width = 240.0
+popup_extra_width = 24.0
+
+[common.combobox.geometry]
+affordance_inset = 10.0
+affordance_width = 18.0
+affordance_icon_size = 12.0
+affordance_gap = 2.0
+trigger_extra_gap = 8.0
+
+[common.search_selector.geometry]
+border_width = 1.0
+search_icon_width = 18.0
+search_icon_size = 12.0
+trigger_icon_extra_width = 10.0
+trigger_extra_gap = 8.0
+search_padding = 8.0
+search_separator_height = 1.0
+search_padding_reduction = 3.0
+search_input_height_floor = 18.0
+# Estimated search field/chrome reservation when filling the viewport.
+search_chrome_height = 57.0
+trailing_icon_size = 14.0
+
+# Stepper decoration: lengths in pixels; glyph/number scales multiply badge size.
+[common.stepper.geometry]
+side_label_width = 120
+label_width = 48
+content_gap = 16.0
+label_gap = 6.0
+side_label_gap = 10.0
+content_height = 120.0
+font_size = 12.0
+line_height = 16.0
+glyph_scale = 0.45
+number_scale = 0.38
+border_width = 1.0
+
+[common.textfield.geometry]
+# Painted caret dimensions (pixels) and whole-input disabled opacity.
+caret_width = 1.5
+caret_height_extra = 2.0
+disabled_opacity = 0.6
+
+[common.textarea.geometry]
+# Painted caret dimensions (pixels) and whole-input disabled opacity.
+caret_width = 1.5
+caret_height_extra = 2.0
+disabled_opacity = 0.6
+
+[common.scrollbar.geometry]
+# Initial visible/content fraction before viewport measurement.
+thumb_fraction = 0.25
+disabled_opacity = 0.56
+
+# SplitView separator hit target and visual cues, in pixels.
+[common.split_view.geometry]
+hitbox_width = 20.0
+expand_inset_y = 10.0
+expand_cue_left = 2.0
+cue_inset_y = 16.0
+cue_radius = 4.0
+cue_width = 4.0
+cue_hovered_width = 8.0
+
+# Lucide catalog names; use "svg:path/to/icon.svg" for an external SVG.
+[common.icons]
+window_minimize = "minus"
+window_restore = "copy"
+window_maximize = "square"
+window_close = "x"
+
+clear = "x"
+search = "search"
+disclosure_expanded = "chevron-down"
+disclosure_collapsed = "chevron-right"
+menu_expanded = "chevron-up"
+menu_collapsed = "chevron-down"
+selected = "check"
+completed = "check"
+selector_trigger = "chevrons-up-down"
+pager_first = "chevrons-left"
+pager_previous = "chevron-left"
+pager_next = "chevron-right"
+pager_last = "chevrons-right"
+pager_gap = "ellipsis"
+textarea_resize = "scaling"
+folder_open = "folder-open"
+folder = "folder"
+file = "file"
+drag_handle = "list-chevrons-up-down"
+
+[common.progress.geometry]
+# Unit fractions for indeterminate sweep and layered shimmer appearance.
+indeterminate_fraction = 0.28
+shimmer_soft_opacity = 0.35
+shimmer_mid_opacity = 0.85
+shimmer_mid_offset = 0.2
+shimmer_mid_width = 0.6
+shimmer_core_offset = 0.35
+shimmer_core_width = 0.3
+
+# Semantic recipe slots for button; values reference shared palette tokens.
+[common.recipes.button]
+"app.foreground" = "app.foreground"
+"app.muted_foreground" = "app.muted_foreground"
+"border.default" = "border.default"
+"focus.ring" = "focus.ring"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for checkbox; values reference shared palette tokens.
+[common.recipes.checkbox]
+"app.foreground" = "app.foreground"
+"focus.ring" = "focus.ring"
+"form.input.background" = "form.input.background"
+"form.input.border" = "form.input.border"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+
+# Semantic recipe slots for control_group; values reference shared palette tokens.
+[common.recipes.control_group]
+"app.muted_foreground" = "app.muted_foreground"
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for radio_button; values reference shared palette tokens.
+[common.recipes.radio_button]
+"app.foreground" = "app.foreground"
+"focus.ring" = "focus.ring"
+"form.input.background" = "form.input.background"
+"form.input.border" = "form.input.border"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+
+# Semantic recipe slots for switch; values reference shared palette tokens.
+[common.recipes.switch]
+"app.background" = "app.background"
+"app.foreground" = "app.foreground"
+"border.default" = "border.default"
+"focus.ring" = "focus.ring"
+"form.input.background" = "form.input.background"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+
+# Semantic recipe slots for table; values reference shared palette tokens.
+[common.recipes.table]
+"app.foreground" = "app.foreground"
+"app.muted_foreground" = "app.muted_foreground"
+"data.accent_1" = "data.accent_1"
+"focus.ring" = "focus.ring"
+"form.input.background" = "form.input.background"
+"form.input.border" = "form.input.border"
+"form.input.invalid_border" = "form.input.invalid_border"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+"surface.floating.background" = "surface.floating.background"
+"surface.floating.foreground" = "surface.floating.foreground"
+"surface.subtle.background" = "surface.subtle.background"
+"surface.subtle.foreground" = "surface.subtle.foreground"
+
+# Semantic recipe slots for tree_view; values reference shared palette tokens.
+[common.recipes.tree_view]
+"app.foreground" = "app.foreground"
+"navigation.hover_background" = "navigation.hover_background"
+"navigation.muted_foreground" = "navigation.muted_foreground"
+"navigation.selected_background" = "navigation.selected_background"
+"navigation.selected_foreground" = "navigation.selected_foreground"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+
+# Semantic recipe slots for dock_splitter; values reference shared palette tokens.
+[common.recipes.dock_splitter]
+"border.default" = "border.default"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+
+# Semantic recipe slots for resizable_panels; values reference shared palette tokens.
+[common.recipes.resizable_panels]
+"border.default" = "border.default"
+"border.strong" = "border.strong"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+
+# Semantic recipe slots for scrollbar; values reference shared palette tokens.
+[common.recipes.scrollbar]
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for split_view; values reference shared palette tokens.
+[common.recipes.split_view]
+"border.default" = "border.default"
+"border.strong" = "border.strong"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+
+# Semantic recipe slots for accordion; values reference shared palette tokens.
+[common.recipes.accordion]
+"app.foreground" = "app.foreground"
+"navigation.border" = "navigation.border"
+"navigation.hover_background" = "navigation.hover_background"
+"navigation.muted_foreground" = "navigation.muted_foreground"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+
+# Semantic recipe slots for pager; values reference shared palette tokens.
+[common.recipes.pager]
+"app.foreground" = "app.foreground"
+"app.muted_foreground" = "app.muted_foreground"
+"form.input.border" = "form.input.border"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+"surface.panel.background" = "surface.panel.background"
+
+# Semantic recipe slots for sidebar; values reference shared palette tokens.
+[common.recipes.sidebar]
+"focus.ring" = "focus.ring"
+"navigation.foreground" = "navigation.foreground"
+"navigation.hover_background" = "navigation.hover_background"
+"navigation.muted_foreground" = "navigation.muted_foreground"
+"navigation.selected_background" = "navigation.selected_background"
+"navigation.selected_foreground" = "navigation.selected_foreground"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+
+# Semantic recipe slots for stepper; values reference shared palette tokens.
+[common.recipes.stepper]
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+"surface.subtle.background" = "surface.subtle.background"
+"surface.subtle.foreground" = "surface.subtle.foreground"
+
+# Semantic recipe slots for tabs; values reference shared palette tokens.
+[common.recipes.tabs]
+"app.foreground" = "app.foreground"
+"focus.ring" = "focus.ring"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+"state.selected.background" = "state.selected.background"
+
+# Semantic recipe slots for context_menu; values reference shared palette tokens.
+[common.recipes.context_menu]
+"app.background" = "app.background"
+"app.foreground" = "app.foreground"
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+
+# Semantic recipe slots for floating_menu; values reference shared palette tokens.
+[common.recipes.floating_menu]
+"data.positive" = "data.positive"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.hover.foreground" = "state.hover.foreground"
+"surface.floating.background" = "surface.floating.background"
+"surface.floating.border" = "surface.floating.border"
+"surface.floating.foreground" = "surface.floating.foreground"
+
+# Semantic recipe slots for overlay_window; values reference shared palette tokens.
+[common.recipes.overlay_window]
+"surface.floating.background" = "surface.floating.background"
+"surface.floating.border" = "surface.floating.border"
+"surface.floating.foreground" = "surface.floating.foreground"
+
+# Semantic recipe slots for popup_menu; values reference shared palette tokens.
+[common.recipes.popup_menu]
+"app.background" = "app.background"
+"app.foreground" = "app.foreground"
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for progress; values reference shared palette tokens.
+[common.recipes.progress]
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for slider; values reference shared palette tokens.
+[common.recipes.slider]
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+"surface.panel.background" = "surface.panel.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for selector; values reference shared palette tokens.
+[common.recipes.selector]
+"app.background" = "app.background"
+"app.foreground" = "app.foreground"
+"app.muted_foreground" = "app.muted_foreground"
+"border.default" = "border.default"
+"focus.ring" = "focus.ring"
+"form.input.invalid_border" = "form.input.invalid_border"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+
+# Semantic recipe slots for textarea; values reference shared palette tokens.
+[common.recipes.textarea]
+"form.input.background" = "form.input.background"
+"form.input.border" = "form.input.border"
+"form.input.foreground" = "form.input.foreground"
+"form.input.invalid_border" = "form.input.invalid_border"
+"form.input.placeholder" = "form.input.placeholder"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+
+# Semantic recipe slots for textfield; values reference shared palette tokens.
+[common.recipes.textfield]
+"form.input.background" = "form.input.background"
+"form.input.border" = "form.input.border"
+"form.input.foreground" = "form.input.foreground"
+"form.input.invalid_border" = "form.input.invalid_border"
+"form.input.placeholder" = "form.input.placeholder"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+
+# Helper chrome shared by raw SDK controls and look templates.
+[common.shared.geometry]
+popup_viewport_height = 220
+popup_row_height = 28
+menu_row_height = 27
+menu_row_gap = 4
+compact_textfield_height = 22
+compact_textfield_padding_y = 2
+textarea_resize_icon_size = 10
+textarea_resize_inset = 3
+textarea_resize_hit_size = 12
+textarea_scrollbar_width = 12
+textarea_scrollbar_inset = 2
+scrollbar_width = 12
+composition_underline_width = 1
+label_baseline_sm = 0.5
+label_baseline_md = 1
+label_baseline_lg = 1.5
+drag_offset = 12
+drag_preview_width = 220
+drag_padding_x = 12
+drag_padding_y = 8
+drag_border_width = 1
+drag_marker_width = 2
+split_sidebar_width = 280
+split_sidebar_min_width = 220
+split_sidebar_max_width = 420
+selection_scrollbar_width = 16
+textarea_resize_opacity = 0.75
+
+wide_middle_gap = 24
+wide_side_min_width = 240
+wide_side_preferred_width = 280
+wide_middle_min_width = 435
+wide_middle_max_width = 435
+form_field_gap = 4
+page_size_trigger_width = 64
+popup_icon_size = 16
+
+[common.tokens.palette.light.shell]
+background = "hsla(0, 0%, 11%, 1)"
+foreground = "hsla(0, 0%, 100%, 0.85)"
+border = "hsla(0, 0%, 100%, 0.1)"
+hover_background = "hsla(0, 0%, 100%, 0.12)"
+active_background = "hsla(0, 0%, 100%, 0.2)"
+close_hover_background = "hsla(0, 78%, 56%, 1)"
+close_active_background = "hsla(0, 78%, 50%, 1)"
+close_foreground = "hsla(0, 0%, 100%, 1)"
+
+[common.tokens.palette.dark.shell]
+background = "hsla(0, 0%, 11%, 1)"
+foreground = "hsla(0, 0%, 100%, 0.85)"
+border = "hsla(0, 0%, 100%, 0.1)"
+hover_background = "hsla(0, 0%, 100%, 0.12)"
+active_background = "hsla(0, 0%, 100%, 0.2)"
+close_hover_background = "hsla(0, 78%, 56%, 1)"
+close_active_background = "hsla(0, 78%, 50%, 1)"
+close_foreground = "hsla(0, 0%, 100%, 1)"
+
+[common.shell.geometry]
+fullscreen_left_padding = 12
+height = 34
+macos_left_padding = 80
+left_padding = 12
+traffic_light_inset = 9
+icon_size = 16
+border_width = 1
+
+[common.tokens.elevation.light.drag_preview]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0, offset_y = 1, blur = 3, spread = 0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0, offset_y = 1, blur = 2, spread = -1, inset = false },
+]
+
+[common.tokens.elevation.dark.drag_preview]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0, offset_y = 1, blur = 3, spread = 0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0, offset_y = 1, blur = 2, spread = -1, inset = false },
+]
+
+[common.row_limits.autocomplete]
+min = 7
+max = 14
+
+[common.row_limits.combobox]
+min = 1
+max = 7
+
+[common.row_limits.search_selector]
+min = 1
+max = 7
+
+[common.row_limits.selection_panel]
+min = 1
+max = 7
+
+[common.row_limits.pager]
+min = 5
+max = 7
+
+[common.recipes.tooltip]
+"surface.floating.background" = "surface.floating.background"
+"surface.floating.foreground" = "surface.floating.foreground"
+
+[common.recipes.autocomplete]
+"form.input.foreground" = "form.input.foreground"
+"state.selected.background" = "state.selected.background"
+"surface.floating.foreground" = "surface.floating.foreground"
+
+[common.recipes.toolbar]
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+[common.recipes.shell]
+"shell.background" = "shell.background"
+"shell.foreground" = "shell.foreground"
+"shell.border" = "shell.border"
+"shell.hover_background" = "shell.hover_background"
+"shell.active_background" = "shell.active_background"
+"shell.close_hover_background" = "shell.close_hover_background"
+"shell.close_active_background" = "shell.close_active_background"
+"shell.close_foreground" = "shell.close_foreground"
+
+[common.recipes.drag_drop]
+"surface.floating.background" = "surface.floating.background"
+"surface.floating.foreground" = "surface.floating.foreground"
+"focus.ring" = "focus.ring"
+"form.input.invalid_border" = "form.input.invalid_border"
+
+[common.font_features]
+sidebar_section = [["smcp", 1]]

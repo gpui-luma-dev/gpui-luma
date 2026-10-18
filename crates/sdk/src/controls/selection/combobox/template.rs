@@ -5,7 +5,6 @@ use gpui::{
     SharedString, Window, div, prelude::*, px,
 };
 
-use crate::infra::icon::lucide_icon;
 use crate::controls::selector_list::SelectorItemsPanelLook;
 use crate::motion::overlay_presence::OverlayPresence;
 
@@ -46,6 +45,10 @@ impl Default for ComboBoxTemplateHandlers {
 }
 
 pub struct ComboBoxRenderModel {
+    /// Captured shared default glyph choices.
+    pub icons: crate::theme::stylesheet::IconsStylesheet,
+    /// Captured and size-resolved affordance geometry.
+    pub geometry: crate::theme::stylesheet::ResolvedComboBoxGeometry,
     pub textfield: AnyElement,
     pub query_is_empty: bool,
     pub show_down_arrow: bool,
@@ -139,9 +142,9 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                                 .id("combobox-arrow")
                                 .absolute()
                                 .top(px(0.0))
-                                .right(px(10.0))
+                                .right(px(model.geometry.affordance_inset.value_px))
                                 .h_full()
-                                .w(px(18.0))
+                                .w(px(model.geometry.affordance_width.value_px))
                                 .flex()
                                 .items_center()
                                 .justify_center()
@@ -149,7 +152,11 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                                 .text_color(model.muted_text_color)
                                 .hover(|style| style.text_color(model.status_color))
                                 .on_click(trigger_click)
-                                .child(lucide_icon(lucide_svg_static::Icon::ChevronDown, model.muted_text_color, 12.0)),
+                                .child(crate::infra::icon::render_icon_source(
+                                    &model.icons.resolve(crate::theme::stylesheet::IconRole::MenuCollapsed),
+                                    model.muted_text_color,
+                                    model.geometry.affordance_icon_size.value_px,
+                                )),
                         )
                     })
                     .when(model.show_clear_button && !model.query_is_empty, |row| {
@@ -158,9 +165,15 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                                 .id("combobox-clear")
                                 .absolute()
                                 .top(px(0.0))
-                                .right(if model.show_down_arrow { px(30.0) } else { px(10.0) })
+                                .right(px(model.geometry.affordance_inset.value_px
+                                    + if model.show_down_arrow {
+                                        model.geometry.affordance_width.value_px
+                                            + model.geometry.affordance_gap.value_px
+                                    } else {
+                                        0.0
+                                    }))
                                 .h_full()
-                                .w(px(18.0))
+                                .w(px(model.geometry.affordance_width.value_px))
                                 .flex()
                                 .items_center()
                                 .justify_center()
@@ -168,7 +181,11 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                                 .text_color(model.muted_text_color)
                                 .hover(|style| style.text_color(model.status_color))
                                 .on_click(clear_click)
-                                .child(lucide_icon(lucide_svg_static::Icon::X, model.muted_text_color, 12.0)),
+                                .child(crate::infra::icon::render_icon_source(
+                                    &model.icons.resolve(crate::theme::stylesheet::IconRole::Clear),
+                                    model.muted_text_color,
+                                    model.geometry.affordance_icon_size.value_px,
+                                )),
                         )
                     }),
             )

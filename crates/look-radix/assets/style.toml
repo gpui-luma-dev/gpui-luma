@@ -8,7 +8,6 @@ duration_ms = 300
 easing = "out_cubic"
 
 [common.tabs.geometry]
-indicator_height = 2.0
 
 [common.tabs.variants.line]
 list_gap = 0.0
@@ -16,6 +15,7 @@ list_padding = 0.0
 
 [common.tabs.variants.surface]
 list_gap = 2.0
+list_padding = 4.0
 
 [common.switch.geometry]
 track_padding = 1.0
@@ -95,7 +95,7 @@ glyph_size = 9.0
 
 [common.radio.sizes."1"]
 indicator_size = 14.0
-dot_size = 5.6000000000000005
+dot_size = 5.6 # 40% of the 14px indicator
 
 [common.checkbox.sizes."2"]
 indicator_size = 16.0
@@ -145,14 +145,13 @@ font_size = 14.0
 line_height = 20.0
 
 [common.floating_menu.geometry]
-min_width = 180.0
+separator_inset = 8.0
 font_size = 14.0
 line_height = 20.0
 
 [common.tooltip.geometry]
 padding = 8.0
 padding_y = 4.0
-max_width = 260.0
 font_size = 12.0
 line_height = 16.0
 
@@ -268,3 +267,202 @@ line_height = 20.0
 min_width = 200.0
 font_size = 14.0
 line_height = 20.0
+
+[common.overlay_window.geometry]
+backdrop_opacity = 0.42
+
+# Radix radio groups keep the same compact gap in either orientation.
+[common.radio_group.sizes.horizontal]
+gap = 8.0
+
+[button_recipes.classic]
+pressed_rim_lightness_scale = 0.5
+pressed_rim_alpha_scale = 0.6
+lightness_min = 0.02
+lightness_max = 0.98
+radius = 4.0
+fill_top_delta = 0.0
+fill_bottom_delta = 0.067
+border_delta = -0.022
+bevel_darken = 0.045
+bevel_offset = 1.0
+bevel_alpha = 1.0
+rim_lighten = 0.30
+rim_offset = 1.0
+rim_alpha = 0.95
+fade_offset = 4.0
+fade_blur = 4.0
+fade_spread = -2.0
+fade_alpha = 0.35
+drop_offset = 1.0
+drop_blur = 2.0
+drop_alpha = 0.08
+
+[[button_recipes.rules]]
+background = "tone.9"
+foreground = "contrast"
+border = "tone.9"
+
+[[button_recipes.rules]]
+variants = ["soft"]
+selected = false
+background = "tone.3"
+foreground = "tone.11"
+border = "tone.3"
+
+[[button_recipes.rules]]
+variants = ["surface"]
+selected = false
+background = "tone.2"
+foreground = "tone.11"
+border = "tone.7"
+
+[[button_recipes.rules]]
+variants = ["outline"]
+selected = false
+background = "transparent"
+foreground = "role.foreground"
+border = "role.border"
+
+[[button_recipes.rules]]
+variants = ["ghost", "ghost_quiet"]
+selected = false
+background = "transparent"
+foreground = "role.foreground"
+border = "none"
+
+[[button_recipes.rules]]
+variants = ["classic", "solid"]
+selected = false
+high_contrast = true
+background = "tone.12"
+foreground = "gray.1"
+border = "tone.12"
+
+[[button_recipes.rules]]
+variants = ["soft", "surface", "outline", "ghost", "ghost_quiet"]
+selected = false
+high_contrast = true
+foreground = "tone.12"
+
+[[button_recipes.rules]]
+variants = ["outline"]
+selected = false
+high_contrast = true
+border = "tone.11"
+
+[[button_recipes.rules]]
+variants = ["solid", "classic"]
+layer = "hovered"
+high_contrast = false
+background = "tone.10"
+
+[[button_recipes.rules]]
+selected = true
+layer = "hovered"
+high_contrast = false
+background = "tone.10"
+
+[[button_recipes.rules]]
+variants = ["solid", "classic"]
+layer = "hovered"
+high_contrast = true
+background = "tone.12"
+background_delta = 0.04
+
+[[button_recipes.rules]]
+selected = true
+layer = "hovered"
+high_contrast = true
+background = "tone.12"
+background_delta = 0.04
+
+[[button_recipes.rules]]
+variants = ["soft", "surface", "outline", "ghost", "ghost_quiet"]
+selected = false
+layer = "hovered"
+background = "tone.3"
+
+[[button_recipes.rules]]
+variants = ["solid", "classic"]
+layer = "pressed"
+high_contrast = false
+background = "tone.10"
+
+[[button_recipes.rules]]
+selected = true
+layer = "pressed"
+high_contrast = false
+background = "tone.10"
+
+[[button_recipes.rules]]
+variants = ["solid", "classic"]
+layer = "pressed"
+high_contrast = true
+background = "tone.12"
+background_delta = -0.03
+
+[[button_recipes.rules]]
+selected = true
+layer = "pressed"
+high_contrast = true
+background = "tone.12"
+background_delta = -0.03
+
+[[button_recipes.rules]]
+variants = ["soft", "surface", "outline", "ghost", "ghost_quiet"]
+selected = false
+layer = "pressed"
+background = "tone.4"
+
+[[button_recipes.rules]]
+variants = ["surface"]
+selected = false
+layer = "hovered"
+border = "tone.8"
+
+[[button_recipes.rules]]
+layer = "disabled"
+background = "role.surface"
+foreground = "role.muted_foreground"
+border = "role.border"
+
+[[button_recipes.rules]]
+variants = ["classic"]
+enabled = true
+border = "background"
+classic_edge = true
+
+[[button_recipes.rules]]
+focused = true
+border = "role.focus"
+
+[[button_recipes.rules]]
+variants = ["page"]
+background = "transparent"
+foreground = "role.muted_foreground"
+border = "none"
+
+[[button_recipes.rules]]
+variants = ["page"]
+selected = true
+mode = "light"
+background = "role.foreground"
+foreground = "role.background"
+
+[[button_recipes.rules]]
+variants = ["page"]
+selected = true
+mode = "dark"
+background = "role.primary_foreground"
+foreground = "role.background"
+
+[[button_recipes.rules]]
+variants = ["page"]
+layer = "disabled"
+foreground = "role.muted_foreground"
+
+[[button_recipes.rules]]
+variants = ["ghost_quiet"]
+background = "transparent"
+border = "none"

@@ -9,6 +9,23 @@ use super::PagerStyle;
 
 #[derive(Clone, Debug)]
 pub struct PagerLook {
+    /// Gap-jump glyph size in pixels.
+    pub gap_icon_size: f32,
+    /// Page-size border width in pixels.
+    pub border_width: f32,
+    /// Gap between the page-size label and trigger, in pixels.
+    pub page_size_label_gap: f32,
+    /// Vertical gap below the page-size trigger, in pixels.
+    pub popup_offset_y: f32,
+    /// Page-size popup gap in pixels.
+    pub popup_gap: f32,
+    /// Page-size popup padding in pixels.
+    pub popup_padding: f32,
+    /// Page-size popup item padding y in pixels.
+    pub popup_item_padding_y: f32,
+    /// Amount subtracted from the popup radius for each item, in pixels.
+    pub popup_item_radius_inset: f32,
+
     pub panel_background: Hsla,
     pub border: Hsla,
     pub body_text: Hsla,
@@ -56,7 +73,7 @@ impl DefaultPagerTheme {
 
 impl PagerTheme for DefaultPagerTheme {
     fn resolve(&self, enabled: bool, style: PagerStyle) -> PagerLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("pager", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
         let typography = self.tokens.typography.text.caption;
         let compact = matches!(style, PagerStyle::Minimal);
@@ -65,10 +82,25 @@ impl PagerTheme for DefaultPagerTheme {
         let compact_gap = metrics.spacing.s3;
         let regular_gap = metrics.spacing.s5;
         let item_gap = metrics.spacing.s1;
-        let padding_x = (metrics.padding_x(control_size) - (metrics.spacing.s1 * 0.5)).max(0.0);
-        let padding_y = metrics.padding_y(control_size) + (metrics.gap(control_size) * 0.5);
+        let key = style.stylesheet_key();
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().pager.authored_geometry(key);
+        let recipe = self.tokens.stylesheet.pager.authored_geometry(key).with_fallback(&baseline);
+        let padding_x = (metrics.padding_x(control_size)
+            - metrics.spacing.s1 * recipe.padding_x_inset_scale.unwrap_or_default())
+        .max(0.0);
+        let padding_y = metrics.padding_y(control_size)
+            + metrics.gap(control_size) * recipe.padding_y_gap_scale.unwrap_or_default();
 
-        PagerLook {
+        let mut look = PagerLook {
+            gap_icon_size: recipe.gap_icon_size.unwrap_or_default(),
+            border_width: recipe.border_width.unwrap_or_default(),
+            page_size_label_gap: recipe.page_size_label_gap.unwrap_or_default(),
+            popup_offset_y: recipe.popup_offset_y.unwrap_or_default(),
+            popup_gap: recipe.popup_gap.unwrap_or_default(),
+            popup_padding: recipe.popup_padding.unwrap_or_default(),
+            popup_item_padding_y: recipe.popup_item_padding_y.unwrap_or_default(),
+            popup_item_radius_inset: recipe.popup_item_radius_inset.unwrap_or_default(),
+
             panel_background: if enabled {
                 palette.surface.panel.background
             } else {
@@ -91,19 +123,21 @@ impl PagerTheme for DefaultPagerTheme {
             shadow: vec![],
             typography,
             button_size: control_height,
-            button_min_width: if compact {
-                control_height
-            } else {
-                control_height + metrics.spacing.s1
-            },
+            button_min_width: control_height + metrics.spacing.s1 * recipe.button_extra_width_scale.unwrap_or_default(),
             control_height,
             radius: metrics.radius(control_size),
             padding_x,
             padding_y,
             gap: item_gap,
             group_gap: if compact { compact_gap } else { regular_gap },
-            disabled_opacity: 0.56,
-        }
+            disabled_opacity: recipe.disabled_opacity.unwrap_or_default(),
+        };
+        crate::theme::stylesheet::apply_common_geometry!(self.tokens.stylesheet.pager, key, PagerGeometry, look,
+            [button_size => button_size, button_min_width => button_min_width, control_height => control_height,
+             padding_x => padding_x, padding_y => padding_y, gap => gap, group_gap => group_gap, radius => radius,
+             font_size => typography.size, line_height => typography.line_height, disabled_opacity => disabled_opacity],
+            defaults = Default::default());
+        look
     }
 }
 

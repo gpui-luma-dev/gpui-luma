@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{BoxShadow, Hsla, SharedString, black, point, px};
+use gpui::{BoxShadow, Hsla, SharedString, black};
 
 use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
@@ -8,6 +8,13 @@ use super::OverlayWindowMode;
 
 #[derive(Clone, Debug)]
 pub struct OverlayWindowLook {
+    /// Placement inset, clamp margin and draggable header hit height in pixels.
+    pub viewport_padding: f32,
+    pub window_margin: f32,
+    pub drag_header_height: f32,
+
+    /// Shell border thickness in pixels.
+    pub border_width: f32,
     pub background: Hsla,
     pub border: Hsla,
     pub foreground: Hsla,
@@ -45,46 +52,50 @@ impl DefaultOverlayWindowTheme {
 
 impl OverlayWindowTheme for DefaultOverlayWindowTheme {
     fn resolve(&self, size: ControlSize, mode: OverlayWindowMode) -> OverlayWindowLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("overlay_window", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let elevation = &self.tokens.elevation;
-        let min_width = match size {
-            ControlSize::Sm => 320.0,
-            ControlSize::Md => 400.0,
-            ControlSize::Lg => 480.0,
-        };
+        let geometry = self.tokens.stylesheet.overlay_window.resolve_geometry(
+            size.stylesheet_key(),
+            crate::theme::stylesheet::OverlayWindowGeometry {
+                padding: metrics.padding_x(size),
+                radius: metrics.radius.xl,
+                font_size: typography.text.body.size,
+                line_height: typography.text.body.line_height,
+                ..Default::default()
+            },
+        );
 
         OverlayWindowLook {
+            viewport_padding: geometry.viewport_padding.value_px,
+            window_margin: geometry.window_margin.value_px,
+            drag_header_height: geometry.drag_header_height.value_px,
+
+            border_width: geometry.border_width.value_px,
             background: palette.surface.floating.background,
             border: palette.surface.floating.border,
             foreground: palette.surface.floating.foreground,
             backdrop_background: if mode == OverlayWindowMode::Modal {
-                Hsla { a: 0.44, ..black() }
+                Hsla { a: geometry.backdrop_opacity.value_px, ..black() }
             } else {
                 Hsla { a: 0.0, ..black() }
             },
             shadow: if mode == OverlayWindowMode::Modal {
                 elevation.dialog.to_box_shadows()
             } else {
-                vec![BoxShadow {
-                    offset: point(px(0.0), px(18.0)),
-                    blur_radius: px(38.0),
-                    spread_radius: px(-16.0),
-                    color: Hsla { a: 0.20, ..black() },
-                    inset: false,
-                }]
+                elevation.overlay_window.to_box_shadows()
             },
-            radius: metrics.radius.xl,
-            padding: metrics.padding_x(size),
-            min_width,
-            max_width: min_width + 120.0,
-            estimated_height: match size {
-                ControlSize::Sm => 196.0,
-                ControlSize::Md => 228.0,
-                ControlSize::Lg => 264.0,
+            radius: geometry.radius.value_px,
+            padding: geometry.padding.value_px,
+            min_width: geometry.min_width.value_px,
+            max_width: geometry.max_width.value_px,
+            estimated_height: geometry.estimated_height.value_px,
+            body: LumaTextStyle {
+                size: geometry.font_size.value_px,
+                line_height: geometry.line_height.value_px,
+                ..typography.text.body
             },
-            body: typography.text.body,
             font_family: typography.font.sans.family.clone().into(),
         }
     }

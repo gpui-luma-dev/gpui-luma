@@ -48,6 +48,8 @@ impl ToolbarTheme for RadixToolbarTheme {
                 padding_x: fallback.padding_x,
                 padding_y: fallback.padding_y,
                 gap: fallback.gap,
+                border_width: metrics.border_width.default,
+                separator_width: metrics.border_width.default,
             },
         );
         let style = self.style.unwrap_or(ToolbarStyle {
@@ -57,6 +59,8 @@ impl ToolbarTheme for RadixToolbarTheme {
             ..fallback
         });
         ToolbarLook {
+            border_width: geometry.border_width.value_px,
+            separator_width: geometry.separator_width.value_px,
             background,
             border,
             separator: gray(6),

@@ -7,6 +7,9 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens
 
 #[derive(Clone, Debug)]
 pub struct SliderLook {
+    pub thumb_border_width: f32,
+    /// Captured radial layout and disabled-track presentation.
+    pub decoration: crate::theme::stylesheet::SliderDecoration,
     pub track_background: Hsla,
     pub fill_background: Hsla,
     pub thumb_background: Hsla,
@@ -42,7 +45,7 @@ impl DefaultSliderTheme {
 
 impl SliderTheme for DefaultSliderTheme {
     fn resolve(&self, size: ControlSize, thumb_size: Option<SliderThumbSize>, state: InteractionState) -> SliderLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("slider", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
         let elevation = &self.tokens.elevation;
         let selected = palette.state.selected;
@@ -53,7 +56,10 @@ impl SliderTheme for DefaultSliderTheme {
             InteractionLayer::Default => selected.background,
         };
 
-        SliderLook {
+        let selected_thumb = thumb_size.unwrap_or(size.into());
+        let mut look = SliderLook {
+            thumb_border_width: self.tokens.metrics.border_width.default,
+            decoration: self.tokens.stylesheet.slider.decoration(size.stylesheet_key()),
             track_background: if state.disabled {
                 palette.state.disabled.background
             } else {
@@ -71,31 +77,61 @@ impl SliderTheme for DefaultSliderTheme {
                 selected.background
             },
             thumb_shadow: elevation.thumb.to_box_shadows(),
-            width: 260.0,
-            height: slider_height(metrics, size),
+            width: 0.0,
+            height: slider_height(metrics, size, &self.tokens.stylesheet),
             track_height: slider_track_height(metrics, size),
-            thumb_size: slider_thumb_size(metrics, thumb_size.unwrap_or(size.into())),
+            thumb_size: slider_thumb_size_with_stylesheet(metrics, selected_thumb, &self.tokens.stylesheet),
             radius: metrics.radius.pill,
-        }
+        };
+        let thumb_key = thumb_size.map(|size| thumb_control_size(size).stylesheet_key());
+        let geometry = self.tokens.stylesheet.slider.resolve_geometry(size.stylesheet_key(), thumb_key, &look);
+        look.width = geometry.width.value_px;
+        look.height = geometry.height.value_px;
+        look.track_height = geometry.track_height.value_px;
+        look.thumb_size = geometry.thumb_size.value_px;
+        look
     }
 }
 
-fn slider_height(metrics: &MetricTokens, size: ControlSize) -> f32 {
-    (metrics.control_height(size) - metrics.spacing.s1).max(metrics.control_height(size) * 0.5)
+fn slider_height(
+    metrics: &MetricTokens,
+    size: ControlSize,
+    stylesheet: &crate::theme::stylesheet::CommonStylesheet,
+) -> f32 {
+    let recipe = stylesheet.slider.authored_geometry(size.stylesheet_key());
+    let floor = recipe
+        .height_floor_scale
+        .or(crate::theme::stylesheet::CommonStylesheet::sdk_default().slider.geometry.height_floor_scale)
+        .unwrap_or_default();
+    recipe.height.unwrap_or_else(|| {
+        (metrics.control_height(size) - metrics.spacing.s1).max(metrics.control_height(size) * floor)
+    })
 }
 
 fn slider_track_height(metrics: &MetricTokens, size: ControlSize) -> f32 {
     (metrics.gap(size) - metrics.border_width.strong).max(metrics.border_width.strong)
 }
 
-pub fn slider_thumb_size(metrics: &MetricTokens, size: SliderThumbSize) -> f32 {
-    let control_size = match size {
+fn thumb_control_size(size: SliderThumbSize) -> ControlSize {
+    match size {
         SliderThumbSize::Sm => ControlSize::Sm,
         SliderThumbSize::Md => ControlSize::Md,
         SliderThumbSize::Lg => ControlSize::Lg,
-    };
+    }
+}
 
-    slider_height(metrics, control_size) * 0.5
+fn slider_thumb_size_with_stylesheet(
+    metrics: &MetricTokens,
+    size: SliderThumbSize,
+    stylesheet: &crate::theme::stylesheet::CommonStylesheet,
+) -> f32 {
+    let size = thumb_control_size(size);
+    let recipe = stylesheet.slider.authored_geometry(size.stylesheet_key());
+    let factor = recipe
+        .thumb_scale
+        .or(crate::theme::stylesheet::CommonStylesheet::sdk_default().slider.geometry.thumb_scale)
+        .unwrap_or_default();
+    recipe.thumb_size.unwrap_or_else(|| slider_height(metrics, size, stylesheet) * factor)
 }
 
 #[cfg(test)]

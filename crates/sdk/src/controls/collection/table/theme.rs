@@ -6,12 +6,26 @@ use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, ListRowScale, LumaTextStyle, MetricTokens, ThemeTokens,
 };
 
-const ROW_HOVER_ACCENT_ALPHA: f32 = 0.4;
-
 #[derive(Clone, Debug)]
 pub struct TableLook {
+    /// Inter-row divider thickness in pixels.
+    pub row_divider_width: f32,
+    /// Horizontal text-column inset shared by header and body, in pixels.
+    pub column_padding_x: f32,
+    /// Column resize hit target width in pixels.
+    pub column_resize_hit_width: f32,
+    /// Painted column resize stroke thickness in pixels.
+    pub column_resize_line_width: f32,
+    /// Hit target extension above and below the header in pixels.
+    pub column_resize_vertical_extension: f32,
     pub background: Hsla,
     pub border: Hsla,
+    /// Outer frame thickness in pixels.
+    pub border_width: f32,
+    /// Header separator thickness in pixels.
+    pub header_divider_width: f32,
+    /// Header bottom padding divided by resolved vertical padding.
+    pub header_padding_bottom_scale: f32,
     pub header_background: Hsla,
     pub header_label_color: Hsla,
     pub header_typography: LumaTextStyle,
@@ -42,6 +56,15 @@ pub struct TableRowPalette {
 
 #[derive(Clone, Copy, Debug)]
 pub struct TableRowLook {
+    pub column_emphasis_weight: gpui::FontWeight,
+    /// Inter-row divider thickness in pixels.
+    pub row_divider_width: f32,
+    /// Horizontal text-column inset in pixels.
+    pub column_padding_x: f32,
+    /// Opacity of default muted cells.
+    pub column_muted_opacity: f32,
+    /// Whole-row opacity applied only when disabled.
+    pub disabled_opacity: f32,
     pub background: Hsla,
     pub label_color: Hsla,
     pub divider: Hsla,
@@ -56,6 +79,8 @@ pub struct TableRowLook {
 /// Theme-owned visuals for the compact drag preview and insertion feedback.
 #[derive(Clone, Debug)]
 pub struct TableDragLook {
+    /// Captured, size-resolved preview and insertion feedback geometry.
+    pub geometry: crate::theme::stylesheet::ResolvedTableGeometry,
     pub background: Hsla,
     pub foreground: Hsla,
     pub valid_marker: Hsla,
@@ -69,6 +94,9 @@ pub trait TableTheme: Send + Sync {
         let look = self.resolve_look(true, true, size);
         let invalid = self.resolve_row(false, InteractionState { invalid: true, ..Default::default() }, size);
         TableDragLook {
+            geometry: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                .table
+                .resolve_geometry(size.stylesheet_key(), Default::default()),
             background: look.header_background,
             foreground: look.header_label_color,
             valid_marker: look.border,
@@ -88,7 +116,12 @@ pub trait TableTheme: Send + Sync {
         size: ControlSize,
         scale: &ListRowScale,
     ) -> TableRowLook {
-        compose_table_row_look(&self.resolve_row(selected, state, size), scale)
+        TableRowLook::from_palette(
+            &self.resolve_row(selected, state, size),
+            scale,
+            crate::theme::stylesheet::CommonStylesheet::sdk_default(),
+            size,
+        )
     }
 }
 
@@ -111,8 +144,14 @@ impl DefaultTableTheme {
 
 impl TableTheme for DefaultTableTheme {
     fn resolve_drag(&self, size: ControlSize) -> TableDragLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("table", &self.tokens.palette);
         TableDragLook {
+            geometry: self
+                .tokens
+                .stylesheet
+                .table
+                .with_sdk_defaults()
+                .resolve_geometry(size.stylesheet_key(), Default::default()),
             background: palette.surface.floating.background,
             foreground: palette.surface.floating.foreground,
             valid_marker: palette.focus.ring,
@@ -122,16 +161,28 @@ impl TableTheme for DefaultTableTheme {
     }
 
     fn resolve_look(&self, enabled: bool, _focused: bool, size: ControlSize) -> TableLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("table", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
 
-        TableLook {
+        let key = size.stylesheet_key();
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().table.authored_geometry(key);
+        let recipe = self.tokens.stylesheet.table.authored_geometry(key).with_fallback(&baseline);
+        let mut look = TableLook {
+            row_divider_width: recipe.row_divider_width.unwrap_or_default(),
+            column_padding_x: recipe.column_padding_x.unwrap_or_default(),
+            column_resize_hit_width: recipe.column_resize_hit_width.unwrap_or_default(),
+            column_resize_line_width: recipe.column_resize_line_width.unwrap_or_default(),
+            column_resize_vertical_extension: recipe.column_resize_vertical_extension.unwrap_or_default(),
+
             background: if enabled {
                 palette.form.input.background
             } else {
                 palette.state.disabled.background
             },
             border: palette.form.input.border,
+            border_width: recipe.border_width.unwrap_or_default(),
+            header_divider_width: recipe.header_divider_width.unwrap_or_default(),
+            header_padding_bottom_scale: recipe.header_padding_bottom_scale.unwrap_or_default(),
             header_background: if enabled {
                 palette.surface.subtle.background
             } else {
@@ -144,20 +195,26 @@ impl TableTheme for DefaultTableTheme {
             },
             header_typography: self.tokens.typography.text.caption,
             radius: metrics.radius(size),
-            padding_x: 0.0,
-            padding_y: metrics.padding_y(size) * 0.5,
-        }
+            padding_x: recipe.padding_x.unwrap_or_default(),
+            padding_y: metrics.padding_y(size) * recipe.padding_y_scale.unwrap_or_default(),
+        };
+        crate::theme::stylesheet::apply_common_geometry!(self.tokens.stylesheet.table, key, TableGeometry, look,
+            [padding_x => padding_x, padding_y => padding_y], defaults = Default::default());
+        look
     }
 
     fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> TableRowPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("table", &self.tokens.palette);
         let typography = &self.tokens.typography;
 
         let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
         let layer = state.layer();
 
         let selected_background = palette.surface.subtle.background;
-        let hover_background = Hsla { a: ROW_HOVER_ACCENT_ALPHA, ..palette.data.accent_1 };
+        let key = size.stylesheet_key();
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().table.authored_geometry(key);
+        let recipe = self.tokens.stylesheet.table.authored_geometry(key).with_fallback(&baseline);
+        let hover_background = Hsla { a: recipe.row_hover_opacity.unwrap_or_default(), ..palette.data.accent_1 };
 
         let background = if state.disabled && !state.focused {
             transparent
@@ -186,21 +243,50 @@ impl TableTheme for DefaultTableTheme {
         TableRowPalette { background, label_color, divider: palette.form.input.border, label_typography }
     }
 
+    fn resolve_row_look(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: ControlSize,
+        scale: &ListRowScale,
+    ) -> TableRowLook {
+        let mut look =
+            TableRowLook::from_palette(&self.resolve_row(selected, state, size), scale, &self.tokens.stylesheet, size);
+        look.column_emphasis_weight = self.tokens.typography.text.title.weight;
+        look
+    }
+
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
     }
 }
 
-pub(crate) fn compose_table_row_look(palette: &TableRowPalette, scale: &ListRowScale) -> TableRowLook {
-    TableRowLook {
-        background: palette.background,
-        label_color: palette.label_color,
-        divider: palette.divider,
-        label_typography: palette.label_typography,
-        radius: 0.0,
-        padding_x: scale.padding_x,
-        padding_y: scale.padding_y,
-        min_height: scale.min_height,
-        label_baseline_shift: scale.label_baseline_shift,
+impl TableRowLook {
+    /// Combines row colors and metrics with shared, size-specific row styling.
+    pub fn from_palette(
+        palette: &TableRowPalette,
+        scale: &ListRowScale,
+        stylesheet: &crate::theme::stylesheet::CommonStylesheet,
+        size: ControlSize,
+    ) -> Self {
+        let key = size.stylesheet_key();
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().table.authored_geometry(key);
+        let recipe = stylesheet.table.authored_geometry(key).with_fallback(&baseline);
+        Self {
+            column_emphasis_weight: stylesheet.tokens.typography.text.title.weight,
+            column_padding_x: recipe.column_padding_x.unwrap_or_default(),
+            column_muted_opacity: recipe.column_muted_opacity.unwrap_or_default(),
+            row_divider_width: recipe.row_divider_width.unwrap_or_default(),
+            disabled_opacity: recipe.row_disabled_opacity.unwrap_or_default(),
+            background: palette.background,
+            label_color: palette.label_color,
+            divider: palette.divider,
+            label_typography: palette.label_typography,
+            radius: recipe.row_radius.unwrap_or_default(),
+            padding_x: scale.padding_x,
+            padding_y: scale.padding_y,
+            min_height: scale.min_height,
+            label_baseline_shift: crate::theme::scales::label_baseline_shift(size, stylesheet),
+        }
     }
 }

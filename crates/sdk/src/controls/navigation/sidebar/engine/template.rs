@@ -4,9 +4,8 @@ use std::{
 };
 
 use gpui::{
-    Anchor, AnyElement, App, Bounds, ClickEvent, Div, FocusHandle, FontFeatures, FontWeight, MouseButton,
-    MouseDownEvent, MouseUpEvent, Pixels, SharedString, Stateful, Window, anchored, deferred, div, point, prelude::*,
-    px,
+    Anchor, AnyElement, App, Bounds, ClickEvent, Div, FocusHandle, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
+    SharedString, Stateful, Window, anchored, deferred, div, point, prelude::*, px,
 };
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -19,25 +18,8 @@ use crate::infra::icon::{DisclosureIcons, render_disclosure_icon, render_icon_so
 use crate::infra::ElementExt;
 use super::{SidebarTheme, default_sidebar_theme};
 
-const CONTAINER_GAP: f32 = 8.0;
-const REGION_GAP: f32 = 4.0;
-const HEADER_REGION_PADDING_BOTTOM: f32 = 8.0;
-const FOOTER_REGION_PADDING_TOP: f32 = 8.0;
-const TITLE_GAP: f32 = 2.0;
-const TITLE_PADDING_BOTTOM: f32 = 4.0;
-const SUBTITLE_OPACITY: f32 = 0.72;
-const SECTION_PADDING_TOP: f32 = 8.0;
 const CHILD_DEPTH_INDENT_MULTIPLIER: f32 = 1.0;
-const DISCLOSURE_EXPANDED_ICON: LucideIcon = LucideIcon::ChevronDown;
-const DISCLOSURE_COLLAPSED_ICON: LucideIcon = LucideIcon::ChevronRight;
-const DISCLOSURE_ICON_SIZE: f32 = 14.0;
-const DISABLED_ROW_OPACITY: f32 = 0.56;
 const SCROLL_REGION_MIN_HEIGHT: f32 = 0.0;
-const RAIL_SUBMENU_OFFSET_X: f32 = 12.0;
-const RAIL_BRANCH_INDICATOR_ICON: LucideIcon = LucideIcon::ChevronRight;
-const RAIL_BRANCH_INDICATOR_SIZE: f32 = 18.0;
-const RAIL_BRANCH_INDICATOR_RIGHT: f32 = -10.0;
-const ICON_FONT_WEIGHT: FontWeight = FontWeight::NORMAL;
 
 /// Shared callback retained across redraws; custom handlers use `Rc::new`.
 pub type SidebarPanelBoundsHandler = Rc<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
@@ -186,6 +168,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
         _window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
+        let theme = &self.theme;
         let SidebarPanelTemplateHandlers {
             row_bounds,
             row_hovers,
@@ -210,7 +193,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
             .size_full()
             .flex()
             .flex_col()
-            .gap(px(CONTAINER_GAP))
+            .gap(px(theme.geometry().container_gap.value_px))
             .text_color(self.theme.foreground());
 
         if model.collapsed {
@@ -244,7 +227,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                         &model.disclosure_icons,
                         cx,
                     )
-                    .pt(px(FOOTER_REGION_PADDING_TOP)),
+                    .pt(px(theme.geometry().footer_padding_top.value_px)),
                 );
             }
 
@@ -253,6 +236,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     deferred(render_rail_submenu_overlay(
                         rail_submenu,
                         self.floating_menu_theme.resolve(),
+                        self.theme.geometry(),
                         rail_submenu_item_hovers,
                         rail_submenu_item_clicks,
                         rail_submenu_bounds,
@@ -283,7 +267,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &model.disclosure_icons,
                     cx,
                 )
-                .pb(px(HEADER_REGION_PADDING_BOTTOM)),
+                .pb(px(theme.geometry().header_padding_bottom.value_px)),
             );
         }
 
@@ -322,7 +306,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &model.disclosure_icons,
                     cx,
                 )
-                .pt(px(FOOTER_REGION_PADDING_TOP)),
+                .pt(px(theme.geometry().footer_padding_top.value_px)),
             );
         }
 
@@ -330,18 +314,23 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
     }
 }
 
-fn sidebar_title_style() -> LumaTextStyle {
-    LumaTypography::default().text.label
+fn sidebar_title_style(typography: &LumaTypography) -> LumaTextStyle {
+    typography.text.label
 }
 
-fn sidebar_subtitle_style() -> LumaTextStyle {
-    LumaTypography::default().text.scale.sm
+fn sidebar_subtitle_style(typography: &LumaTypography) -> LumaTextStyle {
+    typography.text.scale.sm
 }
 
-fn render_title(title: Option<SharedString>, subtitle: Option<SharedString>, _theme: &Arc<dyn SidebarTheme>) -> Div {
-    let title_style = sidebar_title_style();
-    let subtitle_style = sidebar_subtitle_style();
-    let mut header = div().flex().flex_col().gap(px(TITLE_GAP)).pb(px(TITLE_PADDING_BOTTOM));
+fn render_title(title: Option<SharedString>, subtitle: Option<SharedString>, theme: &Arc<dyn SidebarTheme>) -> Div {
+    let typography = theme.typography();
+    let title_style = sidebar_title_style(&typography);
+    let subtitle_style = sidebar_subtitle_style(&typography);
+    let mut header = div()
+        .flex()
+        .flex_col()
+        .gap(px(theme.geometry().title_gap.value_px))
+        .pb(px(theme.geometry().title_padding_bottom.value_px));
 
     if let Some(title) = title {
         header = header.child(
@@ -361,7 +350,7 @@ fn render_title(title: Option<SharedString>, subtitle: Option<SharedString>, _th
                 .text_size(px(subtitle_style.size))
                 .line_height(px(subtitle_style.line_height))
                 .font_weight(subtitle_style.weight)
-                .opacity(SUBTITLE_OPACITY)
+                .opacity(theme.geometry().subtitle_opacity.value_px)
                 .child(subtitle),
         );
     }
@@ -382,7 +371,7 @@ fn render_region(
     disclosure_icons: &DisclosureIcons,
     cx: &mut App,
 ) -> Div {
-    let mut region = div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP));
+    let mut region = div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(theme.geometry().region_gap.value_px));
 
     for node in nodes {
         region = region.child(render_node(
@@ -415,7 +404,7 @@ fn render_collapsed_rail_region(
     disclosure_icons: &DisclosureIcons,
     cx: &mut App,
 ) -> Div {
-    let mut region = div().flex().flex_col().items_center().gap(px(REGION_GAP));
+    let mut region = div().flex().flex_col().items_center().gap(px(theme.geometry().region_gap.value_px));
 
     for node in nodes {
         region = region.child(render_collapsed_rail_node(
@@ -507,11 +496,19 @@ fn render_node(
     } else {
         row
     };
-    let mut root = div().id(id.clone()).w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP)).child(row);
+    let mut root = div()
+        .id(id.clone())
+        .w_full()
+        .min_w(px(0.0))
+        .flex()
+        .flex_col()
+        .gap(px(theme.geometry().region_gap.value_px))
+        .child(row);
 
     if !children.is_empty() {
         let height_report = children_height_reports.get(&id).cloned();
-        let mut children_region = div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(REGION_GAP));
+        let mut children_region =
+            div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(theme.geometry().region_gap.value_px));
         for child in children {
             children_region = children_region.child(render_node(
                 child,
@@ -588,11 +585,11 @@ fn render_section_row(label: SharedString, theme: &Arc<dyn SidebarTheme>) -> Div
 
     div()
         .min_h(px(look.height))
-        .pt(px(SECTION_PADDING_TOP))
+        .pt(px(theme.geometry().section_padding_top.value_px))
         .text_size(px(look.typography.size))
         .line_height(px(look.typography.line_height))
         .font_weight(look.typography.weight)
-        .font_features(FontFeatures(Arc::new(vec![("smcp".into(), 1)])))
+        .font_features(theme.section_font_features())
         .text_color(look.label_color)
         .child(label)
 }
@@ -657,7 +654,7 @@ fn render_item_row(
             &disclosure_icons,
             expansion_progress,
             look.icon_color,
-            DISCLOSURE_ICON_SIZE,
+            theme.geometry().disclosure_icon_size.value_px,
         ));
     }
 
@@ -666,13 +663,13 @@ fn render_item_row(
     }
 
     if let Some(focus_border) = look.focus_border {
-        row = row.border_1().border_color(focus_border);
+        row = row.border(px(theme.metrics().border_width.default)).border_color(focus_border);
     }
 
     if state.enabled {
         row = row.cursor_pointer();
     } else {
-        row = row.opacity(DISABLED_ROW_OPACITY);
+        row = row.opacity(theme.geometry().disabled_opacity.value_px);
     }
 
     let RowHandlers { hover, mouse_down, mouse_up, mouse_up_out, click, .. } = handlers;
@@ -725,7 +722,7 @@ fn render_collapsed_rail_node(
         theme.resolve_item(state.selected, interaction, ControlSize::Md)
     };
     let row_width = if has_children {
-        rail_branch_button_width(look.height)
+        rail_branch_button_width(look.height, &theme.geometry())
     } else {
         look.height
     };
@@ -758,9 +755,13 @@ fn render_collapsed_rail_node(
         row = row.child(
             div()
                 .absolute()
-                .left(px(rail_branch_indicator_left(look.height)))
-                .top(px(centered_icon_left(look.height, RAIL_BRANCH_INDICATOR_SIZE)))
-                .child(render_icon_source(&disclosure_icons.collapsed, look.icon_color, RAIL_BRANCH_INDICATOR_SIZE)),
+                .left(px(rail_branch_indicator_left(look.height, &theme.geometry())))
+                .top(px(centered_icon_left(look.height, theme.geometry().rail_branch_indicator_size.value_px)))
+                .child(render_icon_source(
+                    &disclosure_icons.collapsed,
+                    look.icon_color,
+                    theme.geometry().rail_branch_indicator_size.value_px,
+                )),
         );
     } else {
         row = row.child(render_lucide_icon(
@@ -775,13 +776,13 @@ fn render_collapsed_rail_node(
     }
 
     if let Some(focus_border) = look.focus_border {
-        row = row.border_1().border_color(focus_border);
+        row = row.border(px(theme.metrics().border_width.default)).border_color(focus_border);
     }
 
     if state.enabled {
         row = row.cursor_pointer();
     } else {
-        row = row.opacity(DISABLED_ROW_OPACITY);
+        row = row.opacity(theme.geometry().disabled_opacity.value_px);
     }
 
     let RowHandlers { bounds, hover, mouse_down, mouse_up, mouse_up_out, click } = handlers;
@@ -826,6 +827,7 @@ fn render_collapsed_rail_node(
 fn render_rail_submenu_overlay(
     submenu: RenderedRailSubmenu,
     look: FloatingMenuLook,
+    geometry: crate::theme::stylesheet::ResolvedSidebarGeometry,
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
     bounds_handler: Option<SidebarPanelBoundsHandler>,
@@ -842,7 +844,9 @@ fn render_rail_submenu_overlay(
     );
 
     let content_size = submenu.content_size.unwrap_or_default();
-    let offset = submenu.presence.adjust_offset(point(px(RAIL_SUBMENU_OFFSET_X), px(0.0)), content_size);
+    let offset = submenu
+        .presence
+        .adjust_offset(point(px(geometry.rail_submenu_offset_x.value_px), px(0.0)), content_size);
     let content = if let Some(bounds_handler) = bounds_handler {
         div()
             .on_mouse_down_out(move |event, window, cx| mouse_down_out(event, window, cx))
@@ -856,19 +860,20 @@ fn render_rail_submenu_overlay(
     };
 
     anchored()
-        .snap_to_window_with_margin(px(8.0))
+        .snap_to_window_with_margin(px(geometry.window_margin.value_px))
         .anchor(Anchor::TopLeft)
         .position(point(submenu.parent_bounds.right(), submenu.parent_bounds.top()))
         .offset(offset)
         .child(content)
 }
 
-fn rail_branch_indicator_left(button_height: f32) -> f32 {
-    button_height - RAIL_BRANCH_INDICATOR_RIGHT - RAIL_BRANCH_INDICATOR_SIZE
+fn rail_branch_indicator_left(button_height: f32, geometry: &crate::theme::stylesheet::ResolvedSidebarGeometry) -> f32 {
+    button_height + geometry.rail_branch_overhang.value_px - geometry.rail_branch_indicator_size.value_px
 }
 
-fn rail_branch_button_width(button_height: f32) -> f32 {
-    button_height.max(rail_branch_indicator_left(button_height) + RAIL_BRANCH_INDICATOR_SIZE)
+fn rail_branch_button_width(button_height: f32, geometry: &crate::theme::stylesheet::ResolvedSidebarGeometry) -> f32 {
+    button_height
+        .max(rail_branch_indicator_left(button_height, geometry) + geometry.rail_branch_indicator_size.value_px)
 }
 
 fn centered_icon_left(button_height: f32, icon_size: f32) -> f32 {
@@ -881,7 +886,6 @@ fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElem
         .flex()
         .items_center()
         .justify_center()
-        .font_weight(ICON_FONT_WEIGHT)
         .text_size(px(size))
         .line_height(px(size))
         .text_color(color)

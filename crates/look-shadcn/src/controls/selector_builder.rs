@@ -279,6 +279,7 @@ where
 
     fn into_sdk_builder(self, look: ShadcnLook) -> SelectorBuilder<T> {
         let mut builder = gpui_luma::controls::selector::Selector::new_typed(self.id)
+            .stylesheet(&look.stylesheet().common)
             .motion_defaults(look.motion_defaults().selector)
             .with_motion_overrides(self.motion)
             .motion_enabled(self.motion_enabled)

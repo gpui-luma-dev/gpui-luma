@@ -612,6 +612,7 @@ impl Render for ComboBoxControl {
         self.presence.sync();
         self.presence.schedule_frame(window, cx);
         let autocomplete_look = self.model.autocomplete_theme.resolve(self.model.size);
+        let geometry = self.model.stylesheet.resolve_geometry(self.model.size.stylesheet_key(), Default::default());
         let look = (self.model.popup_look_provider)(self.model.size);
         let selected_label = self
             .behavior
@@ -642,11 +643,9 @@ impl Render for ComboBoxControl {
             let placeholder_width = placeholder_line.width().as_f32();
 
             let textfield_side_padding = (textfield_look.padding_x * 2.0) + textfield_look.border_width;
-            let prefix_width = if self.model.show_down_arrow { 18.0 + 10.0 } else { 0.0 };
-            let clear_width = if self.model.show_clear_button { 18.0 + 10.0 } else { 0.0 };
-            let spacing = 8.0;
-
-            px(textfield_side_padding + placeholder_width + prefix_width + clear_width + spacing)
+            let affordance_width =
+                reserved_affordance_width(&geometry, self.model.show_down_arrow, self.model.show_clear_button);
+            px(textfield_side_padding + placeholder_width + affordance_width)
         };
 
         let visible_indices = self.behavior.state.filtered.clone();
@@ -743,6 +742,8 @@ impl Render for ComboBoxControl {
         };
 
         let render_model = ComboBoxRenderModel {
+            icons: self.model.icons.clone(),
+            geometry,
             textfield: self.textfield.clone().into_any_element(),
             query_is_empty: self.behavior.state.query.is_empty(),
             show_down_arrow: self.model.show_down_arrow,
@@ -837,5 +838,50 @@ impl crate::infra::attachments::TooltipEntityExt for gpui::Entity<ComboBoxContro
     fn clear_tooltip(self, cx: &mut App) -> Self {
         self.read(cx).textfield.clone().clear_tooltip(cx);
         self
+    }
+}
+
+// Preserve the stock inset reservation while allowing a wider configured gap
+// between both affordances to increase the minimum trigger width.
+fn reserved_affordance_width(
+    geometry: &crate::theme::stylesheet::ResolvedComboBoxGeometry,
+    arrow: bool,
+    clear: bool,
+) -> f32 {
+    let inset = geometry.affordance_inset.value_px;
+    let width = geometry.affordance_width.value_px;
+    let arrow_width = if arrow { width + inset } else { 0.0 };
+    let clear_inset = if arrow {
+        inset.max(geometry.affordance_gap.value_px)
+    } else {
+        inset
+    };
+    let clear_width = if clear { width + clear_inset } else { 0.0 };
+    arrow_width + clear_width + geometry.trigger_extra_gap.value_px
+}
+
+#[cfg(test)]
+mod geometry_tests {
+    use super::*;
+    use crate::theme::stylesheet::CommonStylesheet;
+
+    #[test]
+    fn affordance_reservation_retains_defaults_and_grows_with_configured_spacing() {
+        let baseline = CommonStylesheet::sdk_default().combobox.resolve_geometry("md", Default::default());
+        assert_eq!(reserved_affordance_width(&baseline, false, false), 8.0);
+        assert_eq!(reserved_affordance_width(&baseline, true, false), 36.0);
+        assert_eq!(reserved_affordance_width(&baseline, false, true), 36.0);
+        assert_eq!(reserved_affordance_width(&baseline, true, true), 64.0);
+        let sheet = CommonStylesheet::resolve_layers(&["[common.combobox.geometry]\naffordance_gap=20"]).unwrap();
+        let geometry = sheet.combobox.resolve_geometry("md", Default::default());
+        assert_eq!(reserved_affordance_width(&geometry, true, true), 74.0);
+        let zero = CommonStylesheet::resolve_layers(&[
+            "[common.combobox.geometry]\naffordance_inset=0\naffordance_width=0\naffordance_gap=0\ntrigger_extra_gap=0",
+        ])
+        .unwrap();
+        assert_eq!(
+            reserved_affordance_width(&zero.combobox.resolve_geometry("md", Default::default()), true, true),
+            0.0
+        );
     }
 }

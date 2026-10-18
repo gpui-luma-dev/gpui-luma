@@ -157,6 +157,8 @@ impl SliderTheme for SliderThemeAdapter {
         let radix_size = self.size.unwrap_or_else(|| SliderSize::from_control_size(size));
         let geometry = slider_geometry(look, radix_size, thumb_size);
         SliderLook {
+            thumb_border_width: look.metrics().border_width.default,
+            decoration: look.common_stylesheet().slider.decoration(radix_size.as_str()),
             track_background: track,
             fill_background: fill,
             thumb_background: thumb_bg,
@@ -321,8 +323,9 @@ mod tests {
         let look = Look::built_in();
         let stylesheet = look.common_stylesheet();
         for sizes in [stylesheet.slider.sizes.keys().collect::<Vec<_>>(), stylesheet.switch.sizes.keys().collect()] {
-            assert_eq!(sizes.len(), 3);
-            assert!(sizes.iter().all(|key| ["1", "2", "3"].contains(&key.as_str())));
+            let numeric: Vec<_> = sizes.iter().filter(|key| key.parse::<u8>().is_ok()).collect();
+            assert_eq!(numeric.len(), 3);
+            assert!(numeric.iter().all(|key| ["1", "2", "3"].contains(&key.as_str())));
         }
         let theme = slider_theme_for(&look, SliderVariant::Surface, SliderSize::One);
         assert_eq!(theme.resolve(ControlSize::Lg, None, Default::default()).height, 16.0);

@@ -261,6 +261,7 @@ impl TextArea {
             }
         };
         let mut builder = gpui_luma::controls::textarea::TextArea::new(self.id)
+            .stylesheet(&look.stylesheet().common)
             .template(template)
             .theme(theme)
             .placeholder(self.placeholder)

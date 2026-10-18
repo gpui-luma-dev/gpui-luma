@@ -22,6 +22,13 @@ pub struct TextAreaPalette {
 
 #[derive(Clone, Debug)]
 pub struct TextAreaLook {
+    /// Helper chrome resolved through the selected common stylesheet.
+    pub helper_geometry: crate::theme::stylesheet::ResolvedSharedGeometry,
+    /// Painted caret width and extra height in pixels.
+    pub caret_width: f32,
+    pub caret_height_extra: f32,
+    /// Whole-input opacity when disabled.
+    pub disabled_opacity: f32,
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
@@ -76,7 +83,7 @@ impl DefaultTextAreaTheme {
 
 impl TextAreaTheme for DefaultTextAreaTheme {
     fn resolve(&self, state: TextAreaState, enabled: bool) -> TextAreaPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("textarea", &self.tokens.palette);
         let typography = &self.tokens.typography;
 
         let (background, foreground, border, placeholder, selection_background, selection_foreground, caret) =
@@ -136,12 +143,34 @@ impl TextAreaTheme for DefaultTextAreaTheme {
     ) -> TextAreaLook {
         let mut palette = self.resolve(state, enabled);
         apply_control_size_typography(&mut palette.typography, &self.tokens.typography, size);
-        compose_textarea_look(&palette, scale, self.metrics().border_width.default)
+        let mut look = compose_textarea_look(&palette, scale, self.metrics().border_width.default);
+        look.helper_geometry = self.tokens.stylesheet.shared_geometry();
+        crate::theme::stylesheet::apply_common_geometry!(
+            self.tokens.stylesheet.textarea, size.stylesheet_key(), TextAreaGeometry, look,
+            [min_height => min_height, padding_x => padding_x, padding_y => padding_y, font_size => typography.size, line_height => typography.line_height, caret_width => caret_width, caret_height_extra => caret_height_extra, disabled_opacity => disabled_opacity]
+        );
+        look
     }
 }
 
 pub fn compose_textarea_look(palette: &TextAreaPalette, scale: &StandardBoxScale, border_width: f32) -> TextAreaLook {
     TextAreaLook {
+        helper_geometry: crate::theme::stylesheet::CommonStylesheet::sdk_default().shared_geometry(),
+        caret_width: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .textarea
+            .geometry
+            .caret_width
+            .unwrap_or_default(),
+        caret_height_extra: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .textarea
+            .geometry
+            .caret_height_extra
+            .unwrap_or_default(),
+        disabled_opacity: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .textarea
+            .geometry
+            .disabled_opacity
+            .unwrap_or_default(),
         background: palette.background,
         foreground: palette.foreground,
         border: palette.border,

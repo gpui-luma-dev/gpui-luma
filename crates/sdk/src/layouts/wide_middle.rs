@@ -23,13 +23,14 @@ pub struct WideMiddle {
 
 impl WideMiddle {
     pub fn new() -> Self {
+        let geometry = crate::theme::stylesheet::CommonStylesheet::sdk_default().shared_geometry();
         Self {
             stacked: false,
-            gap: 24.0,
-            side_min_width: 240.0,
-            side_preferred_width: 280.0,
-            middle_min_width: 435.0,
-            middle_max_width: 435.0,
+            gap: geometry.wide_middle_gap.value_px,
+            side_min_width: geometry.wide_side_min_width.value_px,
+            side_preferred_width: geometry.wide_side_preferred_width.value_px,
+            middle_min_width: geometry.wide_middle_min_width.value_px,
+            middle_max_width: geometry.wide_middle_max_width.value_px,
         }
     }
 

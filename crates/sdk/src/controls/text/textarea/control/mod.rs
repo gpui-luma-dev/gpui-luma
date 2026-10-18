@@ -17,8 +17,6 @@ use crate::theme::{StandardBoxScale, observe_theme_revision};
 
 use self::layout::TextAreaLayoutCache;
 
-pub(super) const FOCUS_RING_GAP: f32 = 1.0;
-
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum TextAreaEvent {

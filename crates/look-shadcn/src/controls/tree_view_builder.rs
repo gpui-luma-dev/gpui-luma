@@ -523,7 +523,8 @@ where
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> TreeViewBuilder<T> {
-        let self_builder = self.builder.motion_defaults(look.motion_defaults().tree_view);
+        let self_builder =
+            self.builder.stylesheet(&look.stylesheet().common).motion_defaults(look.motion_defaults().tree_view);
         let builder = self_builder.size(self.size.control_size()).scrollbar_template(look.scrollbar_template());
         if self.custom_template {
             builder

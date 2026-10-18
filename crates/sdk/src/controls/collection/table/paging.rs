@@ -146,7 +146,7 @@ impl PagerTemplate for TablePagerTemplate {
                     .flex()
                     .items_center()
                     .gap(px(look.group_gap))
-                    .child(div().flex_none().flex().items_center().gap(px(8.0)).when(
+                    .child(div().flex_none().flex().items_center().gap(px(look.page_size_label_gap)).when(
                         !model.page_size_options.is_empty(),
                         |slot| {
                             slot.when_some(model.page_size_label(), |slot, label| {

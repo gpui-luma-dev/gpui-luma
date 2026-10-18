@@ -15,6 +15,8 @@ test-support = ["gpui-luma/test-support"]
 
 [dependencies]
 anyhow.workspace = true
+serde.workspace = true
+toml.workspace = true
 gpui.workspace = true
 gpui-luma.workspace = true
 

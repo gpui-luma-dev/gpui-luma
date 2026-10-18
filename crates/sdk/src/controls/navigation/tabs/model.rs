@@ -201,6 +201,7 @@ pub struct TabsModel {
     pub(crate) motion_enabled: bool,
     pub(crate) contents: HashMap<SharedString, TabsContent>,
     pub(crate) motion: crate::motion::MotionConfig<TabsMotion>,
+    pub(crate) disclosure_icons_explicit: bool,
     pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) template: Arc<dyn TabsTemplate>,
 }
@@ -503,9 +504,9 @@ impl TabsBuilder {
                 motion_enabled: true,
                 contents: HashMap::new(),
                 motion: Default::default(),
-                disclosure_icons: DisclosureIcons::new(
-                    lucide_svg_static::Icon::ChevronUp,
-                    lucide_svg_static::Icon::ChevronDown,
+                disclosure_icons_explicit: false,
+                disclosure_icons: DisclosureIcons::menu_from_stylesheet(
+                    crate::theme::stylesheet::CommonStylesheet::sdk_default(),
                 ),
                 template: default_tabs_template(),
             },
@@ -580,7 +581,16 @@ impl TabsBuilder {
         self
     }
 
+    /// Capture shared icon defaults without replacing explicit control icons.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        if !self.model.disclosure_icons_explicit {
+            self.model.disclosure_icons = DisclosureIcons::menu_from_stylesheet(stylesheet);
+        }
+        self
+    }
+
     pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
+        self.model.disclosure_icons_explicit = true;
         self.model.disclosure_icons = icons;
         self
     }

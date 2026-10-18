@@ -51,7 +51,11 @@ pub fn split_view_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, _hovered:
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "split_view").with_stylesheet(mode.stylesheet());
     let colors = resolve_split_view_colors(&resolver, enabled).unwrap_or_else(|_| SplitViewColorTable::fallback());
 
-    SplitViewLook { separator: colors.separator.hsla(), separator_hover: colors.separator_hover.hsla() }
+    SplitViewLook {
+        geometry: mode.stylesheet().common.split_view.resolve_geometry("", Default::default()),
+        separator: colors.separator.hsla(),
+        separator_hover: colors.separator_hover.hsla(),
+    }
 }
 
 #[cfg(test)]

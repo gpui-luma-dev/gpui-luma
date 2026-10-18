@@ -35,7 +35,10 @@ impl ThemedControlGroupTemplate {
         T: ControlGroupItemLike + 'static,
     {
         let chrome = ControlGroupChromeModel::from(model);
-        let list = self.inner.theme.resolve_list(model.enabled);
+        let mut list = self.inner.theme.resolve_list(model.enabled);
+        if let Some(stylesheet) = model.shell_stylesheet {
+            list = list.with_stylesheet(&stylesheet.control_group);
+        }
 
         let mut root = div()
             .id(model.id.clone())
@@ -44,17 +47,17 @@ impl ThemedControlGroupTemplate {
             .overflow_hidden()
             .rounded(px(list.radius))
             .bg(list.background)
-            .border_1()
+            .border(px(list.border_width))
             .border_color(list.border)
             .px(px(list.padding_x))
             .py(px(list.padding_y));
 
         root = match chrome.layout {
             ControlGroupLayout::Horizontal => root.items_center().gap(px(list.gap)),
-            ControlGroupLayout::Vertical => root.flex_col().items_start().gap_2(),
+            ControlGroupLayout::Vertical => root.flex_col().items_start().gap(px(list.vertical_gap)),
         };
 
-        root = root.children(render_control_group_items(model, handlers, window, cx));
+        root = root.children(render_control_group_items(model, handlers, window, cx, list.disabled_opacity));
         self.inner.apply_modifiers(root, &chrome)
     }
 }

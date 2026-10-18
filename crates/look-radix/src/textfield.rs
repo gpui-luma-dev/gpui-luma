@@ -105,6 +105,7 @@ impl TextFieldTheme for TextFieldThemeAdapter {
         let mut palette = self.resolve(state, enabled);
         palette.typography = typography_for_size(size);
         let mut look = compose_textfield_look(&palette, scale, self.metrics().border_width.default);
+        look.helper_geometry = self.look.common_stylesheet().shared_geometry();
         let geometry = self.look.common_stylesheet().textfield.resolve_geometry(
             crate::look::sdk_size_key(size),
             gpui_luma::theme::stylesheet::TextFieldGeometry {
@@ -115,8 +116,12 @@ impl TextFieldTheme for TextFieldThemeAdapter {
                 icon_size: look.icon_size,
                 font_size: look.typography.size,
                 line_height: look.typography.line_height,
+                ..Default::default()
             },
         );
+        look.caret_width = geometry.caret_width.value_px;
+        look.caret_height_extra = geometry.caret_height_extra.value_px;
+        look.disabled_opacity = geometry.disabled_opacity.value_px;
         look.min_height = geometry.min_height.value_px;
         look.padding_x = geometry.padding_x.value_px;
         look.padding_y = geometry.padding_y.value_px;

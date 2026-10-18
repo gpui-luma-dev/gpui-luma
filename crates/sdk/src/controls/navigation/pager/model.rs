@@ -19,6 +19,17 @@ pub enum PagerStyle {
     Numeric,
 }
 
+impl PagerStyle {
+    /// Stylesheet key for per-presentation geometry overrides.
+    pub fn stylesheet_key(self) -> &'static str {
+        match self {
+            Self::Minimal => "minimal",
+            Self::MinimalEdge => "minimal-edge",
+            Self::Numeric => "numeric",
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PagerPageItem {
     Page(usize),
@@ -45,13 +56,16 @@ impl Default for PagerTemplateParameters {
                 SharedString::from(format!("Page {current_page} of {page_count}"))
             }),
             page_size_label: None,
-            page_size_trigger_width: 64.0,
+            page_size_trigger_width: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                .shared_geometry()
+                .page_size_trigger_width
+                .value_px,
             first_label: None,
             previous_label: None,
             next_label: None,
             last_label: None,
             show_first_last: true,
-            numeric_slot_count: 7,
+            numeric_slot_count: crate::theme::stylesheet::CommonStylesheet::sdk_default().row_limits.resolve("pager").1,
         }
     }
 }
@@ -123,6 +137,9 @@ pub struct PagerModel {
     pub(crate) info_text: Option<SharedString>,
     pub(crate) info_slot: Option<PagerInfoSlot>,
     pub(crate) template_parameters: PagerTemplateParameters,
+    pub(crate) numeric_slot_count_explicit: bool,
+    pub(crate) page_size_trigger_width_explicit: bool,
+    pub(crate) icons_explicit: bool,
     pub(crate) icons: PagerIcons,
     pub(crate) theme: Option<Arc<dyn PagerTheme>>,
     pub(crate) template: Arc<dyn PagerTemplate>,
@@ -130,6 +147,8 @@ pub struct PagerModel {
 
 #[derive(Clone, Debug)]
 pub struct PagerIcons {
+    /// Ellipsis or other gap-jump glyph.
+    pub gap: IconSource,
     pub page_size_open: IconSource,
     pub page_size_closed: IconSource,
     pub first: IconSource,
@@ -140,13 +159,21 @@ pub struct PagerIcons {
 
 impl Default for PagerIcons {
     fn default() -> Self {
+        Self::from_stylesheet(crate::theme::stylesheet::CommonStylesheet::sdk_default())
+    }
+}
+impl PagerIcons {
+    /// Resolve default icon roles before applying explicit consumer icon overrides.
+    pub fn from_stylesheet(sheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        use crate::theme::stylesheet::IconRole;
         Self {
-            page_size_open: lucide_svg_static::Icon::ChevronUp.into(),
-            page_size_closed: lucide_svg_static::Icon::ChevronDown.into(),
-            first: lucide_svg_static::Icon::ChevronsLeft.into(),
-            previous: lucide_svg_static::Icon::ChevronLeft.into(),
-            next: lucide_svg_static::Icon::ChevronRight.into(),
-            last: lucide_svg_static::Icon::ChevronsRight.into(),
+            gap: sheet.icons.resolve(IconRole::PagerGap),
+            page_size_open: sheet.icons.resolve(IconRole::MenuExpanded),
+            page_size_closed: sheet.icons.resolve(IconRole::MenuCollapsed),
+            first: sheet.icons.resolve(IconRole::PagerFirst),
+            previous: sheet.icons.resolve(IconRole::PagerPrevious),
+            next: sheet.icons.resolve(IconRole::PagerNext),
+            last: sheet.icons.resolve(IconRole::PagerLast),
         }
     }
 }
@@ -189,7 +216,14 @@ impl PagerRenderModel<'_> {
 
     pub fn page_size_trigger_width(&self) -> f32 {
         let width = self.template_parameters.page_size_trigger_width;
-        if width.is_finite() && width > 0.0 { width } else { 64.0 }
+        if width.is_finite() && width > 0.0 {
+            width
+        } else {
+            crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                .shared_geometry()
+                .page_size_trigger_width
+                .value_px
+        }
     }
 
     pub fn first_label(&self) -> Option<&SharedString> {
@@ -310,6 +344,9 @@ impl PagerBuilder {
                 info_text: None,
                 info_slot: None,
                 template_parameters: PagerTemplateParameters::default(),
+                numeric_slot_count_explicit: false,
+                page_size_trigger_width_explicit: false,
+                icons_explicit: false,
                 icons: PagerIcons::default(),
                 theme: None,
                 template: default_pager_template(),
@@ -342,7 +379,23 @@ impl PagerBuilder {
         self
     }
 
+    /// Capture default glyphs; explicit `.icons(...)` wins in either method order.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        if !self.model.numeric_slot_count_explicit {
+            self.model.template_parameters.numeric_slot_count = stylesheet.row_limits.resolve("pager").1;
+        }
+        if !self.model.page_size_trigger_width_explicit {
+            self.model.template_parameters.page_size_trigger_width =
+                stylesheet.shared_geometry().page_size_trigger_width.value_px;
+        }
+        if !self.model.icons_explicit {
+            self.model.icons = PagerIcons::from_stylesheet(stylesheet);
+        }
+        self
+    }
+
     pub fn icons(mut self, icons: PagerIcons) -> Self {
+        self.model.icons_explicit = true;
         self.model.icons = icons;
         self
     }
@@ -368,6 +421,8 @@ impl PagerBuilder {
     }
 
     pub fn template_parameters(mut self, template_parameters: PagerTemplateParameters) -> Self {
+        self.model.page_size_trigger_width_explicit = true;
+        self.model.numeric_slot_count_explicit = true;
         self.model.template_parameters = template_parameters;
         self
     }
@@ -391,6 +446,7 @@ impl PagerBuilder {
     }
 
     pub fn page_size_trigger_width(mut self, width: f32) -> Self {
+        self.model.page_size_trigger_width_explicit = true;
         self.model.template_parameters.page_size_trigger_width = width;
         self
     }
@@ -421,6 +477,7 @@ impl PagerBuilder {
     }
 
     pub fn numeric_slot_count(mut self, numeric_slot_count: usize) -> Self {
+        self.model.numeric_slot_count_explicit = true;
         self.model.template_parameters.numeric_slot_count = numeric_slot_count;
         self
     }
@@ -544,5 +601,22 @@ mod tests {
             .with_template_modifier(|element, _| element);
 
         assert!(!std::sync::Arc::ptr_eq(&builder.model.template, &template));
+    }
+}
+
+#[cfg(test)]
+mod icon_precedence_tests {
+    use super::*;
+    #[test]
+    fn explicit_icons_win_before_and_after_stylesheet_capture() {
+        let sheet =
+            crate::theme::stylesheet::CommonStylesheet::parse("[common.icons]\npager_next='arrow-right'").unwrap();
+        let custom = PagerIcons { next: crate::infra::icon::IconSource::from("custom-next.svg"), ..Default::default() };
+        let before = PagerBuilder::new("before").icons(custom.clone()).stylesheet(&sheet);
+        let after = PagerBuilder::new("after").stylesheet(&sheet).icons(custom);
+        assert_eq!(before.model.icons.next, after.model.icons.next);
+        assert_eq!(before.model.icons.next.svg_path().unwrap().as_ref(), "custom-next.svg");
+        let inherited = PagerBuilder::new("default").stylesheet(&sheet);
+        assert_eq!(inherited.model.icons.next.lucide(), Some(lucide_svg_static::Icon::ArrowRight));
     }
 }

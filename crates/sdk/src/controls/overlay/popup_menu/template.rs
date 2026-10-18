@@ -13,8 +13,6 @@ use crate::infra::icon::render_disclosure_icon;
 use crate::controls::popup_menu::{PopupMenuLook, PopupMenuTheme, PopupMenuTriggerMetrics, default_popup_menu_theme};
 use crate::theme::InteractionState;
 
-const FOCUS_RING_GAP: f32 = 1.0;
-
 pub type PopupMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type PopupMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type PopupMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -190,7 +188,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
         // Reserve the focus ring geometry in every state. Painting it only when focused
         // would change the control's outer bounds and shift surrounding layout.
         let focus_extent = if focus_border.a > 0.0 {
-            FOCUS_RING_GAP + focus_metrics.width.max(0.0)
+            focus_metrics.gap + focus_metrics.width.max(0.0)
         } else {
             0.0
         };
@@ -302,15 +300,20 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 secondary = secondary.debug_selector(move || format!("{disclosure_id}/disclosure"));
             }
             if model.split_state.primary.disabled && model.enabled {
-                action_face = action_face.opacity(0.56);
+                action_face = action_face.opacity(self.theme.metrics().disabled_opacity);
             }
             trigger = trigger
                 .overflow_hidden()
-                .border_1()
+                .border(px(self.theme.metrics().border_width.default))
                 .border_color(border)
                 .h(px(look.trigger_height))
                 .child(action_face)
-                .child(div().border_l_1().border_color(control_look.trigger_foreground).child(secondary));
+                .child(
+                    div()
+                        .border_l(px(self.theme.metrics().border_width.default))
+                        .border_color(control_look.trigger_foreground)
+                        .child(secondary),
+                );
         } else if model.icon_only {
             let icon_face = model
                 .icon
@@ -324,11 +327,6 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .child(icon_face)
                 .on_click(trigger_click);
         } else {
-            let end_icon = model.end_icon.unwrap_or(if model.open {
-                LucideIcon::ChevronUp
-            } else {
-                LucideIcon::ChevronDown
-            });
             trigger = trigger
                 .justify_between()
                 .gap(px(look.trigger_gap))
@@ -339,7 +337,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .line_height(px(look.trigger_typography.line_height))
                 .font_weight(look.trigger_typography.weight)
                 .child(face)
-                .child(if model.end_icon.is_some() {
+                .child(if let Some(end_icon) = model.end_icon {
                     render_lucide_icon(end_icon, look.trigger_foreground, look.trigger_icon_size)
                 } else {
                     render_disclosure_icon(
@@ -361,7 +359,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
         }
 
         if border.a > 0.0 && !model.split {
-            trigger = trigger.border_1().border_color(border);
+            trigger = trigger.border(px(self.theme.metrics().border_width.default)).border_color(border);
         }
 
         if let Some(shadows) = look.trigger_shadow.take().filter(|shadows| !shadows.is_empty()) {
@@ -369,7 +367,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
         }
 
         if model.state.disabled {
-            trigger = trigger.opacity(0.56);
+            trigger = trigger.opacity(self.theme.metrics().disabled_opacity);
         }
 
         let mut root = div()
@@ -401,7 +399,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                     .left(px(0.0))
                     .border(px(focus_metrics.width))
                     .border_color(focus_ring_color)
-                    .rounded(px(look.trigger_radius + FOCUS_RING_GAP + focus_metrics.width)),
+                    .rounded(px(look.trigger_radius + focus_metrics.gap + focus_metrics.width)),
             );
         } else {
             root = root.child(trigger);
@@ -427,7 +425,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                     model.items,
                     model.open_submenu,
                     model.active_path,
-                    look.floating_menu,
+                    look.floating_menu.clone(),
                     item_hovers,
                     submenu_hovers,
                     item_clicks,
@@ -437,7 +435,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 ),
             );
             let overlay = anchored()
-                .snap_to_window_with_margin(px(8.0))
+                .snap_to_window_with_margin(px(look.floating_menu.window_margin))
                 .anchor(placement.anchor)
                 .position(placement.position)
                 .offset(offset)
@@ -497,7 +495,7 @@ fn resolve_popup_menu_placement(
     let offset_y = px(look.menu_offset_y);
     let resolved = match placement {
         PopupMenuPlacement::Smart => {
-            let viewport_bottom = viewport_size.height - px(8.0);
+            let viewport_bottom = viewport_size.height - px(look.floating_menu.window_margin);
             if trigger_bounds.bottom() + offset_y + menu_size.height <= viewport_bottom {
                 PopupMenuPlacement::BelowStart
             } else {

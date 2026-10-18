@@ -58,7 +58,12 @@ pub fn textarea_look(
     scale.height = geometry.min_height.value_px;
     scale.padding_x = geometry.padding_x.value_px;
     scale.padding_y = geometry.padding_y.value_px;
-    compose_textarea_look(&palette, &scale, mode.metrics.border_width.default)
+    let mut look = compose_textarea_look(&palette, &scale, mode.metrics.border_width.default);
+    look.helper_geometry = mode.stylesheet().common.shared_geometry();
+    look.caret_width = geometry.caret_width.value_px;
+    look.caret_height_extra = geometry.caret_height_extra.value_px;
+    look.disabled_opacity = geometry.disabled_opacity.value_px;
+    look
 }
 
 pub(crate) fn textarea_geometry(
@@ -75,6 +80,7 @@ pub(crate) fn textarea_geometry(
             padding_y: scale.padding_y,
             font_size: typography.size,
             line_height: typography.line_height,
+            ..Default::default()
         },
     )
 }

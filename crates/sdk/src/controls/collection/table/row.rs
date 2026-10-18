@@ -37,13 +37,13 @@ pub(crate) fn render_table_row(
     }
 
     if show_top_divider {
-        row = row.border_t_1().border_color(look.divider);
+        row = row.border_t(px(look.row_divider_width)).border_color(look.divider);
     }
 
     if enabled {
         row = row.cursor_pointer();
     } else {
-        row = row.opacity(0.56);
+        row = row.opacity(look.disabled_opacity);
     }
 
     row

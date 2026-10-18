@@ -136,6 +136,8 @@ pub(crate) fn slider_look_with_stylesheet(
     let geometry = crate::tables::metrics::resolve_slider_metrics_with_stylesheet(mode, stylesheet, size, thumb_size);
 
     SliderLook {
+        thumb_border_width: mode.metrics.border_width.default,
+        decoration: stylesheet.common.slider.decoration(size.stylesheet_key()),
         track_background: colors.track_background.hsla(),
         fill_background: colors.fill_background.hsla(),
         thumb_background: colors.thumb_background.hsla(),

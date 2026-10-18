@@ -4,8 +4,11 @@ use gpui::Hsla;
 
 use crate::theme::{ControlSize, ThemeTokens};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct StepperLook {
+    pub number_weight: gpui::FontWeight,
+    /// Resolved decoration and layout defaults shared with templates.
+    pub geometry: crate::theme::stylesheet::ResolvedStepperGeometry,
     pub complete_bg: Hsla,
     pub complete_fg: Hsla,
     pub in_progress_bg: Hsla,
@@ -42,7 +45,12 @@ impl DefaultStepperTheme {
 
 impl StepperTheme for DefaultStepperTheme {
     fn resolve(&self, enabled: bool, size: ControlSize) -> StepperLook {
-        let palette = &self.tokens.palette;
+        let geometry = self
+            .tokens
+            .stylesheet
+            .stepper
+            .resolve_geometry(size.stylesheet_key(), crate::theme::stylesheet::StepperGeometry::default());
+        let palette = self.tokens.stylesheet.recipes.palette("stepper", &self.tokens.palette);
 
         let track_color = if enabled {
             palette.surface.subtle.background
@@ -71,6 +79,7 @@ impl StepperTheme for DefaultStepperTheme {
             };
 
         StepperLook {
+            number_weight: self.tokens.typography.text.label.weight,
             complete_bg,
             complete_fg,
             in_progress_bg,
@@ -80,24 +89,9 @@ impl StepperTheme for DefaultStepperTheme {
             incomplete_fg,
             track_active_color,
             track_muted_color,
-            step_badge_size: step_badge_size(size),
-            track_thickness: track_thickness(size),
+            step_badge_size: geometry.step_badge_size.value_px,
+            track_thickness: geometry.track_thickness.value_px,
+            geometry,
         }
-    }
-}
-
-fn step_badge_size(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 24.0,
-        ControlSize::Md => 32.0,
-        ControlSize::Lg => 40.0,
-    }
-}
-
-fn track_thickness(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 2.0,
-        ControlSize::Md => 2.0,
-        ControlSize::Lg => 3.0,
     }
 }

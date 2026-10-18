@@ -102,7 +102,7 @@ fn size_and_state_baselines_survive_shared_geometry_migration() {
 }
 
 #[test]
-fn numeric_ranges_are_preserved_without_sdk_size_aliases() {
+fn numeric_ranges_remain_independent_of_inherited_sdk_presets() {
     let stylesheet = Look::built_in().common_stylesheet();
     for (sizes, count) in [
         (stylesheet.button.sizes.keys().collect::<Vec<_>>(), 4),
@@ -111,13 +111,13 @@ fn numeric_ranges_are_preserved_without_sdk_size_aliases() {
         (stylesheet.radio.sizes.keys().collect(), 3),
         (stylesheet.badge.sizes.keys().collect(), 3),
     ] {
-        assert_eq!(sizes.len(), count);
+        assert_eq!(sizes.iter().filter(|key| key.parse::<usize>().is_ok()).count(), count);
         for index in 1..=count {
             assert!(sizes.iter().any(|key| **key == index.to_string()));
         }
-        assert!(!sizes.iter().any(|key| ["sm", "md", "lg"].contains(&key.as_str())));
     }
-    assert!(stylesheet.tooltip.sizes.is_empty());
+    // SDK helper recipes are inherited alongside Radix's own semantic sizes.
+    assert_eq!(stylesheet.tooltip.sizes.keys().collect::<Vec<_>>(), vec!["compact"]);
     assert!(stylesheet.toolbar.sizes.is_empty());
 }
 
@@ -222,4 +222,18 @@ fn sparse_configuration_keeps_composition_fallbacks_visible_and_zero_distinct() 
     look.set_common_stylesheet(stylesheet);
     assert_eq!(crate::callout::resolve_geometry(&look).font_size.value_px, 0.0);
     assert_eq!(crate::segmented::resolve_geometry(&look).height.value_px, 0.0);
+}
+
+#[test]
+fn slide_panel_uses_captured_common_visual_defaults() {
+    use gpui_luma::controls::slide_panel::{SlidePanelSizeConfig, SlidePanelTopAnchor};
+    let look = Look::built_in().fork();
+    let mut sheet = look.common_stylesheet();
+    sheet.slide_panel.geometry.side_width = Some(501.0);
+    sheet.resizable_panels.geometry.grip_radius = Some(0.0);
+    look.set_common_stylesheet(sheet);
+    let panel = look.slide_panel_state(SlidePanelTopAnchor::WindowEdge, SlidePanelSizeConfig::new(0.0, 0.0, 900.0));
+    look.set_common_stylesheet(gpui_luma::theme::stylesheet::CommonStylesheet::default());
+    assert_eq!(panel.geometry().side_width, Some(501.0));
+    assert_eq!(panel.resize_handle_metrics().grip_radius, 0.0);
 }

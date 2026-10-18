@@ -18,8 +18,6 @@ use crate::theme::{StandardBoxScale, snap_to_pixel};
 
 use super::theme::{SelectorLook, SelectorTheme, default_selector_theme};
 
-const FOCUS_RING_GAP: f32 = 1.0;
-
 pub type SelectorBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type SelectorClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type SelectorHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -271,7 +269,7 @@ where
         let focus_metrics = self.theme.metrics().focus;
         let focus_extent = focus_border
             .filter(|border| border.a > 0.0)
-            .map(|_| FOCUS_RING_GAP + focus_metrics.width.max(0.0))
+            .map(|_| focus_metrics.gap + focus_metrics.width.max(0.0))
             .unwrap_or(0.0);
         let trigger_content = render_item_content(model, &control_look, cx);
         let mut trigger = div()
@@ -324,7 +322,7 @@ where
             );
 
         if border.a > 0.0 {
-            trigger = trigger.border_1().border_color(border);
+            trigger = trigger.border(px(self.theme.metrics().border_width.default)).border_color(border);
         }
 
         if !model.state.disabled
@@ -352,7 +350,7 @@ where
                     .left_0()
                     .border(px(focus_metrics.width))
                     .border_color(focus_border)
-                    .rounded(px(look.trigger_radius + FOCUS_RING_GAP + focus_metrics.width)),
+                    .rounded(px(look.trigger_radius + focus_metrics.gap + focus_metrics.width)),
             );
         }
 
@@ -372,10 +370,14 @@ where
                         model.popup_geometry.unwrap_or(crate::controls::selector_list::SelectorPopupGeometry {
                             row_center: px(look.items_panel.item_height) * (index as f32 + 0.5),
                             content_height: px(look.items_panel.item_height) * model.items.len(),
-                            inset: px(look.items_panel.padding + 1.0),
+                            inset: px(look.items_panel.padding + look.items_panel.border_width),
                         });
-                    popup_metrics =
-                        resolve_centered_popup_metrics(model.trigger_bounds, geometry, window.viewport_size());
+                    popup_metrics = resolve_centered_popup_metrics(
+                        model.trigger_bounds,
+                        geometry,
+                        window.viewport_size(),
+                        look.items_panel.window_margin,
+                    );
                     if model.initialize_popup_scroll
                         && let Some(scroll) = model.popup_scroll
                     {
@@ -437,7 +439,7 @@ where
             let menu = menu
                 .when(centered, |menu| menu.min_w(model.trigger_bounds.map_or(px(0.0), |bounds| bounds.size.width)));
             let overlay = anchored()
-                .snap_to_window_with_margin(px(8.0))
+                .snap_to_window_with_margin(px(look.items_panel.window_margin))
                 .anchor(popup_metrics.anchor)
                 .position(popup_metrics.position)
                 .offset(popup_metrics.offset)
@@ -472,7 +474,7 @@ pub(crate) fn resolve_selector_popup_metrics(
     });
     let menu_size = estimated_menu_size(look, item_count, trigger_bounds.size.width);
     let offset_y = px(look.menu_offset_y);
-    let viewport_margin = px(8.0);
+    let viewport_margin = px(look.items_panel.window_margin);
     let viewport_top = viewport_margin;
     let viewport_bottom = viewport_size.height - viewport_margin;
     let available_below = (viewport_bottom - (trigger_bounds.bottom() + offset_y)).max(px(0.0));
@@ -545,9 +547,10 @@ fn resolve_centered_popup_metrics(
     trigger: Option<Bounds<Pixels>>,
     geometry: crate::controls::selector_list::SelectorPopupGeometry,
     viewport: Size<Pixels>,
+    window_margin: f32,
 ) -> ResolvedSelectorPlacement {
     let trigger = trigger.unwrap_or_else(|| Bounds::new(point(px(0.0), px(0.0)), gpui::size(px(0.0), px(0.0))));
-    let margin = px(8.0).min((viewport.height * 0.5).max(px(0.0)));
+    let margin = px(window_margin).min((viewport.height * 0.5).max(px(0.0)));
     let available = (viewport.height - margin * 2.0).max(px(0.0));
     let panel_height = geometry.content_height + geometry.inset * 2.0;
     let max_height = panel_height.min(available);
@@ -607,7 +610,7 @@ mod tests {
                 inset: px(5.0),
             };
             let trigger = Bounds::new(point(px(40.0), px(480.0)), size(px(180.0), px(32.0)));
-            let metrics = resolve_centered_popup_metrics(Some(trigger), geometry, size(px(800.0), px(1000.0)));
+            let metrics = resolve_centered_popup_metrics(Some(trigger), geometry, size(px(800.0), px(1000.0)), 8.0);
             assert_eq!(metrics.position.x, trigger.left());
             assert_eq!(
                 metrics.position.y + geometry.inset + geometry.row_center - metrics.initial_scroll,
@@ -628,7 +631,7 @@ mod tests {
                     inset: px(5.0),
                 };
                 let trigger = Bounds::new(point(px(30.0), px(trigger_y)), size(px(150.0), px(32.0)));
-                let metrics = resolve_centered_popup_metrics(Some(trigger), geometry, size(px(320.0), px(400.0)));
+                let metrics = resolve_centered_popup_metrics(Some(trigger), geometry, size(px(320.0), px(400.0)), 8.0);
                 let row = geometry.inset + geometry.row_center - metrics.initial_scroll;
                 assert!(metrics.scrolling);
                 assert_eq!(metrics.position.y, px(8.0));
@@ -649,7 +652,7 @@ mod tests {
             content_height: px(32.0),
             inset: px(5.0),
         };
-        let metrics = resolve_centered_popup_metrics(None, geometry, size(px(20.0), px(10.0)));
+        let metrics = resolve_centered_popup_metrics(None, geometry, size(px(20.0), px(10.0)), 8.0);
         assert_eq!(metrics.max_height, px(0.0));
         assert!(metrics.initial_scroll >= px(0.0));
     }

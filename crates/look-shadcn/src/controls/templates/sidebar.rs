@@ -12,10 +12,21 @@ struct ShadcnSidebarTheme {
 }
 
 impl SidebarTheme for ShadcnSidebarTheme {
+    fn typography(&self) -> gpui_luma::theme::LumaTypography {
+        self.theme.mode_tokens().typography.clone()
+    }
+    fn section_font_features(&self) -> gpui::FontFeatures {
+        self.theme.stylesheet().common.font_features.resolve("sidebar_section")
+    }
+
+    fn geometry(&self) -> gpui_luma::theme::stylesheet::ResolvedSidebarGeometry {
+        self.theme.mode_tokens().stylesheet().common.sidebar.resolve_geometry("", Default::default())
+    }
     fn resolve_drag(&self, size: ControlSize) -> gpui_luma::infra::drag_drop::DragDropLook {
         let tokens = self.theme.mode_tokens();
         let palette = &tokens.palette;
         gpui_luma::infra::drag_drop::DragDropLook {
+            geometry: self.theme.stylesheet().common.shared_geometry(),
             background: self.theme.token_color("popover").unwrap_or(palette.panel_background),
             foreground: self.theme.token_color("popover-foreground").unwrap_or(palette.body_text),
             valid_marker: self.theme.token_color("ring").unwrap_or(palette.focus_ring),

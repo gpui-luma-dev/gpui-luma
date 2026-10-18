@@ -7,18 +7,6 @@ use gpui::{
 
 use super::{SplitViewRenderModel, SplitViewSeparatorVisibility, control::SplitViewSeparatorDrag};
 
-/// Default separator geometry in logical pixels.
-pub const SEPARATOR_HITBOX_WIDTH: f32 = 20.0;
-const EXPAND_SEPARATOR_INSET_Y: f32 = 10.0;
-const EXPAND_SEPARATOR_CUE_LEFT: f32 = 2.0;
-/// Default separator geometry in logical pixels.
-pub const SEPARATOR_CUE_INSET_Y: f32 = 16.0;
-/// Default separator geometry in logical pixels.
-pub const SEPARATOR_CUE_RADIUS: f32 = 4.0;
-/// Default separator geometry in logical pixels.
-pub const SEPARATOR_CUE_WIDTH: f32 = 4.0;
-/// Default separator geometry in logical pixels.
-pub const SEPARATOR_CUE_HOVERED_WIDTH: f32 = 8.0;
 const CENTERED_CUE_OFFSET_FACTOR: f32 = 0.5;
 
 pub type SplitViewHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -164,7 +152,7 @@ impl SplitViewTemplate for ThemedSplitViewTemplate {
             SplitViewSeparatorVisibility::Hover if model.separator_hovered => Some(separator_hover_color),
             SplitViewSeparatorVisibility::Hover => None,
         };
-        let cue_width = separator_cue_width(model.separator_hovered);
+        let cue_width = separator_cue_width(model.separator_hovered, &look.geometry);
         let resize_enabled = model.enabled && model.resizable && !model.collapsed;
 
         let mut row = div()
@@ -178,27 +166,37 @@ impl SplitViewTemplate for ThemedSplitViewTemplate {
                     .id("expand-separator")
                     .absolute()
                     .left(collapsed_expand_separator_left(model.effective_sidebar_width))
-                    .top(px(EXPAND_SEPARATOR_INSET_Y))
-                    .bottom(px(EXPAND_SEPARATOR_INSET_Y))
-                    .w(px(SEPARATOR_HITBOX_WIDTH))
+                    .top(px(look.geometry.expand_inset_y.value_px))
+                    .bottom(px(look.geometry.expand_inset_y.value_px))
+                    .w(px(look.geometry.hitbox_width.value_px))
                     .on_hover(separator_hover)
                     .on_click(separator_click)
                     .cursor_e_resize()
-                    .child(render_separator_cue(EXPAND_SEPARATOR_CUE_LEFT, cue_width, cue_color)),
+                    .child(render_separator_cue(
+                        look.geometry.expand_cue_left.value_px,
+                        cue_width,
+                        cue_color,
+                        &look.geometry,
+                    )),
             )
         } else {
             let mut separator = div()
                 .id("separator")
                 .relative()
                 .h_full()
-                .w(px(SEPARATOR_HITBOX_WIDTH))
+                .w(px(look.geometry.hitbox_width.value_px))
                 .flex_none()
                 .on_hover(separator_hover)
                 .on_click(separator_click)
                 .on_mouse_down(MouseButton::Left, separator_mouse_down)
                 .when(resize_enabled, |this| this.cursor_col_resize())
                 .when(!resize_enabled, |this| this.cursor_pointer())
-                .child(render_separator_cue(centered_separator_cue_left(cue_width), cue_width, cue_color));
+                .child(render_separator_cue(
+                    centered_separator_cue_left(cue_width, look.geometry.hitbox_width.value_px),
+                    cue_width,
+                    cue_color,
+                    &look.geometry,
+                ));
 
             if resize_enabled {
                 separator = separator.on_drag(
@@ -234,30 +232,35 @@ impl SplitViewTemplate for ThemedSplitViewTemplate {
     }
 }
 
-fn separator_cue_width(hovered: bool) -> f32 {
+fn separator_cue_width(hovered: bool, geometry: &crate::theme::stylesheet::ResolvedSplitViewGeometry) -> f32 {
     if hovered {
-        SEPARATOR_CUE_HOVERED_WIDTH
+        geometry.cue_hovered_width.value_px
     } else {
-        SEPARATOR_CUE_WIDTH
+        geometry.cue_width.value_px
     }
 }
 
-fn centered_separator_cue_left(width: f32) -> f32 {
-    (SEPARATOR_HITBOX_WIDTH - width) * CENTERED_CUE_OFFSET_FACTOR
+fn centered_separator_cue_left(width: f32, hitbox_width: f32) -> f32 {
+    (hitbox_width - width) * CENTERED_CUE_OFFSET_FACTOR
 }
 
 pub(crate) fn collapsed_expand_separator_left(effective_sidebar_width: Pixels) -> Pixels {
     effective_sidebar_width.max(px(0.0))
 }
 
-fn render_separator_cue(left: f32, width: f32, color: Option<Hsla>) -> Div {
+fn render_separator_cue(
+    left: f32,
+    width: f32,
+    color: Option<Hsla>,
+    geometry: &crate::theme::stylesheet::ResolvedSplitViewGeometry,
+) -> Div {
     let mut cue = div()
         .absolute()
         .left(px(left))
-        .top(px(SEPARATOR_CUE_INSET_Y))
-        .bottom(px(SEPARATOR_CUE_INSET_Y))
+        .top(px(geometry.cue_inset_y.value_px))
+        .bottom(px(geometry.cue_inset_y.value_px))
         .w(px(width))
-        .rounded(px(SEPARATOR_CUE_RADIUS));
+        .rounded(px(geometry.cue_radius.value_px));
 
     if let Some(color) = color {
         cue = cue.bg(color);

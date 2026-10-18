@@ -22,7 +22,10 @@ pub type AutocompletePopupLookProvider = Arc<dyn Fn(ControlSize) -> SelectorItem
 
 #[derive(Clone)]
 pub struct AutocompleteModel {
+    pub(crate) row_limits: (usize, usize),
+    pub(crate) icons: crate::theme::stylesheet::IconsStylesheet,
     pub(crate) motion: crate::motion::MotionConfig<AutocompleteMotion>,
+    pub(crate) stylesheet: crate::theme::stylesheet::AutocompleteStylesheet,
     pub(crate) id: SharedString,
     pub(crate) items: Vec<SelectionItem>,
     pub(crate) placeholder: SharedString,
@@ -159,6 +162,11 @@ impl AutocompleteBuilder {
 
             model: AutocompleteModel {
                 motion: Default::default(),
+                row_limits: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .row_limits
+                    .resolve("autocomplete"),
+                icons: crate::theme::stylesheet::CommonStylesheet::sdk_default().icons.clone(),
+                stylesheet: crate::theme::stylesheet::CommonStylesheet::sdk_default().autocomplete.clone(),
                 id: id.into(),
                 items: items.into_iter().collect(),
                 placeholder: SharedString::from("Type to filter…"),
@@ -177,6 +185,15 @@ impl AutocompleteBuilder {
                 popup_look_provider: Arc::new(|size| default_selector_items_panel_look(&ThemeTokens::default(), size)),
             },
         }
+    }
+
+    /// Capture shared affordance geometry; per-size values resolve at render time.
+    /// Text-field/popup providers and consumer template modifiers retain their own precedence.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        self.model.row_limits = stylesheet.row_limits.resolve("autocomplete");
+        self.model.icons = stylesheet.with_sdk_defaults().icons;
+        self.model.stylesheet = stylesheet.with_sdk_defaults().autocomplete;
+        self
     }
 
     pub fn items(mut self, items: impl IntoIterator<Item = SelectionItem>) -> Self {
@@ -338,5 +355,34 @@ mod tests {
             .with_items_template_modifier(|element, _| element);
 
         assert!(!Arc::ptr_eq(&builder.model.items_template, &items_template));
+    }
+}
+
+#[cfg(test)]
+mod stylesheet_tests {
+    use super::*;
+
+    #[test]
+    fn affordance_snapshot_keeps_size_overrides_and_preserves_custom_theme_provider() {
+        let mut sheet = crate::theme::stylesheet::CommonStylesheet::parse(
+            "[common.autocomplete.geometry]\nclear_width=27\n[common.autocomplete.sizes.sm]\nclear_width=0",
+        )
+        .unwrap();
+        let original = AutocompleteBuilder::new("snapshot", []);
+        let theme = original.model.autocomplete_theme.clone();
+        let builder = original.stylesheet(&sheet).size(ControlSize::Sm);
+        sheet.autocomplete.geometry.clear_width = Some(41.0);
+        assert!(Arc::ptr_eq(&theme, &builder.model.autocomplete_theme));
+        assert_eq!(
+            builder
+                .model
+                .stylesheet
+                .resolve_geometry(builder.model.size.stylesheet_key(), Default::default())
+                .clear_width
+                .value_px,
+            0.0
+        );
+        assert_eq!(builder.model.stylesheet.resolve_geometry("md", Default::default()).clear_width.value_px, 27.0);
+        assert_eq!(builder.model.stylesheet.resolve_geometry("md", Default::default()).clear_icon_size.value_px, 12.0);
     }
 }

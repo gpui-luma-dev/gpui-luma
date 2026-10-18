@@ -291,7 +291,11 @@ where
 
     fn into_sdk_builder(self, look: ShadcnLook) -> SelectionPanelBuilder<T> {
         let theme = look.clone();
-        let mut builder = self.builder.size(self.size.control_size()).scrollbar_template(theme.scrollbar_template());
+        let mut builder = self
+            .builder
+            .stylesheet(&look.stylesheet().common)
+            .size(self.size.control_size())
+            .scrollbar_template(theme.scrollbar_template());
         if !self.custom_look_provider {
             builder = builder.look_provider(theme.selection_panel_look_provider());
         }

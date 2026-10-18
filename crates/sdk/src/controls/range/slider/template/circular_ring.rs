@@ -3,8 +3,8 @@ use std::sync::{Arc, OnceLock};
 use gpui::{App, Div, Stateful, Window, canvas, div, px, prelude::*};
 
 use super::{
-    DIAL_SIZE, SliderTemplate, SliderTemplateHandlers, TRACK_RADIUS, attach_radial_interaction, effective_thumb_radius,
-    paint_radial_annulus, paint_radial_fill_track, render_slider_thumb_at, track_bounds_canvas, track_muted_background,
+    SliderTemplate, SliderTemplateHandlers, attach_radial_interaction, effective_thumb_radius, paint_radial_annulus,
+    paint_radial_fill_track, render_slider_thumb_at, track_bounds_canvas, track_muted_background,
     track_surface_background, uses_static_track_surface,
 };
 use crate::controls::slider::{SliderTheme, default_slider_theme};
@@ -30,6 +30,15 @@ pub fn default_circular_ring_template() -> Arc<dyn SliderTemplate> {
 }
 
 impl SliderTemplate for ThemedCircularRingTemplate {
+    fn resolve_look(
+        &self,
+        size: crate::theme::ControlSize,
+        thumb_size: Option<super::super::SliderThumbSize>,
+        state: crate::theme::InteractionState,
+    ) -> super::super::SliderLook {
+        self.theme.resolve(size, thumb_size, state)
+    }
+
     fn render(
         &self,
         model: &SliderRenderModel<'_>,
@@ -48,9 +57,11 @@ impl SliderTemplate for ThemedCircularRingTemplate {
         let thumb_position = primary_thumb.map(|thumb| thumb.position).unwrap_or(0.0);
         let display_percentage = display_position(thumb_position, model.reversed);
         let angle = angle_for_percentage(min_angle, max_angle, display_percentage);
-        let center = DIAL_SIZE * 0.5;
-        let thumb_x = center + TRACK_RADIUS * angle.cos();
-        let thumb_y = center + TRACK_RADIUS * angle.sin();
+        let dial_size = look.decoration.dial_size;
+        let track_radius = look.decoration.track_radius;
+        let center = dial_size * 0.5;
+        let thumb_x = center + track_radius * angle.cos();
+        let thumb_y = center + track_radius * angle.sin();
         let arc_thickness = look.track_height;
         let presentation = model.presentation;
         let track_background = track_muted_background(&look);
@@ -64,7 +75,7 @@ impl SliderTemplate for ThemedCircularRingTemplate {
         let root = div()
             .id(model.id.clone())
             .relative()
-            .size(px(DIAL_SIZE))
+            .size(px(dial_size))
             .child(
                 canvas(
                     move |_, _, _| (),
@@ -72,6 +83,7 @@ impl SliderTemplate for ThemedCircularRingTemplate {
                         if static_surface {
                             paint_radial_annulus(
                                 bounds,
+                                track_radius,
                                 min_angle,
                                 max_angle,
                                 surface_background,
@@ -84,6 +96,7 @@ impl SliderTemplate for ThemedCircularRingTemplate {
                         match presentation {
                             TrackPresentation::Fill => paint_radial_fill_track(
                                 bounds,
+                                track_radius,
                                 min_angle,
                                 max_angle,
                                 display_percentage,
@@ -95,6 +108,7 @@ impl SliderTemplate for ThemedCircularRingTemplate {
                             TrackPresentation::Domain => {
                                 paint_radial_annulus(
                                     bounds,
+                                    track_radius,
                                     min_angle,
                                     max_angle,
                                     surface_background,

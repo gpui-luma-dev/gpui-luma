@@ -72,7 +72,7 @@ where
             .child(row_content);
 
         if item.state.disabled {
-            row = row.opacity(0.56);
+            row = row.opacity(theme.metrics().disabled_opacity);
         } else {
             row = row.cursor_pointer();
         }

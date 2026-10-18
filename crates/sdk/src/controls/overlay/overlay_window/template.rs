@@ -23,6 +23,10 @@ pub struct OverlayWindowTemplateParts {
 }
 
 pub trait OverlayWindowTemplate: Send + Sync {
+    /// Resolve shell and placement styling together for the active template.
+    fn resolve_look(&self, size: crate::theme::ControlSize, mode: super::OverlayWindowMode) -> OverlayWindowLook {
+        default_overlay_window_theme().resolve(size, mode)
+    }
     fn render(
         &self,
         model: &OverlayWindowRenderModel<'_>,
@@ -101,6 +105,9 @@ where
 }
 
 impl OverlayWindowTemplate for ModifiedOverlayWindowTemplate {
+    fn resolve_look(&self, size: crate::theme::ControlSize, mode: super::OverlayWindowMode) -> OverlayWindowLook {
+        self.base.resolve_look(size, mode)
+    }
     fn render(
         &self,
         model: &OverlayWindowRenderModel<'_>,
@@ -115,15 +122,17 @@ impl OverlayWindowTemplate for ModifiedOverlayWindowTemplate {
 }
 
 impl OverlayWindowTemplate for ThemedOverlayWindowTemplate {
+    fn resolve_look(&self, size: crate::theme::ControlSize, mode: super::OverlayWindowMode) -> OverlayWindowLook {
+        self.theme.resolve(size, mode)
+    }
     fn render(
         &self,
         model: &OverlayWindowRenderModel<'_>,
-        _look: &OverlayWindowLook,
+        look: &OverlayWindowLook,
         parts: OverlayWindowTemplateParts,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
-        let look = self.theme.resolve(model.size, model.mode);
         let OverlayWindowTemplateParts { header_drag_handle, handlers } = parts;
         let OverlayWindowTemplateHandlers { key_down, header_mouse_down, shell_mouse_down, shell_mouse_down_out } =
             handlers;
@@ -140,10 +149,10 @@ impl OverlayWindowTemplate for ThemedOverlayWindowTemplate {
             .when(model.width.is_none(), |shell| shell.max_w(px(look.max_width)))
             .p(px(look.padding))
             .bg(look.background)
-            .border_1()
+            .border(px(look.border_width))
             .border_color(look.border)
             .rounded(px(look.radius))
-            .shadow(look.shadow)
+            .shadow(look.shadow.clone())
             .text_color(look.foreground)
             .font_family(look.font_family.clone())
             .text_size(px(look.body.size))

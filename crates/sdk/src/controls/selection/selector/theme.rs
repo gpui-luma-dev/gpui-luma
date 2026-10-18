@@ -119,7 +119,7 @@ impl SelectorTheme for DefaultSelectorTheme {
         without_elevation: bool,
     ) -> SelectorPalette {
         let _ = without_elevation;
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("selector", &self.tokens.palette);
         let typography = &self.tokens.typography;
 
         let trigger_background = match state.layer() {
@@ -170,12 +170,23 @@ impl SelectorTheme for DefaultSelectorTheme {
         apply_control_size_typography(&mut palette.trigger_typography, &self.tokens.typography, size);
         palette.items_panel = default_selector_items_panel_look(&self.tokens, size);
         let mut look = compose_selector_look(&palette, scale);
+        let key = size.stylesheet_key();
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().selector.authored_geometry(key);
+        let recipe = self.tokens.stylesheet.selector.authored_geometry(key).with_fallback(&baseline);
+        look.menu_offset_y = recipe.gap.unwrap_or(scale.gap) * recipe.menu_offset_scale.unwrap_or_default();
+        crate::theme::stylesheet::apply_common_geometry!(self.tokens.stylesheet.selector, key, SelectorGeometry, look,
+            [height => trigger_height, padding_x => trigger_padding_x, padding_y => trigger_padding_y,
+             gap => trigger_gap, icon_size => trigger_icon_size, font_size => trigger_typography.size,
+             line_height => trigger_typography.line_height, radius => trigger_radius, menu_offset_y => menu_offset_y],
+            defaults = Default::default());
         if state.invalid && !state.disabled {
-            let invalid_border = self.tokens.palette.form.input.invalid_border;
+            let invalid_border =
+                self.tokens.stylesheet.recipes.palette("selector", &self.tokens.palette).form.input.invalid_border;
             look.trigger_border = Some(invalid_border);
             look.trigger_focus_border = Some(invalid_border);
         } else if state.focused && !state.disabled && palette.trigger_border.is_some() {
-            look.trigger_focus_border = Some(self.tokens.palette.focus.ring);
+            look.trigger_focus_border =
+                Some(self.tokens.stylesheet.recipes.palette("selector", &self.tokens.palette).focus.ring);
         }
         look
     }
@@ -207,7 +218,12 @@ pub(crate) fn compose_selector_look(palette: &SelectorPalette, scale: &StandardB
         trigger_height: scale.height,
         trigger_icon_size: scale.icon_size,
         trigger_focus_border: None,
-        menu_offset_y: scale.gap * 0.5,
+        menu_offset_y: scale.gap
+            * crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                .selector
+                .geometry
+                .menu_offset_scale
+                .unwrap_or_default(),
         items_panel: palette.items_panel.clone(),
     }
 }

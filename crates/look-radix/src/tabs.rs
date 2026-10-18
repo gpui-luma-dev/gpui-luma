@@ -210,6 +210,7 @@ impl TabsTheme for TabsThemeAdapter {
         let geometry = tabs_geometry(&self.look, self.variant, size);
         match self.variant {
             TabsVariant::Line => TabsListLook {
+                border_width: metrics.border_width.default,
                 // The SDK paints the separate baseline without adding layout borders.
                 background: (!enabled).then(|| self.look.resolve_role(SemanticRole::Surface).hsla()),
                 border: None,
@@ -218,6 +219,7 @@ impl TabsTheme for TabsThemeAdapter {
                 gap: geometry.list_gap.value_px,
             },
             TabsVariant::Surface => TabsListLook {
+                border_width: metrics.border_width.default,
                 background: Some(self.look.resolve_step(ScaleFamily::Gray, 3).hsla()),
                 border: None,
                 radius: metrics.radius(size),
@@ -257,7 +259,15 @@ impl TabsTheme for TabsThemeAdapter {
         } else {
             None
         };
+        let (accessory_size, accessory_gap) =
+            self.look.common_stylesheet().tabs.accessory_metrics(if self.variant == TabsVariant::Surface {
+                "surface"
+            } else {
+                "line"
+            });
         TabsItemLook {
+            accessory_size,
+            accessory_gap,
             label_color,
             indicator: (!surface && active).then_some(accent),
             background,

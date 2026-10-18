@@ -42,6 +42,7 @@ pub fn resolve_sidebar_metrics(
             item_padding_x: table.item_padding_x.value_px,
             item_gap: table.item_gap.value_px,
             item_icon_size: table.item_icon_size.value_px,
+            ..Default::default()
         },
     );
     table.section_height = super::helpers::prefer_shared_metric(geometry.section_height, table.section_height);

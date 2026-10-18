@@ -24,6 +24,17 @@ pub fn tree_view_frame(look: &Look) -> Div {
 }
 
 impl TreeViewTheme for RadixTreeViewTheme {
+    fn drag_preview_shadow(&self) -> Vec<gpui::BoxShadow> {
+        self.look
+            .common_stylesheet()
+            .theme_tokens(self.look.mode(), gpui_luma::color::GamutMapping::CssLocalMinde)
+            .map(|tokens| tokens.elevation.drag_preview.to_box_shadows())
+            .unwrap_or_default()
+    }
+
+    fn icon(&self, role: gpui_luma::theme::stylesheet::IconRole) -> gpui_luma::infra::icon::IconSource {
+        self.look.common_stylesheet().icons.resolve(role)
+    }
     fn resolve_row(&self, state: InteractionState, selected: bool, size: ControlSize) -> TreeViewPalette {
         let gray = |step| self.look.resolve_step(ScaleFamily::Gray, step).hsla();
         let accent = |step| self.look.resolve_step(ScaleFamily::Color, step).hsla();
@@ -62,6 +73,15 @@ impl TreeViewTheme for RadixTreeViewTheme {
 
     fn row_outline(&self, state: InteractionState, _size: ControlSize) -> Option<gpui::Hsla> {
         (state.hovered && !state.disabled).then(|| self.look.resolve_step(ScaleFamily::Color, 8).hsla())
+    }
+
+    fn resolve_scale(&self, size: ControlSize, scale_factor: f32) -> gpui_luma::controls::tree_view::TreeViewScale {
+        gpui_luma::controls::tree_view::TreeViewScale::compute_with_stylesheet(
+            size,
+            &self.metrics(),
+            scale_factor,
+            &self.look.common_stylesheet(),
+        )
     }
 
     fn metrics(&self) -> MetricTokens {
@@ -454,6 +474,7 @@ impl<T: Clone + Send + Sync + 'static> TreeView<T> {
         let control = {
             let look = crate::look::resolve_look(self.look.as_ref(), cx.try_global::<Look>());
             self.builder
+                .stylesheet(&look.common_stylesheet())
                 .motion_defaults(look.motion_defaults().tree_view)
                 .template(tree_view_template(&look))
                 .spawn(cx)

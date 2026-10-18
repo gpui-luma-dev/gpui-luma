@@ -59,10 +59,24 @@ fn default_trigger_content() -> ControlPresenter<PopupMenuTriggerModel> {
 /// Presenter used by the icon-only face preset ([`PopupMenuBuilder::icon`] / [`PopupMenu::set_icon`](super::PopupMenu::set_icon)).
 pub fn icon_content(icon: impl Into<ControlIcon>) -> ControlPresenter<PopupMenuTriggerModel> {
     match icon.into() {
-        ControlIcon::Lucide(icon) => {
-            Arc::new(move |_, _| crate::infra::icon::lucide_icon(icon, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0))
-        }
-        ControlIcon::SvgPath(path) => Arc::new(move |_, _| svg().size(px(16.0)).path(path.clone()).into_any_element()),
+        ControlIcon::Lucide(icon) => Arc::new(move |_, _| {
+            svg()
+                .path(icon.asset_path())
+                .size(px(crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .shared_geometry()
+                    .popup_icon_size
+                    .value_px))
+                .into_any_element()
+        }),
+        ControlIcon::SvgPath(path) => Arc::new(move |_, _| {
+            svg()
+                .size(px(crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .shared_geometry()
+                    .popup_icon_size
+                    .value_px))
+                .path(path.clone())
+                .into_any_element()
+        }),
     }
 }
 
@@ -83,6 +97,7 @@ pub struct PopupMenuModel {
     pub(crate) icon_only: bool,
     pub(crate) icon: Option<LucideIcon>,
     pub(crate) end_icon: Option<LucideIcon>,
+    pub(crate) disclosure_icons_explicit: bool,
     pub(crate) disclosure_icons: DisclosureIcons,
     pub(crate) full_width: bool,
     pub(crate) without_elevation: bool,
@@ -256,7 +271,10 @@ impl PopupMenuBuilder {
                 icon_only: false,
                 icon: None,
                 end_icon: None,
-                disclosure_icons: DisclosureIcons::new(LucideIcon::ChevronUp, LucideIcon::ChevronDown),
+                disclosure_icons_explicit: false,
+                disclosure_icons: DisclosureIcons::menu_from_stylesheet(
+                    crate::theme::stylesheet::CommonStylesheet::sdk_default(),
+                ),
                 full_width: false,
                 without_elevation: false,
                 split: false,
@@ -297,7 +315,16 @@ impl PopupMenuBuilder {
     }
 
     /// Sets the open and closed trigger icons, including SVG-path sources.
+    /// Capture shared icon defaults without replacing explicit control icons.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        if !self.model.disclosure_icons_explicit {
+            self.model.disclosure_icons = DisclosureIcons::menu_from_stylesheet(stylesheet);
+        }
+        self
+    }
+
     pub fn disclosure_icons(mut self, icons: DisclosureIcons) -> Self {
+        self.model.disclosure_icons_explicit = true;
         self.model.disclosure_icons = icons;
         self
     }

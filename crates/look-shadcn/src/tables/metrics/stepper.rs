@@ -32,6 +32,7 @@ pub fn resolve_stepper_metrics_for_size(
         gpui_luma::theme::stylesheet::StepperGeometry {
             step_badge_size: table.step_badge_size.value_px,
             track_thickness: table.track_thickness.value_px,
+            ..Default::default()
         },
     );
     table.step_badge_size = super::helpers::prefer_shared_metric(geometry.step_badge_size, table.step_badge_size);

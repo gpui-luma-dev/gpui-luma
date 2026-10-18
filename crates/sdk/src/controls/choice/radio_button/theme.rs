@@ -7,6 +7,8 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyl
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RadioScale {
+    /// Whole-control opacity when disabled.
+    pub disabled_opacity: f32,
     pub control_radius: f32,
     pub control_padding_x: f32,
     pub control_padding_y: f32,
@@ -19,24 +21,46 @@ pub struct RadioScale {
 
 impl RadioScale {
     pub fn compute(size: ControlSize, metrics: &MetricTokens, scale_factor: f32) -> Self {
-        let control_height = metrics.control_height(size);
-        let indicator_ratio = match size {
-            ControlSize::Sm => 0.45,
-            ControlSize::Md => 0.50,
-            ControlSize::Lg => 0.55,
-        };
+        Self::compute_with_stylesheet(
+            size,
+            metrics,
+            scale_factor,
+            crate::theme::stylesheet::CommonStylesheet::sdk_default(),
+        )
+    }
 
-        let indicator_size = snap_to_pixel(control_height * indicator_ratio, scale_factor);
+    /// Resolve shared appearance over the vanilla SDK baseline, then snap once.
+    pub fn compute_with_stylesheet(
+        size: ControlSize,
+        metrics: &MetricTokens,
+        scale_factor: f32,
+        stylesheet: &crate::theme::stylesheet::CommonStylesheet,
+    ) -> Self {
+        let key = size.stylesheet_key();
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().radio.authored_geometry(key);
+        let geometry = stylesheet.radio.authored_geometry(key).with_fallback(&baseline);
+        let indicator_size = snap_to_pixel(
+            geometry
+                .indicator_size
+                .unwrap_or_else(|| metrics.control_height(size) * geometry.indicator_scale.unwrap_or_default()),
+            scale_factor,
+        );
 
         Self {
+            disabled_opacity: geometry.disabled_opacity.unwrap_or_default(),
             control_radius: metrics.radius(size),
-            control_padding_x: 0.0,
-            control_padding_y: 0.0,
+            control_padding_x: snap_to_pixel(geometry.control_padding_x.unwrap_or_default(), scale_factor),
+            control_padding_y: snap_to_pixel(geometry.control_padding_y.unwrap_or_default(), scale_factor),
             indicator_size,
-            height: snap_to_pixel(control_height, scale_factor),
-            gap: snap_to_pixel(metrics.gap(size), scale_factor),
-            label_baseline_shift: label_baseline_shift(size),
-            dot_size: snap_to_pixel(control_height * 0.24, scale_factor),
+            height: snap_to_pixel(metrics.control_height(size), scale_factor),
+            gap: snap_to_pixel(geometry.gap.unwrap_or_else(|| metrics.gap(size)), scale_factor),
+            label_baseline_shift: label_baseline_shift(size, stylesheet),
+            dot_size: snap_to_pixel(
+                geometry
+                    .dot_size
+                    .unwrap_or_else(|| metrics.control_height(size) * geometry.dot_scale.unwrap_or_default()),
+                scale_factor,
+            ),
         }
     }
 }
@@ -85,7 +109,7 @@ impl DefaultRadioButtonTheme {
 
 impl RadioButtonTheme for DefaultRadioButtonTheme {
     fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> RadioButtonPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("radio_button", &self.tokens.palette);
         let typography = &self.tokens.typography;
         let layer = state.layer();
         let selected = palette.state.selected;
@@ -139,5 +163,9 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
 
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
+    }
+
+    fn scale(&self, size: ControlSize, scale_factor: f32) -> RadioScale {
+        RadioScale::compute_with_stylesheet(size, &self.tokens.metrics, scale_factor, &self.tokens.stylesheet)
     }
 }

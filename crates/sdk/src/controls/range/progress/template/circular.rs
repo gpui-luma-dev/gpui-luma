@@ -7,9 +7,6 @@ use super::{ProgressTemplate, ProgressTemplateModifier, apply_template_modifiers
 use super::super::ProgressRenderModel;
 use crate::controls::progress::{ProgressTheme, default_progress_theme};
 
-/// Sweep length for indeterminate circular progress (fraction of full ring).
-const INDETERMINATE_SWEEP: f32 = 0.28;
-
 pub struct CircularProgressTemplate {
     theme: Arc<dyn ProgressTheme>,
     modifiers: Vec<ProgressTemplateModifier>,
@@ -47,6 +44,7 @@ impl ProgressTemplate for CircularProgressTemplate {
         let stroke_width = px(look.stroke_width);
         let track_color = look.track_color;
         let progress_color = look.progress_color;
+        let sweep_fraction = look.geometry.indeterminate_fraction.value_px;
 
         let progress_canvas = canvas(
             |_, _, _| {},
@@ -63,7 +61,7 @@ impl ProgressTemplate for CircularProgressTemplate {
                         radius,
                         stroke_width,
                         phase,
-                        INDETERMINATE_SWEEP,
+                        sweep_fraction,
                         progress_color,
                         window,
                     );

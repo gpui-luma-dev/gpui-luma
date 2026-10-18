@@ -1,7 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{AnyElement, App, ClickEvent, Div, MouseDownEvent, SharedString, Stateful, Window, div, prelude::*, px};
-use lucide_svg_static::Icon as LucideIcon;
 
 use super::model::{PagerPageItem, PagerRenderModel, PagerStyle};
 use super::theme::{PagerLook, PagerTheme, default_pager_theme};
@@ -282,7 +281,7 @@ pub(crate) fn render_page_size_select(
                 .gap(px(look.gap))
                 .px(px(look.padding_x))
                 .rounded(px(look.radius))
-                .border_1()
+                .border(px(look.border_width))
                 .border_color(look.border)
                 .bg(look.panel_background)
                 .text_color(look.body_text)
@@ -310,16 +309,16 @@ pub(crate) fn render_page_size_select(
             slot.child(
                 div()
                     .absolute()
-                    .top(px(look.control_height + 4.0))
+                    .top(px(look.control_height + look.popup_offset_y))
                     .left(px(0.0))
                     .occlude()
                     .flex()
                     .flex_col()
-                    .gap(px(2.0))
-                    .p(px(4.0))
+                    .gap(px(look.popup_gap))
+                    .p(px(look.popup_padding))
                     .min_w(px(model.page_size_trigger_width()))
                     .rounded(px(look.radius))
-                    .border_1()
+                    .border(px(look.border_width))
                     .border_color(look.border)
                     .bg(look.panel_background)
                     .shadow(look.shadow.clone())
@@ -328,8 +327,8 @@ pub(crate) fn render_page_size_select(
                         div()
                             .id(("page-size", option))
                             .px(px(look.padding_x))
-                            .py(px(4.0))
-                            .rounded(px((look.radius - 2.0).max(0.0)))
+                            .py(px(look.popup_item_padding_y))
+                            .rounded(px((look.radius - look.popup_item_radius_inset).max(0.0)))
                             .when(selected, |slot| {
                                 slot.bg(look.selected_background).text_color(look.selected_foreground)
                             })
@@ -587,9 +586,11 @@ fn render_gap_button(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let content: ControlPresenter<ButtonContentContext<()>> = Arc::new(move |_, _| {
-        crate::infra::icon::lucide_icon(LucideIcon::Ellipsis, gpui::hsla(0.0, 0.0, 0.5, 1.0), 16.0)
-    });
+    let icon = model.icons.gap.clone();
+    let color = look.muted_text;
+    let size = look.gap_icon_size;
+    let content: ControlPresenter<ButtonContentContext<()>> =
+        Arc::new(move |_, _| crate::infra::icon::render_icon_source(&icon, color, size));
 
     let click = model.enabled.then(|| {
         let set_page = handlers.set_page.clone();

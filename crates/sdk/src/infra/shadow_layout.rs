@@ -30,10 +30,13 @@ mod tests {
 
     #[test]
     fn shadow_projection_extent_reports_projection_without_layout_reservation() {
-        let shadows = vec![LumaShadowLayer::new(Hsla::default(), 0.0, 4.0, 10.0, -2.0).to_box_shadow()];
+        let shadows = vec![LumaShadowLayer::new(Hsla::default(), 0.0, 4.0, 10.0, -2.0, false).to_box_shadow()];
 
         assert_eq!(shadow_projection_extent(Some(&shadows), 1.0, true), 12.0);
         assert_eq!(shadow_projection_extent(Some(&shadows), 1.0, false), 0.0);
         assert_eq!(shadow_projection_extent(None, 1.0, true), 0.0);
+        let mut inset = shadows;
+        inset[0].inset = true;
+        assert_eq!(shadow_projection_extent(Some(&inset), 1.0, true), 0.0);
     }
 }
