@@ -56,6 +56,7 @@ pub fn resolve_pager_metrics(look: &ShadcnLook, style: PagerStyle) -> PagerMetri
             padding_y: table.padding_y.value_px,
             gap: table.gap.value_px,
             group_gap: table.group_gap.value_px,
+            radius: table.radius.value_px,
             ..Default::default()
         },
     );
@@ -66,6 +67,7 @@ pub fn resolve_pager_metrics(look: &ShadcnLook, style: PagerStyle) -> PagerMetri
     table.padding_y = super::helpers::prefer_shared_metric(geometry.padding_y, table.padding_y);
     table.gap = super::helpers::prefer_shared_metric(geometry.gap, table.gap);
     table.group_gap = super::helpers::prefer_shared_metric(geometry.group_gap, table.group_gap);
+    table.radius = super::helpers::prefer_shared_metric(geometry.radius, table.radius);
 
     table
 }

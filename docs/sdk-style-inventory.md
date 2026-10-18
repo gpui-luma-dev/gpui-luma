@@ -30,6 +30,12 @@
 | Table factory | `common.table.geometry` | SDK surface padding, proportional vertical padding, row hover opacity and row radius migrated; state/column/template recipes remain |
 | Selector trigger | `common.selector.geometry` | SDK dimensions, typography, radius and popup offset migrated; Shadcn paint/inspection share the common geometry |
 | Selector list panels | `common.selector_list.geometry/sizes` | SDK panels reuse floating-menu recipes; independent dimensions, typography and radii override afterward; bundled look adapters use the same seam |
+| Pager | `common.pager.geometry/sizes` | SDK factory dimensions/typography/radius/opacity and proportional padding/width recipes migrated; Shadcn fixed defaults removed from Rust; template/icon audit remains |
+| Popup Menu / Split Button trigger | `common.popup_menu.geometry/sizes` | SDK factory now applies common dimensions/typography/radius/offset; bundled looks share final resolution; consumer radius wins |
+| Popover placement | `common.popover.geometry/sizes.button/panel` | Raw builders capture defaults; explicit consumer offset/margin wins independently of method order |
+| Slide Panel | `common.slide_panel.geometry`, shared resize presets | Captured side/edge sizing and viewport ratio; bundled look state factories inherit; remaining divider/border template audit pending |
+| Resize-handle presets | `common.resizable_panels.geometry/sizes` | Lane, hit target, grip extents and radius migrated; SDK/Shadcn paint and available inspection wired |
+| Toolbar factory | `common.toolbar.geometry/sizes` | SDK applies existing padding/gap seam; other styling stays token-backed pending template/state audit |
 
 ## Family coverage
 
@@ -40,7 +46,7 @@ have been classified. Shared token migration benefits every token-backed theme.
 | --- | --- |
 | button/family | Default Button/Icon/Toggle themes consume common geometry; state and template recipes still need audit. |
 | button/icon_button | Pending control-specific schema/factory/template audit. |
-| button/split_button | Pending control-specific schema/factory/template audit. |
+| button/split_button | Uses shared PopupMenu factory/template geometry; face-specific states and divider/icon/template recipes still need audit. |
 | choice/checkbox | Factory and common indicator/row recipes migrated; state and template chrome still need audit. |
 | choice/control_group | Shell defaults migrated; item and template recipes still need audit. |
 | choice/icon_group | Pending control-specific schema/factory/template audit. |
@@ -48,26 +54,26 @@ have been classified. Shared token migration benefits every token-backed theme.
 | choice/radio_group | Pending control-specific schema/factory/template audit. |
 | choice/switch | Factory and proportional track/thumb recipes migrated; explicit dimensions win; template chrome still needs audit. |
 | choice/toggle | Pending control-specific schema/factory/template audit. |
-| choice/toolbar | Pending control-specific schema/factory/template audit. |
+| choice/toolbar | SDK factory now honors existing common padding/gap. Radius/separator token bindings and template/state recipes still need audit. |
 | collection/listbox | Raw SDK flow/control modules own item placement, viewport/scroll/selection algorithms; visual item chrome is host/look-owned. Keep flow arithmetic in Rust. Host visual defaults still need audit. |
 | collection/table | SDK surface/row factory recipes migrated; column/header/template styling and full state recipes still need audit. |
 | collection/tree_view | Row scale factory and both look adapters wired; state and template chrome still need audit. |
 | layout/dock_splitter | Factory hit target and visible line migrated; template chrome still needs audit. |
-| layout/resizable_panels | Factory disabled opacity migrated; template grip/layout styling still needs audit. |
+| layout/resizable_panels | Opacity, lane/hit-target and grip extents/radius migrated. Split placement and collapse/keyboard thresholds are layout/interaction; divider and border styling remain pending. |
 | layout/scroll_container | Pending control-specific schema/factory/template audit. |
 | layout/scrollbar | Fixed geometry migrated; template/scroll algorithms still need classification. |
 | layout/split_view | Pending control-specific schema/factory/template audit. |
 | navigation/accordion | Scale factory and Shadcn paint/inspection wired; state and template chrome still need audit. |
-| navigation/pager | Pending control-specific schema/factory/template audit. |
+| navigation/pager | Factory recipes/dimensions/typography/radius/opacity migrated; page-size trigger width, icons, button-state/template styling still need audit. |
 | navigation/sidebar | Default metric scale migrated; engine/state and template recipes still need audit. |
 | navigation/stepper | Fixed geometry migrated; template decoration still needs audit. |
 | navigation/tabs | List padding/gap and indicator baseline wired; other recipes still need audit. |
 | overlay/context_menu | Target geometry wired and width migrated; shared menu factory wired; template styling still needs audit. |
 | overlay/floating_menu | Factory geometry, proportional recipes, opacity and separators migrated; template icon/state recipes still need audit. |
 | overlay/overlay_window | Factory dimensions/backdrop opacity and nonmodal shadow migrated; template recipes still need audit. |
-| overlay/popover_button | Pending control-specific schema/factory/template audit. |
-| overlay/popup_menu | Pending control-specific schema/factory/template audit. |
-| overlay/slide_panel | Pending control-specific schema/factory/template audit. |
+| overlay/popover_button | Placement defaults migrated for button/panel builders; focus/dismissal are behavior and supplied trigger/content chrome is host-owned. |
+| overlay/popup_menu | Factory dimensions/typography/radius/offset migrated and shared with looks; state/icon/template recipes still need audit. |
+| overlay/slide_panel | Side/edge defaults and viewport ratio captured; resize grip shares migrated presets. Divider/border styling remains pending; movement/interpolation and resize clamps stay behavioral/layout code. |
 | overlay/tooltip | Vanilla and compact geometry migrated; presentation coverage still needs audit. |
 | range/progress | Fixed geometry migrated; template decoration still needs audit. |
 | range/slider | Factory and proportional sizing migrated; pointer algorithms remain Rust; template chrome still needs audit. |
@@ -84,7 +90,10 @@ have been classified. Shared token migration benefits every token-backed theme.
 
 [sdk-style-candidates.csv](sdk-style-candidates.csv) records numeric candidates,
 source locations, context and proposed ownership across controls, themes, layouts,
-rendering and shared infrastructure. Its proposed fields are unreviewed hints.
+rendering and shared infrastructure. Rows still marked `needs classification` are unreviewed hints; reviewed rows
+record their migrated field or the rationale for staying in Rust. Source locations
+and context are from the original audit snapshot, retained to identify removed
+literals after migration.
 Candidates include mathematical/structural values and must not be migrated blindly.
 The file excludes test modules and comments. Integer-only styles, icon identifiers,
 state/variant recipes and token references also require manual audit.

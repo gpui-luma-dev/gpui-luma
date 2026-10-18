@@ -3,7 +3,7 @@ use gpui::{
     prelude::*, px, transparent_black,
 };
 
-use crate::controls::resizable_panels::{ResizeHandleSize, ResizablePanelsLook};
+use crate::controls::resizable_panels::ResizablePanelsLook;
 
 mod handle;
 mod resize;
@@ -15,10 +15,6 @@ pub use handle::{
 pub use resize::SlidePanelResizeDrag;
 
 use super::model::{SUPPORTED_TOP_ANCHORS, SlidePanelEdge, SlidePanelState};
-
-const DEFAULT_SIDE_PANEL_WIDTH: f32 = 360.0;
-const EDGE_PANEL_DESIRED_HEIGHT: f32 = 420.0;
-const EDGE_PANEL_MAX_VIEWPORT_RATIO: f32 = 0.72;
 
 pub type SlidePanelKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type SlidePanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -48,8 +44,12 @@ pub fn render_slide_panel_overlay(
     let viewport_width = viewport.width.as_f32();
     let viewport_height = available_height.as_f32();
 
-    let capped_edge_panel_height = EDGE_PANEL_DESIRED_HEIGHT.min(viewport_height * EDGE_PANEL_MAX_VIEWPORT_RATIO);
-    let side_panel_width = state.main_axis_size(DEFAULT_SIDE_PANEL_WIDTH);
+    let capped_edge_panel_height = state
+        .geometry()
+        .edge_height
+        .unwrap_or_default()
+        .min(viewport_height * state.geometry().edge_max_viewport_ratio.unwrap_or_default());
+    let side_panel_width = state.main_axis_size(state.geometry().side_width.unwrap_or_default());
     let edge_panel_height = state.main_axis_size(capped_edge_panel_height);
     let (panel_width, panel_height) = match edge {
         SlidePanelEdge::Left | SlidePanelEdge::Right => (px(side_panel_width), available_height),
@@ -88,7 +88,7 @@ pub fn render_slide_panel_overlay(
         .on_key_down(handlers.key_down)
         .child(panel_content);
 
-    let handle_metrics = ResizeHandleSize::Sm.metrics();
+    let handle_metrics = state.resize_handle_metrics();
     let handle_active = state.resize_handle_hovered() || state.is_resizing();
     let SlidePanelResizeHandlers { mouse_down, drag_move, mouse_up, mouse_up_out, hover } = resize_handlers;
     let resize_handle = render_slide_panel_resize_handle(
@@ -145,11 +145,11 @@ pub fn render_slide_panel_inset(
 
     debug_assert_eq!(edge, SlidePanelEdge::Right, "inset panel supports right edge only");
 
-    let side_panel_width = state.main_axis_size(DEFAULT_SIDE_PANEL_WIDTH);
+    let side_panel_width = state.main_axis_size(state.geometry().side_width.unwrap_or_default());
     let panel_width = px(side_panel_width);
     let horizontal_offset = px(-((1.0 - state.open_progress()) * side_panel_width));
 
-    let handle_metrics = ResizeHandleSize::Sm.metrics();
+    let handle_metrics = state.resize_handle_metrics();
     let handle_active = state.resize_handle_hovered() || state.is_resizing();
     let SlidePanelResizeHandlers { mouse_down, drag_move, mouse_up, mouse_up_out, hover } = resize_handlers;
     let resize_handle = render_slide_panel_inner_resize_handle(

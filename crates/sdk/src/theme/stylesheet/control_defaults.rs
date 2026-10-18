@@ -266,3 +266,110 @@ fn selector_panel_baseline_retains_stock_metrics_and_inherits_menu_overrides() {
     let panel = default_selector_items_panel_look(&tokens, ControlSize::Md);
     assert_eq!((panel.min_width, panel.item_height), (273.0, 31.0));
 }
+
+#[test]
+fn pager_recipes_apply_style_overrides_and_validate_opacity() {
+    use crate::controls::pager::{DefaultPagerTheme, PagerStyle, PagerTheme};
+    let sheet = CommonStylesheet::resolve_layers(&[r#"
+[common.pager.geometry]
+padding_x_inset_scale=0
+padding_y_gap_scale="math(3 / 2)"
+button_extra_width_scale=2
+radius=9
+disabled_opacity=0
+font_size=17
+line_height=24
+[common.pager.sizes.minimal]
+button_min_width=0
+"#])
+    .unwrap();
+    let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap();
+    let theme = DefaultPagerTheme::new(tokens.clone());
+    for style in [PagerStyle::Minimal, PagerStyle::MinimalEdge, PagerStyle::Numeric] {
+        let look = theme.resolve(true, style);
+        assert_eq!(look.padding_x, tokens.metrics.padding_x(ControlSize::Sm));
+        assert_eq!(
+            look.padding_y,
+            tokens.metrics.padding_y(ControlSize::Sm) + tokens.metrics.gap(ControlSize::Sm) * 1.5
+        );
+        assert_eq!(
+            (look.radius, look.disabled_opacity, look.typography.size, look.typography.line_height),
+            (9.0, 0.0, 17.0, 24.0)
+        );
+        assert_eq!(
+            look.button_min_width,
+            if style == PagerStyle::Minimal {
+                0.0
+            } else {
+                tokens.metrics.control_height(ControlSize::Sm) + tokens.metrics.spacing.s1 * 2.0
+            }
+        );
+    }
+    for value in ["-1", "1.1", "nan"] {
+        assert!(CommonStylesheet::parse(&format!("[common.pager.geometry]\ndisabled_opacity={value}")).is_err());
+        assert!(
+            CommonStylesheet::parse(&format!("[common.slide_panel.geometry]\nedge_max_viewport_ratio={value}"))
+                .is_err()
+        );
+    }
+}
+
+#[test]
+fn slide_panel_and_resize_presets_capture_stylesheet_without_overriding_explicit_sizes() {
+    use crate::controls::{
+        slide_panel::{SlidePanelState, SlidePanelTopAnchor, SlidePanelSizeConfig},
+        resizable_panels::{ResizeHandleSize, DefaultResizablePanelsTheme, ResizablePanelsTheme},
+    };
+    let mut sheet = CommonStylesheet::resolve_layers(&[r#"
+[common.slide_panel.geometry]
+side_width=490
+edge_height=530
+edge_max_viewport_ratio="math(3 / 5)"
+[common.resizable_panels.geometry]
+grip_radius=0
+[common.resizable_panels.sizes.sm]
+lane_width=13
+hit_target=21
+grip_main_axis=45
+"#])
+    .unwrap();
+    let state = SlidePanelState::new(SlidePanelTopAnchor::WindowEdge, SlidePanelSizeConfig::new(0.0, 0.0, 900.0))
+        .stylesheet(&sheet);
+    let explicit = SlidePanelState::new(SlidePanelTopAnchor::WindowEdge, SlidePanelSizeConfig::new(270.0, 0.0, 900.0))
+        .stylesheet(&sheet);
+    sheet.slide_panel.geometry.side_width = Some(700.0);
+    assert_eq!(state.main_axis_size(state.geometry().side_width.unwrap()), 490.0);
+    assert_eq!(explicit.main_axis_size(explicit.geometry().side_width.unwrap()), 270.0);
+    assert_eq!((state.geometry().edge_height, state.geometry().edge_max_viewport_ratio), (Some(530.0), Some(0.6)));
+    let handle = state.resize_handle_metrics();
+    assert_eq!(
+        (handle.lane_px, handle.hit_target_px, handle.grip_main_axis_px, handle.grip_radius),
+        (13.0, 21.0, 45.0, 0.0)
+    );
+    let theme =
+        DefaultResizablePanelsTheme::new(sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap());
+    assert_eq!(theme.resize_handle_metrics(ResizeHandleSize::Sm), handle);
+    let baseline = SlidePanelState::new(SlidePanelTopAnchor::WindowEdge, SlidePanelSizeConfig::new(0.0, 0.0, 900.0));
+    assert_eq!(
+        (
+            baseline.geometry().side_width,
+            baseline.geometry().edge_height,
+            baseline.geometry().edge_max_viewport_ratio
+        ),
+        (Some(360.0), Some(420.0), Some(0.72))
+    );
+}
+
+#[test]
+fn sdk_toolbar_factory_uses_common_geometry_for_both_variants() {
+    use crate::controls::toolbar::{DefaultToolbarTheme, ToolbarTheme, ToolbarVariant};
+    let sheet =
+        CommonStylesheet::resolve_layers(&["[common.toolbar.geometry]\npadding_x=0\npadding_y=7\ngap=13"]).unwrap();
+    let theme = DefaultToolbarTheme::new(sheet.theme_tokens(ThemeMode::Dark, GamutMapping::CssLocalMinde).unwrap());
+    for size in [ControlSize::Sm, ControlSize::Md, ControlSize::Lg] {
+        for variant in [ToolbarVariant::Outline, ToolbarVariant::Ghost] {
+            let look = theme.resolve(true, size, variant);
+            assert_eq!((look.padding_x, look.padding_y, look.gap), (0.0, 7.0, 13.0));
+        }
+    }
+}

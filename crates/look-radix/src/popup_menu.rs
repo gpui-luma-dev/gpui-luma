@@ -127,7 +127,11 @@ impl PopupMenuTheme for PopupMenuThemeAdapter {
         scale.padding_x = geometry.padding_x.value_px;
         scale.padding_y = geometry.padding_y.value_px;
         scale.gap = geometry.gap.value_px;
-        let mut look = compose_popup_menu_look(&self.resolve(trigger_style, metrics, state), &scale);
+        let mut look = compose_popup_menu_look(&self.resolve(trigger_style, metrics, state), &scale).with_stylesheet(
+            &self.look.common_stylesheet().popup_menu,
+            metrics.size.stylesheet_key(),
+            scale_factor,
+        );
         if let Some(radius) = metrics.trigger_radius_override {
             look.trigger_radius = radius;
         }

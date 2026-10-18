@@ -442,27 +442,27 @@ crates/sdk/src/controls/layout/resizable_panels/math.rs,332,resizable_panels,0.0
 crates/sdk/src/controls/layout/resizable_panels/math.rs,333,resizable_panels,0.0,common.resizable_panels.geometry.PanelLayoutState,needs classification,states[index + 1] = PanelLayoutState::Weight(new_right_weight.max(0.0));
 crates/sdk/src/controls/layout/resizable_panels/math.rs,356,resizable_panels,1.0,review owner / derived calculation,needs classification,main_axis_px.max(1.0)
 crates/sdk/src/controls/layout/resizable_panels/math.rs,361,resizable_panels,1.0,review owner / derived calculation,needs classification,let width = handle_width_px.max(1.0).round();
-crates/sdk/src/controls/layout/resizable_panels/model.rs,110,resizable_panels,8.0,common.resizable_panels.geometry.lane_px,needs classification,"lane_px: 8.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,111,resizable_panels,12.0,common.resizable_panels.geometry.hit_target_px,needs classification,"hit_target_px: 12.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,112,resizable_panels,4.0,common.resizable_panels.geometry.grip_cross_axis_px,needs classification,"grip_cross_axis_px: 4.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,113,resizable_panels,36.0,common.resizable_panels.geometry.grip_main_axis_px,needs classification,"grip_main_axis_px: 36.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,116,resizable_panels,12.0,common.resizable_panels.geometry.lane_px,needs classification,"lane_px: 12.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,117,resizable_panels,14.0,common.resizable_panels.geometry.hit_target_px,needs classification,"hit_target_px: 14.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,118,resizable_panels,6.0,common.resizable_panels.geometry.grip_cross_axis_px,needs classification,"grip_cross_axis_px: 6.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,119,resizable_panels,40.0,common.resizable_panels.geometry.grip_main_axis_px,needs classification,"grip_main_axis_px: 40.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,122,resizable_panels,18.0,common.resizable_panels.geometry.lane_px,needs classification,"lane_px: 18.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,123,resizable_panels,20.0,common.resizable_panels.geometry.hit_target_px,needs classification,"hit_target_px: 20.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,124,resizable_panels,8.0,common.resizable_panels.geometry.grip_cross_axis_px,needs classification,"grip_cross_axis_px: 8.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,125,resizable_panels,44.0,common.resizable_panels.geometry.grip_main_axis_px,needs classification,"grip_main_axis_px: 44.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,136,resizable_panels,16.0,review owner / derived calculation,needs classification,if lane_px >= 16.0 {
-crates/sdk/src/controls/layout/resizable_panels/model.rs,138,resizable_panels,10.0,review owner / derived calculation,needs classification,} else if lane_px >= 10.0 {
-crates/sdk/src/controls/layout/resizable_panels/model.rs,171,resizable_panels,0.0,common.resizable_panels.geometry.PanelSize,needs classification,"PanelSize::Weight(weight) => Self::Weight(weight.max(0.0)),"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,195,resizable_panels,1.0,common.resizable_panels.geometry.size,needs classification,"size: PanelSize::Weight(1.0),"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,217,resizable_panels,0.0,common.resizable_panels.geometry.PanelSize,needs classification,self.size = PanelSize::Weight(weight.max(0.0));
-crates/sdk/src/controls/layout/resizable_panels/model.rs,442,resizable_panels,2.0,common.resizable_panels.geometry.keyboard_step,needs classification,"keyboard_step: 2.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,443,resizable_panels,10.0,common.resizable_panels.geometry.keyboard_shift_step,needs classification,"keyboard_shift_step: 10.0,"
-crates/sdk/src/controls/layout/resizable_panels/model.rs,520,resizable_panels,0.1,review owner / derived calculation,needs classification,self.model.keyboard_step = step.as_f32().max(0.1);
-crates/sdk/src/controls/layout/resizable_panels/model.rs,525,resizable_panels,0.1,review owner / derived calculation,needs classification,self.model.keyboard_shift_step = step.as_f32().max(0.1);
+crates/sdk/src/controls/layout/resizable_panels/model.rs,110,resizable_panels,8.0,common.resizable_panels.sizes.sm.lane_width,migrated,"lane_px: 8.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,111,resizable_panels,12.0,common.resizable_panels.sizes.sm.hit_target,migrated,"hit_target_px: 12.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,112,resizable_panels,4.0,common.resizable_panels.sizes.sm.grip_cross_axis,migrated,"grip_cross_axis_px: 4.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,113,resizable_panels,36.0,common.resizable_panels.sizes.sm.grip_main_axis,migrated,"grip_main_axis_px: 36.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,116,resizable_panels,12.0,common.resizable_panels.sizes.md.lane_width,migrated,"lane_px: 12.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,117,resizable_panels,14.0,common.resizable_panels.sizes.md.hit_target,migrated,"hit_target_px: 14.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,118,resizable_panels,6.0,common.resizable_panels.sizes.md.grip_cross_axis,migrated,"grip_cross_axis_px: 6.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,119,resizable_panels,40.0,common.resizable_panels.sizes.md.grip_main_axis,migrated,"grip_main_axis_px: 40.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,122,resizable_panels,18.0,common.resizable_panels.sizes.lg.lane_width,migrated,"lane_px: 18.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,123,resizable_panels,20.0,common.resizable_panels.sizes.lg.hit_target,migrated,"hit_target_px: 20.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,124,resizable_panels,8.0,common.resizable_panels.sizes.lg.grip_cross_axis,migrated,"grip_cross_axis_px: 8.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,125,resizable_panels,44.0,common.resizable_panels.sizes.lg.grip_main_axis,migrated,"grip_main_axis_px: 44.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,136,resizable_panels,16.0,interaction: legacy pixel-input-to-preset selection threshold,retained: interaction,if lane_px >= 16.0 {
+crates/sdk/src/controls/layout/resizable_panels/model.rs,138,resizable_panels,10.0,interaction: legacy pixel-input-to-preset selection threshold,retained: interaction,} else if lane_px >= 10.0 {
+crates/sdk/src/controls/layout/resizable_panels/model.rs,171,resizable_panels,0.0,layout: nonnegative weight and neutral proportional unit,retained: layout calculation,"PanelSize::Weight(weight) => Self::Weight(weight.max(0.0)),"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,195,resizable_panels,1.0,layout: nonnegative weight and neutral proportional unit,retained: layout calculation,"size: PanelSize::Weight(1.0),"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,217,resizable_panels,0.0,layout: nonnegative weight and neutral proportional unit,retained: layout calculation,self.size = PanelSize::Weight(weight.max(0.0));
+crates/sdk/src/controls/layout/resizable_panels/model.rs,442,resizable_panels,2.0,interaction: keyboard resize increment and minimum positive step,retained: interaction,"keyboard_step: 2.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,443,resizable_panels,10.0,interaction: keyboard resize increment and minimum positive step,retained: interaction,"keyboard_shift_step: 10.0,"
+crates/sdk/src/controls/layout/resizable_panels/model.rs,520,resizable_panels,0.1,interaction: keyboard resize increment and minimum positive step,retained: interaction,self.model.keyboard_step = step.as_f32().max(0.1);
+crates/sdk/src/controls/layout/resizable_panels/model.rs,525,resizable_panels,0.1,interaction: keyboard resize increment and minimum positive step,retained: interaction,self.model.keyboard_shift_step = step.as_f32().max(0.1);
 crates/sdk/src/controls/layout/resizable_panels/template.rs,171,resizable_panels,0.0,review owner / derived calculation,needs classification,let main_axis_px = model.panel_sizes_px.get(index).copied().unwrap_or(0.0);
 crates/sdk/src/controls/layout/resizable_panels/template.rs,172,resizable_panels,0.0,review owner / derived calculation,needs classification,let main_size = px(main_axis_px.max(0.0));
 crates/sdk/src/controls/layout/resizable_panels/template.rs,209,resizable_panels,0.0,common.resizable_panels.geometry.ResizablePanelsOrientation,needs classification,"ResizablePanelsOrientation::Horizontal => model.measured_size.map(|size| size.width.as_f32()).unwrap_or(0.0),"
@@ -481,7 +481,7 @@ crates/sdk/src/controls/layout/resizable_panels/template.rs,346,resizable_panels
 crates/sdk/src/controls/layout/resizable_panels/template.rs,347,resizable_panels,0.0,review owner / derived calculation,needs classification,.right(px(0.0))
 crates/sdk/src/controls/layout/resizable_panels/template.rs,348,resizable_panels,0.0,review owner / derived calculation,needs classification,.top(px(0.0))
 crates/sdk/src/controls/layout/resizable_panels/template.rs,349,resizable_panels,0.0,review owner / derived calculation,needs classification,.bottom(px(0.0))
-crates/sdk/src/controls/layout/resizable_panels/template.rs,358,resizable_panels,8.0,review owner / derived calculation,needs classification,.rounded(px(8.0))
+crates/sdk/src/controls/layout/resizable_panels/template.rs,358,resizable_panels,8.0,common.resizable_panels.geometry.grip_radius,migrated,.rounded(px(8.0))
 crates/sdk/src/controls/layout/resizable_panels/template.rs,380,resizable_panels,0.5,review owner / derived calculation,needs classification,let hit_inset = split_local - hit_px * 0.5;
 crates/sdk/src/controls/layout/resizable_panels/template.rs,387,resizable_panels,0.0,review owner / derived calculation,needs classification,.top(px(0.0))
 crates/sdk/src/controls/layout/resizable_panels/template.rs,388,resizable_panels,0.0,review owner / derived calculation,needs classification,.bottom(px(0.0))
@@ -617,9 +617,9 @@ crates/sdk/src/controls/navigation/pager/template.rs,319,pager,4.0,review owner 
 crates/sdk/src/controls/navigation/pager/template.rs,331,pager,4.0,review owner / derived calculation,needs classification,.py(px(4.0))
 crates/sdk/src/controls/navigation/pager/template.rs,332,pager,2.0 | 0.0,review owner / derived calculation,needs classification,.rounded(px((look.radius - 2.0).max(0.0)))
 crates/sdk/src/controls/navigation/pager/template.rs,591,pager,0.0 | 0.0 | 0.5 | 1.0 | 16.0,common.pager.geometry.crate,needs classification,"crate::infra::icon::lucide_icon(LucideIcon::Ellipsis, gpui::hsla(0.0, 0.0, 0.5, 1.0), 16.0)"
-crates/sdk/src/controls/navigation/pager/theme.rs,68,pager,0.5 | 0.0,review owner / derived calculation,needs classification,let padding_x = (metrics.padding_x(control_size) - (metrics.spacing.s1 * 0.5)).max(0.0);
-crates/sdk/src/controls/navigation/pager/theme.rs,69,pager,0.5,review owner / derived calculation,needs classification,let padding_y = metrics.padding_y(control_size) + (metrics.gap(control_size) * 0.5);
-crates/sdk/src/controls/navigation/pager/theme.rs,105,pager,0.56,common.pager.geometry.disabled_opacity,needs classification,"disabled_opacity: 0.56,"
+crates/sdk/src/controls/navigation/pager/theme.rs,68,pager,0.5 | 0.0,common.pager.geometry.padding_x_inset_scale (zero clamp remains mathematical),migrated,let padding_x = (metrics.padding_x(control_size) - (metrics.spacing.s1 * 0.5)).max(0.0);
+crates/sdk/src/controls/navigation/pager/theme.rs,69,pager,0.5,common.pager.geometry.padding_y_gap_scale,migrated,let padding_y = metrics.padding_y(control_size) + (metrics.gap(control_size) * 0.5);
+crates/sdk/src/controls/navigation/pager/theme.rs,105,pager,0.56,common.pager.geometry.disabled_opacity,migrated,"disabled_opacity: 0.56,"
 crates/sdk/src/controls/navigation/sidebar/control.rs,298,sidebar,40.0 | 15.0,common.sidebar.geometry.Default,needs classification,"cx.simulate_click(point(bounds.left() + px(40.0), bounds.top() + px(15.0)), Default::default());"
 crates/sdk/src/controls/navigation/sidebar/control.rs,348,sidebar,20.0 | 15.0,review owner / derived calculation,needs classification,"let position = point(bounds.left() + px(20.0), bounds.top() + px(15.0));"
 crates/sdk/src/controls/navigation/sidebar/drag.rs,542,sidebar,0.75,common.sidebar.geometry.gpui,needs classification,"zone.apply_measured(div().id(""sidebar-before"")).bottom(gpui::relative(0.75))"
@@ -795,16 +795,16 @@ crates/sdk/src/controls/overlay/overlay_window/control.rs,466,overlay_window,0.5
 crates/sdk/src/controls/overlay/overlay_window/control.rs,467,overlay_window,0.5,common.overlay_window.geometry.OverlayWindowPosition,needs classification,"OverlayWindowPosition::Right => point(viewport.width - width - inset, (viewport.height - height) * 0.5),"
 crates/sdk/src/controls/overlay/overlay_window/control.rs,485,overlay_window,12.0,review owner / derived calculation,needs classification,let inset = px(12.0);
 crates/sdk/src/controls/overlay/overlay_window/theme.rs,69,overlay_window,0.0,common.overlay_window.geometry.a,needs classification,"Hsla { a: 0.0, ..black() }"
-crates/sdk/src/controls/overlay/popover_button/model.rs,95,popover_button,0.0,common.popover_button.geometry.offset_y,needs classification,"offset_y: px(0.0),"
-crates/sdk/src/controls/overlay/popover_button/model.rs,96,popover_button,8.0,common.popover_button.geometry.window_margin,needs classification,"window_margin: px(8.0),"
+crates/sdk/src/controls/overlay/popover_button/model.rs,95,popover_button,0.0,common.popover.sizes.button.offset_y,migrated,"offset_y: px(0.0),"
+crates/sdk/src/controls/overlay/popover_button/model.rs,96,popover_button,8.0,common.popover.geometry.window_margin,migrated,"window_margin: px(8.0),"
 crates/sdk/src/controls/overlay/popover_button/panel/control.rs,277,panel,0.0,review owner / derived calculation,needs classification,if bounds.size.width <= px(0.0) || self.content_bounds == Some(bounds) {
 crates/sdk/src/controls/overlay/popover_button/panel/control.rs,359,panel,0.0 | 0.0,common.panel.geometry.width,needs classification,"let scale_size = content_size.unwrap_or(Size { width: px(0.0), height: px(0.0) });"
 crates/sdk/src/controls/overlay/popover_button/panel/control.rs,411,panel,0.0,review owner / derived calculation,needs classification,"let content_height = content_size.map_or(px(0.0), |size| size.height);"
 crates/sdk/src/controls/overlay/popover_button/panel/control.rs,428,panel,0.0,common.panel.geometry.offset,needs classification,"offset: point(px(0.0), offset_y),"
 crates/sdk/src/controls/overlay/popover_button/panel/control.rs,433,panel,0.0 | 0.5,common.panel.geometry.offset,needs classification,"offset: point(content_size.map_or(px(0.0), |size| -(size.width * 0.5)), offset_y),"
 crates/sdk/src/controls/overlay/popover_button/panel/control.rs,438,panel,0.0,common.panel.geometry.offset,needs classification,"offset: point(px(0.0), -offset_y),"
-crates/sdk/src/controls/overlay/popover_button/panel/model.rs,82,panel,4.0,common.panel.geometry.offset_y,needs classification,"offset_y: gpui::px(4.0),"
-crates/sdk/src/controls/overlay/popover_button/panel/model.rs,83,panel,8.0,common.panel.geometry.window_margin,needs classification,"window_margin: gpui::px(8.0),"
+crates/sdk/src/controls/overlay/popover_button/panel/model.rs,82,panel,4.0,common.popover.sizes.panel.offset_y,migrated,"offset_y: gpui::px(4.0),"
+crates/sdk/src/controls/overlay/popover_button/panel/model.rs,83,panel,8.0,common.popover.geometry.window_margin,migrated,"window_margin: gpui::px(8.0),"
 crates/sdk/src/controls/overlay/popup_menu/control.rs,95,popup_menu,1.0,common.popup_menu.geometry.highlight_transition,needs classification,"highlight_transition: VisualTransition::with_transition(1.0, motion.highlight.enabled(motion_enabled)),"
 crates/sdk/src/controls/overlay/popup_menu/control.rs,96,popup_menu,0.0,common.popup_menu.geometry.disclosure_transition,needs classification,"disclosure_transition: DisclosureMotion::with_transition(0.0, motion_enabled, motion.disclosure.clone()),"
 crates/sdk/src/controls/overlay/popup_menu/control.rs,97,popup_menu,0.0,common.popup_menu.geometry.submenu_transition,needs classification,"submenu_transition: DisclosureMotion::with_transition(0.0, motion_enabled, motion.submenu.clone()),"
@@ -838,8 +838,8 @@ crates/sdk/src/controls/overlay/popup_menu/template.rs,514,popup_menu,0.0,common
 crates/sdk/src/controls/overlay/popup_menu/template.rs,519,popup_menu,0.0,common.popup_menu.geometry.offset,needs classification,"offset: point(px(0.0), -offset_y),"
 crates/sdk/src/controls/overlay/popup_menu/template.rs,524,popup_menu,0.0,common.popup_menu.geometry.offset,needs classification,"offset: point(offset_y, px(0.0)),"
 crates/sdk/src/controls/overlay/popup_menu/template.rs,529,popup_menu,0.5 | 0.5,common.popup_menu.geometry.offset,needs classification,"offset: point(-(menu_size.width * 0.5), -(menu_size.height * 0.5)),"
-crates/sdk/src/controls/overlay/popup_menu/theme.rs,143,popup_menu,0.0 | 0.0 | 0.0 | 0.0,common.popup_menu.geometry.InteractionLayer,needs classification,"InteractionLayer::Default => hsla(0.0, 0.0, 0.0, 0.0),"
-crates/sdk/src/controls/overlay/popup_menu/theme.rs,192,popup_menu,0.5,common.popup_menu.geometry.menu_offset_y,needs classification,"menu_offset_y: scale.gap * 0.5,"
+crates/sdk/src/controls/overlay/popup_menu/theme.rs,143,popup_menu,0.0 | 0.0 | 0.0 | 0.0,mathematical identity: transparent background is absence of a fill,retained: absence sentinel,"InteractionLayer::Default => hsla(0.0, 0.0, 0.0, 0.0),"
+crates/sdk/src/controls/overlay/popup_menu/theme.rs,192,popup_menu,0.5,common.popup_menu.geometry.menu_offset_scale,migrated,"menu_offset_y: scale.gap * 0.5,"
 crates/sdk/src/controls/overlay/slide_panel/model.rs,51,slide_panel,0.0,common.slide_panel.geometry.Self,needs classification,"Self::WindowEdge => px(0.0),"
 crates/sdk/src/controls/overlay/slide_panel/model.rs,115,slide_panel,0.0,common.slide_panel.geometry.open_progress,needs classification,"open_progress: 0.0,"
 crates/sdk/src/controls/overlay/slide_panel/model.rs,116,slide_panel,0.0,common.slide_panel.geometry.transition,needs classification,"transition: crate::motion::VisualTransition::with_transition(0.0, crate::motion::Transition::instant()),"
@@ -862,21 +862,21 @@ crates/sdk/src/controls/overlay/slide_panel/template/handle.rs,155,template,0.0,
 crates/sdk/src/controls/overlay/slide_panel/template/handle.rs,156,template,0.0,review owner / derived calculation,needs classification,.right(px(0.0))
 crates/sdk/src/controls/overlay/slide_panel/template/handle.rs,157,template,0.0,review owner / derived calculation,needs classification,.top(px(0.0))
 crates/sdk/src/controls/overlay/slide_panel/template/handle.rs,158,template,0.0,review owner / derived calculation,needs classification,.bottom(px(0.0))
-crates/sdk/src/controls/overlay/slide_panel/template/handle.rs,167,template,8.0,review owner / derived calculation,needs classification,.rounded(px(8.0))
+crates/sdk/src/controls/overlay/slide_panel/template/handle.rs,167,template,8.0,common.resizable_panels.geometry.grip_radius,migrated,.rounded(px(8.0))
 crates/sdk/src/controls/overlay/slide_panel/template/handle.rs,183,template,0.5,review owner / derived calculation,needs classification,let hit_inset = split_local - hit_px * 0.5;
 crates/sdk/src/controls/overlay/slide_panel/template/handle.rs,192,template,0.0,review owner / derived calculation,needs classification,.top(px(0.0))
 crates/sdk/src/controls/overlay/slide_panel/template/handle.rs,193,template,0.0,review owner / derived calculation,needs classification,.bottom(px(0.0))
 crates/sdk/src/controls/overlay/slide_panel/template/handle.rs,207,template,0.0,review owner / derived calculation,needs classification,.left(px(0.0))
 crates/sdk/src/controls/overlay/slide_panel/template/handle.rs,208,template,0.0,review owner / derived calculation,needs classification,.right(px(0.0))
-crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,19,template,360.0,common.template.geometry.DEFAULT_SIDE_PANEL_WIDTH,needs classification,const DEFAULT_SIDE_PANEL_WIDTH: f32 = 360.0;
-crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,20,template,420.0,common.template.geometry.EDGE_PANEL_DESIRED_HEIGHT,needs classification,const EDGE_PANEL_DESIRED_HEIGHT: f32 = 420.0;
-crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,21,template,0.72,common.template.geometry.EDGE_PANEL_MAX_VIEWPORT_RATIO,needs classification,const EDGE_PANEL_MAX_VIEWPORT_RATIO: f32 = 0.72;
-crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,47,template,1.0,review owner / derived calculation,needs classification,let available_height = (viewport.height - overlay_top_inset).max(px(1.0));
-crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,59,template,1.0,review owner / derived calculation,needs classification,let horizontal_offset = px(-((1.0 - state.open_progress()) * side_panel_width));
-crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,60,template,1.0,review owner / derived calculation,needs classification,let vertical_offset = px(-((1.0 - state.open_progress()) * edge_panel_height));
-crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,127,template,0.0,review owner / derived calculation,needs classification,.snap_to_window_with_margin(px(0.0))
-crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,129,template,0.0,review owner / derived calculation,needs classification,".position(point(px(0.0), overlay_top_inset))"
-crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,150,template,1.0,review owner / derived calculation,needs classification,let horizontal_offset = px(-((1.0 - state.open_progress()) * side_panel_width));
+crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,19,template,360.0,common.slide_panel.geometry.side_width,migrated,const DEFAULT_SIDE_PANEL_WIDTH: f32 = 360.0;
+crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,20,template,420.0,common.slide_panel.geometry.edge_height,migrated,const EDGE_PANEL_DESIRED_HEIGHT: f32 = 420.0;
+crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,21,template,0.72,common.slide_panel.geometry.edge_max_viewport_ratio,migrated,const EDGE_PANEL_MAX_VIEWPORT_RATIO: f32 = 0.72;
+crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,47,template,1.0,layout: guard against an empty viewport before positioning,retained: layout calculation,let available_height = (viewport.height - overlay_top_inset).max(px(1.0));
+crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,59,template,1.0,mathematical identity: complement of normalized animation progress,retained: derived calculation,let horizontal_offset = px(-((1.0 - state.open_progress()) * side_panel_width));
+crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,60,template,1.0,mathematical identity: complement of normalized animation progress,retained: derived calculation,let vertical_offset = px(-((1.0 - state.open_progress()) * edge_panel_height));
+crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,127,template,0.0,layout: edge-pinned overlay origin and no extra viewport margin,retained: structural placement,.snap_to_window_with_margin(px(0.0))
+crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,129,template,0.0,layout: edge-pinned overlay origin and no extra viewport margin,retained: structural placement,".position(point(px(0.0), overlay_top_inset))"
+crates/sdk/src/controls/overlay/slide_panel/template/mod.rs,150,template,1.0,mathematical identity: complement of normalized animation progress,retained: derived calculation,let horizontal_offset = px(-((1.0 - state.open_progress()) * side_panel_width));
 crates/sdk/src/controls/overlay/tooltip/control.rs,12,tooltip,10.0,common.tooltip.geometry.GAP,needs classification,const GAP: f32 = 10.0;
 crates/sdk/src/controls/overlay/tooltip/control.rs,13,tooltip,8.0,common.tooltip.geometry.MARGIN,needs classification,const MARGIN: f32 = 8.0;
 crates/sdk/src/controls/overlay/tooltip/control.rs,14,tooltip,6.0,common.tooltip.geometry.POINTER,needs classification,const POINTER: f32 = 6.0;

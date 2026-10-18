@@ -465,3 +465,51 @@ item_height=0
         assert_eq!(resolved.items_panel.item_height, if size == ControlSize::Sm { 0.0 } else { 42.0 });
     }
 }
+
+#[test]
+fn pager_and_resize_handle_overrides_reach_paint_and_inspection() {
+    use gpui_luma::controls::{pager::PagerStyle, resizable_panels::ResizeHandleSize};
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.pager.geometry]
+radius=13
+disabled_opacity=0
+[common.pager.sizes.minimal]
+button_size=0
+[common.resizable_panels.geometry]
+grip_radius=0
+[common.resizable_panels.sizes.md]
+lane_width=17
+hit_target=23
+grip_main_axis=47
+[common.slide_panel.geometry]
+side_width=507
+edge_height=431
+edge_max_viewport_ratio="math(2 / 3)"
+"#])
+    .unwrap();
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    let pager = look.pager_theme().resolve(true, PagerStyle::Minimal);
+    assert_eq!((pager.radius, pager.disabled_opacity, pager.button_size), (13.0, 0.0, 0.0));
+    let handle = look.resizable_panels_theme().resize_handle_metrics(ResizeHandleSize::Md);
+    assert_eq!(
+        (handle.lane_px, handle.hit_target_px, handle.grip_main_axis_px, handle.grip_radius),
+        (17.0, 23.0, 47.0, 0.0)
+    );
+    let panel = look.slide_panel_state(
+        gpui_luma::controls::slide_panel::SlidePanelTopAnchor::WindowEdge,
+        gpui_luma::controls::slide_panel::SlidePanelSizeConfig::new(0.0, 0.0, 900.0),
+    );
+    assert_eq!(panel.geometry().side_width, Some(507.0));
+    #[cfg(feature = "inspect")]
+    {
+        let inspector = crate::inspect::ShadcnInspect::new(&look);
+        let inspected = inspector.inspect_resizable_panels_metrics(ResizeHandleSize::Md);
+        assert_eq!(inspected.lane_px.value_px, handle.lane_px);
+        assert_eq!(inspected.hit_target_px.value_px, handle.hit_target_px);
+        assert_eq!(inspected.grip_main_axis_px.value_px, handle.grip_main_axis_px);
+        let pager_metrics = inspector.inspect_pager_metrics(PagerStyle::Minimal);
+        assert_eq!(pager_metrics.radius.value_px, pager.radius);
+        assert_eq!(pager_metrics.button_size.value_px, pager.button_size);
+    }
+}

@@ -14,6 +14,11 @@ pub struct ResizablePanelsLook {
 }
 
 pub trait ResizablePanelsTheme: Send + Sync {
+    /// Shared visual preset; custom looks resolve it through their stylesheet.
+    fn resize_handle_metrics(&self, size: super::ResizeHandleSize) -> super::ResizeHandleMetrics {
+        size.metrics()
+    }
+
     fn resolve(&self, state: InteractionState) -> ResizablePanelsLook;
 }
 
@@ -35,6 +40,10 @@ impl DefaultResizablePanelsTheme {
 }
 
 impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
+    fn resize_handle_metrics(&self, size: super::ResizeHandleSize) -> super::ResizeHandleMetrics {
+        size.metrics_with_stylesheet(&self.tokens.stylesheet)
+    }
+
     fn resolve(&self, state: InteractionState) -> ResizablePanelsLook {
         let palette = &self.tokens.palette;
         let disabled = state.layer() == InteractionLayer::Disabled;

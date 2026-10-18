@@ -92,7 +92,7 @@ pub fn popup_menu_look(
     let scale = popup_menu_trigger_scale(mode, theme_mode, metrics.size, state, scale_factor);
     let mut look =
         compose_popup_menu_look(&popup_menu_palette(mode, theme_mode, trigger_style, metrics, state), &scale);
-    look.trigger_icon_size = scale.icon_size;
+    look = look.with_stylesheet(&mode.stylesheet().common.popup_menu, metrics.size.stylesheet_key(), scale_factor);
     if let Some(radius) = metrics.trigger_radius_override {
         look.trigger_radius = radius;
     }
@@ -115,6 +115,8 @@ pub(crate) fn popup_menu_geometry(
             icon_size: scale.icon_size,
             font_size: typography.size,
             line_height: typography.line_height,
+            radius: scale.radius,
+            ..Default::default()
         },
     )
 }

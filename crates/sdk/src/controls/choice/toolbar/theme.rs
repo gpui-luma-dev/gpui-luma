@@ -68,7 +68,7 @@ impl ToolbarTheme for DefaultToolbarTheme {
             ToolbarVariant::Ghost => (transparent, transparent),
         };
 
-        ToolbarLook {
+        let mut look = ToolbarLook {
             background,
             border,
             separator: self.tokens.palette.border.default,
@@ -77,6 +77,9 @@ impl ToolbarTheme for DefaultToolbarTheme {
             padding_y: metrics.spacing.s1,
             gap: control.gap,
             separator_height: control.height,
-        }
+        };
+        crate::theme::stylesheet::apply_common_geometry!(self.tokens.stylesheet.toolbar, size.stylesheet_key(), ToolbarGeometry, look,
+            [padding_x => padding_x, padding_y => padding_y, gap => gap]);
+        look
     }
 }

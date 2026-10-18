@@ -19,6 +19,17 @@ pub enum PagerStyle {
     Numeric,
 }
 
+impl PagerStyle {
+    /// Stylesheet key for per-presentation geometry overrides.
+    pub fn stylesheet_key(self) -> &'static str {
+        match self {
+            Self::Minimal => "minimal",
+            Self::MinimalEdge => "minimal-edge",
+            Self::Numeric => "numeric",
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PagerPageItem {
     Page(usize),

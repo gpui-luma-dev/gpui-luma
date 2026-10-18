@@ -122,7 +122,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         window: &mut Window,
         cx: &mut Context<ResizablePanels>,
     ) -> Stateful<Div> {
-        let handle_metrics = model.resize_handle.metrics();
+        let handle_metrics = model.handle_metrics;
         let split_positions = split_positions_px(model.panel_sizes_px);
         let provisional_weight_layout = provisional_weight_layout(model);
 
@@ -355,7 +355,7 @@ fn render_handle_grip(orientation: ResizablePanelsOrientation, grip_color: Hsla,
         })
         .child(
             div()
-                .rounded(px(8.0))
+                .rounded(px(metrics.grip_radius))
                 .bg(grip_color)
                 .when(orientation == ResizablePanelsOrientation::Horizontal, |this| this.w(px(cross)).h(px(main)))
                 .when(orientation == ResizablePanelsOrientation::Vertical, |this| this.w(px(main)).h(px(cross))),

@@ -594,6 +594,7 @@ hit_target = 8.0
 visible_line = 1.0
 
 [common.resizable_panels.geometry]
+grip_radius = 8.0
 disabled_opacity = 0.45
 
 [common.slider.geometry]
@@ -655,3 +656,50 @@ row_hover_opacity = 0.4
 # Popup separation scales with the trigger's gap unless menu_offset_y is explicit.
 [common.selector.geometry]
 menu_offset_scale = "math(1 / 2)"
+
+# Pager recipes are relative to small-control metrics; explicit geometry wins.
+[common.pager.geometry]
+padding_x_inset_scale = "math(1 / 2)"
+padding_y_gap_scale = "math(1 / 2)"
+button_extra_width_scale = 1.0
+disabled_opacity = 0.56
+
+[common.pager.sizes.minimal]
+button_extra_width_scale = 0.0
+
+[common.popup_menu.geometry]
+menu_offset_scale = "math(1 / 2)"
+
+# Placement defaults are captured by builders; explicit offsets/margins win.
+[common.popover.geometry]
+window_margin = 8.0
+
+[common.popover.sizes.button]
+offset_y = 0.0
+
+[common.popover.sizes.panel]
+offset_y = 4.0
+
+[common.slide_panel.geometry]
+side_width = 360.0
+edge_height = 420.0
+edge_max_viewport_ratio = 0.72
+
+
+[common.resizable_panels.sizes.sm]
+lane_width = 8.0
+hit_target = 12.0
+grip_cross_axis = 4.0
+grip_main_axis = 36.0
+
+[common.resizable_panels.sizes.md]
+lane_width = 12.0
+hit_target = 14.0
+grip_cross_axis = 6.0
+grip_main_axis = 40.0
+
+[common.resizable_panels.sizes.lg]
+lane_width = 18.0
+hit_target = 20.0
+grip_cross_axis = 8.0
+grip_main_axis = 44.0

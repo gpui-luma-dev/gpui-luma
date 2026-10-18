@@ -165,7 +165,7 @@ geometry_family!(
     ResizablePanelsGeometry,
     ResolvedResizablePanelsGeometry,
     "resizable_panels",
-    [],
+    [lane_width, hit_target, grip_cross_axis, grip_main_axis, grip_radius],
     unit[disabled_opacity]
 );
 geometry_family!(
@@ -332,7 +332,18 @@ geometry_family!(
     PopupMenuGeometry,
     ResolvedPopupMenuGeometry,
     "popup_menu",
-    [height, padding_x, padding_y, gap, font_size, line_height, icon_size]
+    [
+        height,
+        padding_x,
+        padding_y,
+        gap,
+        font_size,
+        line_height,
+        icon_size,
+        radius,
+        menu_offset_y,
+        menu_offset_scale
+    ]
 );
 geometry_family!(
     ContextMenuStylesheet,
@@ -424,8 +435,13 @@ geometry_family!(
         gap,
         group_gap,
         font_size,
-        line_height
-    ]
+        line_height,
+        radius,
+        padding_x_inset_scale,
+        padding_y_gap_scale,
+        button_extra_width_scale
+    ],
+    unit[disabled_opacity]
 );
 
 geometry_family!(
@@ -468,6 +484,24 @@ geometry_family!(
     ]
 );
 
+geometry_family!(
+    PopoverStylesheet,
+    PopoverGeometryStylesheet,
+    PopoverGeometry,
+    ResolvedPopoverGeometry,
+    "popover",
+    [offset_y, window_margin]
+);
+geometry_family!(
+    SlidePanelStylesheet,
+    SlidePanelGeometryStylesheet,
+    SlidePanelGeometry,
+    ResolvedSlidePanelGeometry,
+    "slide_panel",
+    [side_width, edge_height],
+    unit[edge_max_viewport_ratio]
+);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -483,6 +517,8 @@ mod tests {
         ControlGroupStylesheet::validate_contract();
         TableStylesheet::validate_contract();
         PagerStylesheet::validate_contract();
+        PopoverStylesheet::validate_contract();
+        SlidePanelStylesheet::validate_contract();
         SelectorStylesheet::validate_contract();
         SelectorListStylesheet::validate_contract();
         ButtonStylesheet::validate_contract();

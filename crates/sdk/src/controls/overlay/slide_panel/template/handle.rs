@@ -164,7 +164,7 @@ fn render_handle_grip(
         })
         .child(
             div()
-                .rounded(px(8.0))
+                .rounded(px(metrics.grip_radius))
                 .bg(grip_color)
                 .when(orientation == ResizablePanelsOrientation::Horizontal, |this| this.w(px(cross)).h(px(main)))
                 .when(orientation == ResizablePanelsOrientation::Vertical, |this| this.w(px(main)).h(px(cross))),

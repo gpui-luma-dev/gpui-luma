@@ -485,7 +485,7 @@ impl<'a> ShadcnInspect<'a> {
     }
 
     pub fn inspect_resizable_panels_metrics(&self, handle_size: ResizeHandleSize) -> ResizablePanelsInspectMetrics {
-        inspect_resizable_panels_metrics(handle_size)
+        inspect_resizable_panels_metrics(self.look.mode_tokens().as_ref(), handle_size)
     }
 
     pub fn inspect_table_color_palette(&self, enabled: bool) -> TableInspectPalette {

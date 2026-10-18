@@ -173,7 +173,7 @@ impl SelectorTheme for DefaultSelectorTheme {
         let key = size.stylesheet_key();
         let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().selector.authored_geometry(key);
         let recipe = self.tokens.stylesheet.selector.authored_geometry(key).with_fallback(&baseline);
-        look.menu_offset_y = scale.gap * recipe.menu_offset_scale.unwrap_or_default();
+        look.menu_offset_y = recipe.gap.unwrap_or(scale.gap) * recipe.menu_offset_scale.unwrap_or_default();
         crate::theme::stylesheet::apply_common_geometry!(self.tokens.stylesheet.selector, key, SelectorGeometry, look,
             [height => trigger_height, padding_x => trigger_padding_x, padding_y => trigger_padding_y,
              gap => trigger_gap, icon_size => trigger_icon_size, font_size => trigger_typography.size,

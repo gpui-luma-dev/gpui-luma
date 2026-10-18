@@ -84,6 +84,8 @@ common_stylesheet! {
     selector: SelectorStylesheet,
     selector_list: SelectorListStylesheet,
     popup_menu: PopupMenuStylesheet,
+    popover: PopoverStylesheet,
+    slide_panel: SlidePanelStylesheet,
     scrollbar: ScrollbarStylesheet,
     stepper: StepperStylesheet,
     sidebar: SidebarStylesheet,

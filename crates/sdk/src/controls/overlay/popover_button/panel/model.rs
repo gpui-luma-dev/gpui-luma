@@ -57,6 +57,8 @@ pub struct PopoverPanelRenderModel<'a> {
 }
 
 pub struct PopoverPanelBuilder {
+    explicit_offset_y: bool,
+    explicit_window_margin: bool,
     pub(crate) model: PopoverPanelModel,
 }
 
@@ -68,7 +70,10 @@ impl PopoverPanelBuilder {
     crate::motion_methods!(PopoverMotion, model.motion);
 
     pub fn new(id: impl Into<SharedString>) -> Self {
+        let geometry = crate::theme::stylesheet::CommonStylesheet::sdk_default().popover.authored_geometry("panel");
         Self {
+            explicit_offset_y: false,
+            explicit_window_margin: false,
             model: PopoverPanelModel {
                 motion: Default::default(),
                 id: id.into(),
@@ -79,12 +84,25 @@ impl PopoverPanelBuilder {
                 placement: PopoverPanelPlacement::BelowStart,
                 dismiss_policy: PopoverPanelDismissPolicy::KeepOpen,
                 dismissible: true,
-                offset_y: gpui::px(4.0),
-                window_margin: gpui::px(8.0),
+                offset_y: gpui::px(geometry.offset_y.unwrap_or_default()),
+                window_margin: gpui::px(geometry.window_margin.unwrap_or_default()),
                 focus_on_open: true,
                 initial_content_size: None,
             },
         }
+    }
+
+    /// Capture placement defaults without replacing explicit builder values.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().popover.authored_geometry("panel");
+        let geometry = stylesheet.popover.authored_geometry("panel").with_fallback(&baseline);
+        if !self.explicit_offset_y {
+            self.model.offset_y = gpui::px(geometry.offset_y.unwrap_or_default());
+        }
+        if !self.explicit_window_margin {
+            self.model.window_margin = gpui::px(geometry.window_margin.unwrap_or_default());
+        }
+        self
     }
 
     pub fn content<F>(mut self, content: F) -> Self
@@ -126,11 +144,13 @@ impl PopoverPanelBuilder {
     }
 
     pub fn offset_y(mut self, offset_y: Pixels) -> Self {
+        self.explicit_offset_y = true;
         self.model.offset_y = offset_y;
         self
     }
 
     pub fn window_margin(mut self, margin: Pixels) -> Self {
+        self.explicit_window_margin = true;
         self.model.window_margin = margin;
         self
     }
@@ -147,5 +167,30 @@ impl PopoverPanelBuilder {
 
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<PopoverPanel> {
         cx.new(|cx| PopoverPanel::from_builder(self, cx))
+    }
+}
+
+#[cfg(test)]
+mod stylesheet_tests {
+    use super::*;
+    use crate::theme::stylesheet::CommonStylesheet;
+    use gpui::px;
+
+    #[test]
+    fn panel_placement_inherits_and_preserves_explicit_zero() {
+        let baseline = PopoverPanelBuilder::new("baseline");
+        assert_eq!((baseline.model.offset_y, baseline.model.window_margin), (px(4.0), px(8.0)));
+        let sheet = CommonStylesheet::resolve_layers(&[
+            "[common.popover.geometry]\nwindow_margin=17\n[common.popover.sizes.panel]\noffset_y=9",
+        ])
+        .unwrap();
+        let panel = PopoverPanelBuilder::new("panel").stylesheet(&sheet);
+        assert_eq!((panel.model.offset_y, panel.model.window_margin), (px(9.0), px(17.0)));
+        for panel in [
+            PopoverPanelBuilder::new("before").offset_y(px(0.0)).window_margin(px(0.0)).stylesheet(&sheet),
+            PopoverPanelBuilder::new("after").stylesheet(&sheet).offset_y(px(0.0)).window_margin(px(0.0)),
+        ] {
+            assert_eq!((panel.model.offset_y, panel.model.window_margin), (px(0.0), px(0.0)));
+        }
     }
 }

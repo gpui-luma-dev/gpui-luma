@@ -203,6 +203,7 @@ impl Look {
         size: gpui_luma::controls::slide_panel::SlidePanelSizeConfig,
     ) -> gpui_luma::controls::slide_panel::SlidePanelState {
         gpui_luma::controls::slide_panel::SlidePanelState::new(anchor, size)
+            .stylesheet(&self.common_stylesheet())
             .motion_defaults(self.motion_defaults().slide_panel)
     }
 

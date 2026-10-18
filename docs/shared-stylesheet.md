@@ -94,8 +94,8 @@ The SDK Table factory reads `common.table` for surface padding, proportional
 and consumer look callbacks retain their precedence.
 
 The SDK selector trigger now applies `common.selector` dimensions, typography,
-`radius`, and `menu_offset_y`. `menu_offset_scale` multiplies the supplied trigger
-scale's gap; an explicit offset wins, including zero. Shadcn uses the same
+`radius`, and `menu_offset_y`. `menu_offset_scale` multiplies the resolved trigger
+gap; an explicit offset wins, including zero. Shadcn uses the same
 geometry for paint and available inspector fields.
 
 SDK selector-list panels inherit the shared floating-menu recipes. Author
@@ -110,6 +110,46 @@ icon/state recipes and the remaining template audit are still outstanding.
 Raw SDK ListBox flow values describe host-supplied item geometry and scrolling,
 not a second set of visual defaults. Its placement/virtualization arithmetic
 stays in Rust; host/look-owned chrome needs a separate appearance audit.
+
+## Pager and overlay defaults
+
+SDK Pager now consumes `common.pager`, including `radius` and `disabled_opacity`.
+The `minimal`, `minimal-edge`, and `numeric` size keys select presentations.
+`padding_x_inset_scale` subtracts a multiple of `spacing.s1` from small-control
+horizontal padding (clamped at zero); `padding_y_gap_scale` adds a multiple of the
+small-control gap to vertical padding; `button_extra_width_scale` adds a multiple
+of `spacing.s1` to the button's minimum width. Explicit dimensions win. Shadcn's
+existing pager differences stay in its stylesheet rather than a second Rust table.
+
+`common.popup_menu` now configures SDK trigger dimensions, typography, radius and
+popup offset, and the bundled looks use `PopupMenuLook::with_stylesheet` for the
+same resolution step. `menu_offset_scale` multiplies the resolved trigger gap;
+`menu_offset_y` overrides it, including zero. Consumer radius overrides apply last.
+SplitButton shares this PopupMenu theme/template path.
+
+`PopoverButtonBuilder::stylesheet(&sheet)` and `PopoverPanelBuilder::stylesheet(&sheet)`
+capture `common.popover` placement defaults. Use the `button` and `panel` size keys
+for their distinct `offset_y`; `window_margin` is shared. Explicit builder offsets
+and margins win regardless of whether `.stylesheet(...)` comes before or after them.
+Dismissal, focus behavior and content stay owned by the caller.
+
+`SlidePanelState::stylesheet(&sheet)` captures `common.slide_panel` geometry:
+`side_width`, `edge_height`, and `edge_max_viewport_ratio` (0–1). Explicit size
+configuration remains authoritative; fallback edge height is capped by the
+available viewport. Both bundled-look state factories capture this configuration.
+Existing states retain their visual snapshot when the original stylesheet changes.
+
+Shared resize-handle presets now live in `common.resizable_panels.sizes.sm/md/lg`:
+`lane_width`, `hit_target`, `grip_cross_axis`, and `grip_main_axis`, with shared
+`grip_radius` under `.geometry`. `ResizeHandleSize::metrics_with_stylesheet` exposes
+the same resolution to custom looks. SDK and Shadcn themes feed those resolved
+metrics to the resize template; Shadcn's inspector reads the same stylesheet.
+The one-pixel divider and hit-target minimums still need their final visual versus
+interaction classification.
+
+SDK Toolbar also applies its existing common padding and gap overrides. Template
+borders, icons, state/variant token recipes, and the remaining family audits are
+still outstanding; this does not complete #146.
 
 ## Additional default factories
 

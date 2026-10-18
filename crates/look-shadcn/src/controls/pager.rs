@@ -10,7 +10,9 @@ pub fn pager_look(theme: &ShadcnLook, enabled: bool, style: PagerStyle) -> Pager
     let palette = &tokens.palette;
     let metrics = &tokens.metrics;
     let typography = theme.typography_scale(crate::ShadcnTextSize::Xs);
-    let compact = matches!(style, PagerStyle::Minimal);
+    let key = style.stylesheet_key();
+    let baseline = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default().pager.authored_geometry(key);
+    let recipe = tokens.stylesheet().common.pager.authored_geometry(key).with_fallback(&baseline);
 
     let mut look = PagerLook {
         panel_background: if enabled {
@@ -34,28 +36,18 @@ pub fn pager_look(theme: &ShadcnLook, enabled: bool, style: PagerStyle) -> Pager
         hover_background: palette.accent_background,
         shadow: vec![],
         typography,
-        button_size: if compact {
-            28.0
-        } else {
-            metrics.control_height(ControlSize::Sm)
-        },
-        button_min_width: if compact { 28.0 } else { 32.0 },
+        button_size: metrics.control_height(ControlSize::Sm),
+        button_min_width: metrics.control_height(ControlSize::Sm),
         control_height: metrics.control_height(ControlSize::Sm),
         radius: metrics.radius(ControlSize::Sm),
-        padding_x: 8.0,
-        padding_y: 8.0,
-        gap: 4.0,
-        group_gap: if compact { 8.0 } else { 16.0 },
-        disabled_opacity: 0.56,
+        padding_x: metrics.padding_x(ControlSize::Sm),
+        padding_y: metrics.padding_y(ControlSize::Sm),
+        gap: metrics.gap(ControlSize::Sm),
+        group_gap: metrics.gap(ControlSize::Sm),
+        disabled_opacity: recipe.disabled_opacity.unwrap_or_default(),
     };
     let geometry = tokens.stylesheet().common.pager.resolve_geometry(
-        if compact {
-            "minimal"
-        } else if matches!(style, PagerStyle::MinimalEdge) {
-            "minimal-edge"
-        } else {
-            "numeric"
-        },
+        key,
         gpui_luma::theme::stylesheet::PagerGeometry {
             button_size: look.button_size,
             button_min_width: look.button_min_width,
@@ -66,6 +58,9 @@ pub fn pager_look(theme: &ShadcnLook, enabled: bool, style: PagerStyle) -> Pager
             group_gap: look.group_gap,
             font_size: look.typography.size,
             line_height: look.typography.line_height,
+            radius: look.radius,
+            disabled_opacity: look.disabled_opacity,
+            ..Default::default()
         },
     );
     look.button_size = geometry.button_size.value_px;
@@ -75,6 +70,8 @@ pub fn pager_look(theme: &ShadcnLook, enabled: bool, style: PagerStyle) -> Pager
     look.padding_y = geometry.padding_y.value_px;
     look.gap = geometry.gap.value_px;
     look.group_gap = geometry.group_gap.value_px;
+    look.radius = geometry.radius.value_px;
+    look.disabled_opacity = geometry.disabled_opacity.value_px;
     crate::tables::typography::apply_resolved_geometry_typography(
         &mut look.typography,
         &geometry.font_size,

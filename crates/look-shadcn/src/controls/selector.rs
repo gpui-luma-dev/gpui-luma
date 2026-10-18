@@ -135,7 +135,7 @@ pub(crate) fn selector_geometry(
             font_size: typography.size,
             line_height: typography.line_height,
             radius: scale.radius,
-            menu_offset_y: scale.gap * recipe.menu_offset_scale.unwrap_or_default(),
+            menu_offset_y: recipe.gap.unwrap_or(scale.gap) * recipe.menu_offset_scale.unwrap_or_default(),
             ..Default::default()
         },
     )

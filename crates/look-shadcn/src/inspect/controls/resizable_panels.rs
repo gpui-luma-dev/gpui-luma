@@ -38,8 +38,11 @@ pub fn inspect_resizable_panels_color_palette(
     }
 }
 
-pub fn inspect_resizable_panels_metrics(handle_size: ResizeHandleSize) -> ResizablePanelsInspectMetrics {
-    let table = crate::tables::metrics::resolve_resizable_panels_metrics(handle_size);
+pub fn inspect_resizable_panels_metrics(
+    mode: &ShadcnModeTokens,
+    handle_size: ResizeHandleSize,
+) -> ResizablePanelsInspectMetrics {
+    let table = crate::tables::metrics::resolve_resizable_panels_metrics(handle_size, &mode.stylesheet().common);
     table.into()
 }
 
@@ -71,7 +74,8 @@ mod tests {
 
     #[test]
     fn inspect_handle_metrics_follow_preset_sizes() {
-        let metrics = inspect_resizable_panels_metrics(ResizeHandleSize::Md);
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).unwrap();
+        let metrics = inspect_resizable_panels_metrics(&mode, ResizeHandleSize::Md);
         assert!((metrics.lane_px.value_px - 12.0).abs() < f32::EPSILON);
     }
 }

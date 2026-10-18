@@ -223,3 +223,17 @@ fn sparse_configuration_keeps_composition_fallbacks_visible_and_zero_distinct() 
     assert_eq!(crate::callout::resolve_geometry(&look).font_size.value_px, 0.0);
     assert_eq!(crate::segmented::resolve_geometry(&look).height.value_px, 0.0);
 }
+
+#[test]
+fn slide_panel_uses_captured_common_visual_defaults() {
+    use gpui_luma::controls::slide_panel::{SlidePanelSizeConfig, SlidePanelTopAnchor};
+    let look = Look::built_in().fork();
+    let mut sheet = look.common_stylesheet();
+    sheet.slide_panel.geometry.side_width = Some(501.0);
+    sheet.resizable_panels.geometry.grip_radius = Some(0.0);
+    look.set_common_stylesheet(sheet);
+    let panel = look.slide_panel_state(SlidePanelTopAnchor::WindowEdge, SlidePanelSizeConfig::new(0.0, 0.0, 900.0));
+    look.set_common_stylesheet(gpui_luma::theme::stylesheet::CommonStylesheet::default());
+    assert_eq!(panel.geometry().side_width, Some(501.0));
+    assert_eq!(panel.resize_handle_metrics().grip_radius, 0.0);
+}

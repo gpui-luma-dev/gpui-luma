@@ -83,5 +83,7 @@ pub fn inspect_popup_menu_metrics(
     result.trigger.gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.gap, result.trigger.gap);
     result.trigger.icon_size =
         crate::tables::metrics::helpers::prefer_shared_metric(geometry.icon_size, result.trigger.icon_size);
+    result.trigger.radius =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.radius, result.trigger.radius);
     result
 }

@@ -101,29 +101,34 @@ pub struct ResizeHandleMetrics {
     pub hit_target_px: f32,
     pub grip_cross_axis_px: f32,
     pub grip_main_axis_px: f32,
+    /// Corner radius of the visible grip.
+    pub grip_radius: f32,
 }
 
 impl ResizeHandleSize {
     pub fn metrics(self) -> ResizeHandleMetrics {
-        match self {
-            Self::Sm => ResizeHandleMetrics {
-                lane_px: 8.0,
-                hit_target_px: 12.0,
-                grip_cross_axis_px: 4.0,
-                grip_main_axis_px: 36.0,
-            },
-            Self::Md => ResizeHandleMetrics {
-                lane_px: 12.0,
-                hit_target_px: 14.0,
-                grip_cross_axis_px: 6.0,
-                grip_main_axis_px: 40.0,
-            },
-            Self::Lg => ResizeHandleMetrics {
-                lane_px: 18.0,
-                hit_target_px: 20.0,
-                grip_cross_axis_px: 8.0,
-                grip_main_axis_px: 44.0,
-            },
+        self.metrics_with_stylesheet(crate::theme::stylesheet::CommonStylesheet::sdk_default())
+    }
+
+    /// Resolve the shared preset against a captured stylesheet.
+    pub fn metrics_with_stylesheet(
+        self,
+        stylesheet: &crate::theme::stylesheet::CommonStylesheet,
+    ) -> ResizeHandleMetrics {
+        let key = match self {
+            Self::Sm => "sm",
+            Self::Md => "md",
+            Self::Lg => "lg",
+        };
+        let baseline =
+            crate::theme::stylesheet::CommonStylesheet::sdk_default().resizable_panels.authored_geometry(key);
+        let recipe = stylesheet.resizable_panels.authored_geometry(key).with_fallback(&baseline);
+        ResizeHandleMetrics {
+            lane_px: recipe.lane_width.unwrap_or_default(),
+            hit_target_px: recipe.hit_target.unwrap_or_default(),
+            grip_cross_axis_px: recipe.grip_cross_axis.unwrap_or_default(),
+            grip_main_axis_px: recipe.grip_main_axis.unwrap_or_default(),
+            grip_radius: recipe.grip_radius.unwrap_or_default(),
         }
     }
 
@@ -264,6 +269,7 @@ pub struct ResizablePanelsRenderModel<'a> {
     pub hovered_handle: Option<usize>,
     pub dragging_handle: Option<usize>,
     pub resize_handle: ResizeHandleSize,
+    pub handle_metrics: ResizeHandleMetrics,
     pub handle_grip: bool,
     pub panel_sizes_px: &'a [f32],
     pub panel_hidden: Vec<bool>,

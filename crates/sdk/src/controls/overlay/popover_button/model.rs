@@ -46,6 +46,8 @@ pub struct PopoverButtonBuilder<D = ()> {
     pub(super) content: PopoverContent<D>,
     pub(super) placement: PopoverPlacement,
     pub(super) dismiss_policy: PopoverDismissPolicy,
+    explicit_offset_y: bool,
+    explicit_window_margin: bool,
     pub(super) offset_y: Pixels,
     pub(super) window_margin: Pixels,
     pub(super) initial_content_size: Option<gpui::Size<Pixels>>,
@@ -82,6 +84,7 @@ impl<D: Default + 'static> PopoverButtonBuilder<D> {
 
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
+        let geometry = crate::theme::stylesheet::CommonStylesheet::sdk_default().popover.authored_geometry("button");
         Self {
             motion: Default::default(),
             callbacks: Default::default(),
@@ -92,8 +95,10 @@ impl<D: Default + 'static> PopoverButtonBuilder<D> {
             content: Arc::new(|_, _, _| div().into_any_element()),
             placement: PopoverPlacement::default(),
             dismiss_policy: PopoverDismissPolicy::default(),
-            offset_y: px(0.0),
-            window_margin: px(8.0),
+            explicit_offset_y: false,
+            explicit_window_margin: false,
+            offset_y: px(geometry.offset_y.unwrap_or_default()),
+            window_margin: px(geometry.window_margin.unwrap_or_default()),
             initial_content_size: None,
             focus_on_open: true,
             motion_enabled: true,
@@ -101,6 +106,19 @@ impl<D: Default + 'static> PopoverButtonBuilder<D> {
             measure_trigger: true,
         }
     }
+    /// Capture placement defaults; explicit builder offsets and margins win in either order.
+    pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().popover.authored_geometry("button");
+        let geometry = stylesheet.popover.authored_geometry("button").with_fallback(&baseline);
+        if !self.explicit_offset_y {
+            self.offset_y = px(geometry.offset_y.unwrap_or_default());
+        }
+        if !self.explicit_window_margin {
+            self.window_margin = px(geometry.window_margin.unwrap_or_default());
+        }
+        self
+    }
+
     pub fn typed(mut self, data: D) -> Self {
         self.data = data;
         self
@@ -128,10 +146,12 @@ impl<D: Default + 'static> PopoverButtonBuilder<D> {
         self
     }
     pub fn offset_y(mut self, value: impl Into<Pixels>) -> Self {
+        self.explicit_offset_y = true;
         self.offset_y = value.into();
         self
     }
     pub fn window_margin(mut self, value: impl Into<Pixels>) -> Self {
+        self.explicit_window_margin = true;
         self.window_margin = value.into();
         self
     }
@@ -161,5 +181,33 @@ impl<D: Default + 'static> PopoverButtonBuilder<D> {
         let control = { cx.new(|cx| PopoverButton::from_builder(self, cx)) };
         callbacks.bind(&control, cx);
         control
+    }
+}
+
+#[cfg(test)]
+mod stylesheet_tests {
+    use super::*;
+    use crate::theme::stylesheet::CommonStylesheet;
+
+    #[test]
+    fn button_placement_captures_defaults_and_explicit_values_win_in_either_order() {
+        let baseline = PopoverButtonBuilder::<()>::new("baseline");
+        assert_eq!((baseline.offset_y, baseline.window_margin), (px(0.0), px(8.0)));
+        let mut sheet = CommonStylesheet::resolve_layers(&[
+            "[common.popover.geometry]\nwindow_margin=19\n[common.popover.sizes.button]\noffset_y=6",
+        ])
+        .unwrap();
+        let captured = PopoverButtonBuilder::<()>::new("captured").stylesheet(&sheet);
+        sheet.popover.geometry.window_margin = Some(37.0);
+        assert_eq!((captured.offset_y, captured.window_margin), (px(6.0), px(19.0)));
+        for builder in [
+            PopoverButtonBuilder::<()>::new("before")
+                .offset_y(px(0.0))
+                .window_margin(px(0.0))
+                .stylesheet(&sheet),
+            PopoverButtonBuilder::<()>::new("after").stylesheet(&sheet).offset_y(px(0.0)).window_margin(px(0.0)),
+        ] {
+            assert_eq!((builder.offset_y, builder.window_margin), (px(0.0), px(0.0)));
+        }
     }
 }
