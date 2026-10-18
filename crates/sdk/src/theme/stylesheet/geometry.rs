@@ -165,7 +165,7 @@ geometry_family!(
     ResizablePanelsGeometry,
     ResolvedResizablePanelsGeometry,
     "resizable_panels",
-    [lane_width, hit_target, grip_cross_axis, grip_main_axis, grip_radius],
+    [lane_width, hit_target, grip_cross_axis, grip_main_axis, grip_radius, border_width, divider_width],
     unit[disabled_opacity]
 );
 geometry_family!(

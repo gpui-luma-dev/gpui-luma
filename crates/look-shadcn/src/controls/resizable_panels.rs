@@ -72,12 +72,20 @@ pub fn resizable_panels_look(
     let colors = resolve_resizable_panels_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| ResizablePanelsColorTable::fallback());
 
+    let geometry = mode.stylesheet().common.resizable_panels.resolve_geometry("md", Default::default());
+
     ResizablePanelsLook {
         border: colors.border.hsla(),
+        border_width: geometry.border_width.value_px,
+        divider_width: geometry.divider_width.value_px,
         divider: colors.divider.hsla(),
         grip: colors.grip.hsla(),
         grip_emphasis: colors.grip_emphasis.hsla(),
-        disabled_opacity: if state.disabled { 0.45 } else { 1.0 },
+        disabled_opacity: if state.disabled {
+            geometry.disabled_opacity.value_px
+        } else {
+            1.0
+        },
     }
 }
 

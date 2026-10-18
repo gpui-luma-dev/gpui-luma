@@ -62,12 +62,20 @@ pub fn render_slide_panel_resize_handle(
     };
 
     let divider = match orientation {
-        ResizablePanelsOrientation::Horizontal => {
-            div().absolute().left(px(divider_local_px)).top(px(0.0)).bottom(px(0.0)).w(px(1.0)).bg(look.divider)
-        }
-        ResizablePanelsOrientation::Vertical => {
-            div().absolute().top(px(divider_local_px)).left(px(0.0)).right(px(0.0)).h(px(1.0)).bg(look.divider)
-        }
+        ResizablePanelsOrientation::Horizontal => div()
+            .absolute()
+            .left(px(divider_local_px))
+            .top(px(0.0))
+            .bottom(px(0.0))
+            .w(px(look.divider_width))
+            .bg(look.divider),
+        ResizablePanelsOrientation::Vertical => div()
+            .absolute()
+            .top(px(divider_local_px))
+            .left(px(0.0))
+            .right(px(0.0))
+            .h(px(look.divider_width))
+            .bg(look.divider),
     };
 
     if handle_active {

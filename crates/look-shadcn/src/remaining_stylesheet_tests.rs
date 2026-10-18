@@ -549,3 +549,23 @@ radius=11
         assert_eq!(inspected.padding_x.value_px, shell.padding_x);
     }
 }
+
+#[test]
+fn resize_chrome_uses_common_stylesheet_including_zero_width() {
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.resizable_panels.geometry]
+border_width=0
+divider_width=3
+disabled_opacity=0.2
+"#])
+    .unwrap();
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    let theme = look.resizable_panels_theme();
+    let enabled = theme.resolve(InteractionState::default());
+    assert_eq!((enabled.border_width, enabled.divider_width), (0.0, 3.0));
+    let disabled = theme.resolve(InteractionState { disabled: true, ..Default::default() });
+    assert_eq!(disabled.disabled_opacity, 0.2);
+    let slide = crate::controls::slide_panel::slide_panel_panels_look(&look);
+    assert_eq!((slide.border_width, slide.divider_width), (0.0, 3.0));
+}

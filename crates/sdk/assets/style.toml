@@ -597,6 +597,9 @@ hit_target = 8.0
 visible_line = 1.0
 
 [common.resizable_panels.geometry]
+# Outer frame and split divider thickness in pixels; zero hides the stroke.
+border_width = 1.0
+divider_width = 1.0
 grip_radius = 8.0
 disabled_opacity = 0.45
 

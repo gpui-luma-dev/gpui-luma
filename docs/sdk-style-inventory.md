@@ -33,7 +33,7 @@
 | Pager | `common.pager.geometry/sizes` | SDK factory dimensions/typography/radius/opacity and proportional padding/width recipes migrated; Shadcn fixed defaults removed from Rust; template/icon audit remains |
 | Popup Menu / Split Button trigger | `common.popup_menu.geometry/sizes` | SDK factory now applies common dimensions/typography/radius/offset; bundled looks share final resolution; consumer radius wins |
 | Popover placement | `common.popover.geometry/sizes.button/panel` | Raw builders capture defaults; explicit consumer offset/margin wins independently of method order |
-| Slide Panel | `common.slide_panel.geometry`, shared resize presets | Captured side/edge sizing and viewport ratio; bundled look state factories inherit; remaining divider/border template audit pending |
+| Slide Panel | `common.slide_panel.geometry`, shared resize presets | Captured side/edge sizing and viewport ratio; bundled look state factories inherit; resize divider thickness migrated; remaining shell border audit pending |
 | Resize-handle presets | `common.resizable_panels.geometry/sizes` | Lane, hit target, grip extents and radius migrated; SDK/Shadcn paint and available inspection wired |
 | Toolbar factory | `common.toolbar.geometry/sizes` | SDK applies existing padding/gap seam; other styling stays token-backed pending template/state audit |
 | Group template chrome | `common.control_group.geometry` | Vertical gap, border width, radius and disabled-item opacity migrated; themed looks carry resolved chrome; explicit builder styles and final modifiers retain precedence |
@@ -64,7 +64,7 @@ have been classified. Shared token migration benefits every token-backed theme.
 | collection/table | SDK surface/row factory recipes migrated; column/header/template styling and full state recipes still need audit. |
 | collection/tree_view | Row scale factory and both look adapters wired; state and template chrome still need audit. |
 | layout/dock_splitter | Factory hit target and visible line migrated; template chrome still needs audit. |
-| layout/resizable_panels | Opacity, lane/hit-target and grip extents/radius migrated. Split placement and collapse/keyboard thresholds are layout/interaction; divider and border styling remain pending. |
+| layout/resizable_panels | Opacity, lane/hit-target and grip extents/radius migrated. Split placement and collapse/keyboard thresholds are layout/interaction; Frame and split divider widths now use shared resizable-panel geometry. |
 | layout/scroll_container | Pending control-specific schema/factory/template audit. |
 | layout/scrollbar | Fixed geometry migrated; template/scroll algorithms still need classification. |
 | layout/split_view | Pending control-specific schema/factory/template audit. |
@@ -78,7 +78,7 @@ have been classified. Shared token migration benefits every token-backed theme.
 | overlay/overlay_window | Factory dimensions/backdrop opacity and nonmodal shadow migrated; template recipes still need audit. |
 | overlay/popover_button | Placement defaults migrated for button/panel builders; focus/dismissal are behavior and supplied trigger/content chrome is host-owned. |
 | overlay/popup_menu | Factory dimensions/typography/radius/offset migrated and shared with looks; state/icon/template recipes still need audit. |
-| overlay/slide_panel | Side/edge defaults and viewport ratio captured; resize grip shares migrated presets. Divider/border styling remains pending; movement/interpolation and resize clamps stay behavioral/layout code. |
+| overlay/slide_panel | Side/edge defaults and viewport ratio captured; resize grip shares migrated presets. Resize divider thickness migrated; remaining shell border audit pending; movement/interpolation and resize clamps stay behavioral/layout code. |
 | overlay/tooltip | Vanilla and compact geometry migrated; presentation coverage still needs audit. |
 | range/progress | Fixed geometry migrated; template decoration still needs audit. |
 | range/slider | Factory and proportional sizing migrated; pointer algorithms remain Rust; template chrome still needs audit. |

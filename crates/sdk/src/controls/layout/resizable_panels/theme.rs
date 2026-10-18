@@ -7,6 +7,10 @@ use crate::theme::{InteractionLayer, InteractionState, ThemeTokens};
 #[derive(Clone, Debug)]
 pub struct ResizablePanelsLook {
     pub border: Hsla,
+    /// Outer frame thickness in pixels, when the frame is enabled.
+    pub border_width: f32,
+    /// Painted split divider thickness in pixels; independent of the resize hit target.
+    pub divider_width: f32,
     pub divider: Hsla,
     pub grip: Hsla,
     pub grip_emphasis: Hsla,
@@ -51,6 +55,8 @@ impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
 
         ResizablePanelsLook {
             border: palette.border.default,
+            border_width: geometry.border_width.value_px,
+            divider_width: geometry.divider_width.value_px,
             divider: if disabled {
                 palette.state.disabled.background
             } else {

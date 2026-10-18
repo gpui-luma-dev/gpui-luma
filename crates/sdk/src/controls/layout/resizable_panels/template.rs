@@ -158,7 +158,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         };
 
         if model.show_border {
-            root = root.border_1().border_color(look.border);
+            root = root.border(px(look.border_width)).border_color(look.border);
         }
 
         let mut track = div().relative().flex_1().min_h_0().min_w_0().w_full();
@@ -322,12 +322,20 @@ fn render_overlay_handle(
     };
 
     let divider = match orientation {
-        ResizablePanelsOrientation::Horizontal => {
-            div().absolute().left(px(divider_local_px)).top(px(0.0)).bottom(px(0.0)).w(px(1.0)).bg(look.divider)
-        }
-        ResizablePanelsOrientation::Vertical => {
-            div().absolute().top(px(divider_local_px)).left(px(0.0)).right(px(0.0)).h(px(1.0)).bg(look.divider)
-        }
+        ResizablePanelsOrientation::Horizontal => div()
+            .absolute()
+            .left(px(divider_local_px))
+            .top(px(0.0))
+            .bottom(px(0.0))
+            .w(px(look.divider_width))
+            .bg(look.divider),
+        ResizablePanelsOrientation::Vertical => div()
+            .absolute()
+            .top(px(divider_local_px))
+            .left(px(0.0))
+            .right(px(0.0))
+            .h(px(look.divider_width))
+            .bg(look.divider),
     };
 
     handle = handle.child(divider);

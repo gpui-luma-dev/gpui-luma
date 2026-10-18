@@ -611,3 +611,5 @@ motion inherits the SDK baseline. `common.motion.transition` configures the
 standalone `Transition::default()`; controls use their explicit typed roles.
 Shared token defaults now come from `common.tokens`; remaining control-specific
 recipes are tracked in the migration inventory.
+
+Resizable panel frame and split stroke widths use `common.resizable_panels.geometry.border_width` and `divider_width` (pixels; zero hides the stroke). SlidePanel resize dividers share the resolved resize look. Stroke thickness is independent of resize hit targets. Shadcn also resolves disabled opacity from this family.
