@@ -194,6 +194,9 @@ mod tests {
 
     fn sample_list_look() -> TableLook {
         TableLook {
+            column_resize_hit_width: 10.0,
+            column_resize_line_width: 1.0,
+            column_resize_vertical_extension: 4.0,
             background: gpui::white(),
             border: gpui::black(),
             border_width: 1.0,

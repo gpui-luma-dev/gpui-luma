@@ -61,7 +61,7 @@ have been classified. Shared token migration benefits every token-backed theme.
 | choice/toggle | Pending control-specific schema/factory/template audit. |
 | choice/toolbar | SDK factory now honors existing common padding/gap. Radius/separator token bindings and template/state recipes still need audit. |
 | collection/listbox | Raw SDK flow/control modules own item placement, viewport/scroll/selection algorithms; visual item chrome is host/look-owned. Keep flow arithmetic in Rust. Host visual defaults still need audit. |
-| collection/table | SDK surface/row factory recipes, shell/header strokes, header padding ratio and drag preview/marker geometry and disabled-row opacity migrated; remaining column/template styling and full state recipes still need audit. |
+| collection/table | SDK surface/row factory recipes, shell/header strokes, header padding ratio and drag preview/marker geometry and disabled-row opacity and column resize chrome migrated; remaining column/template styling and full state recipes still need audit. |
 | collection/tree_view | Row scale factory and both look adapters wired; state and template chrome still need audit. |
 | layout/dock_splitter | Factory hit target and visible line migrated; template chrome still needs audit. |
 | layout/resizable_panels | Opacity, lane/hit-target and grip extents/radius migrated. Split placement and collapse/keyboard thresholds are layout/interaction; Frame and split divider widths now use shared resizable-panel geometry. |

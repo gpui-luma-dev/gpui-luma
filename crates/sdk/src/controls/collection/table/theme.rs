@@ -8,6 +8,12 @@ use crate::theme::{
 
 #[derive(Clone, Debug)]
 pub struct TableLook {
+    /// Column resize hit target width in pixels.
+    pub column_resize_hit_width: f32,
+    /// Painted column resize stroke thickness in pixels.
+    pub column_resize_line_width: f32,
+    /// Hit target extension above and below the header in pixels.
+    pub column_resize_vertical_extension: f32,
     pub background: Hsla,
     pub border: Hsla,
     /// Outer frame thickness in pixels.
@@ -151,6 +157,10 @@ impl TableTheme for DefaultTableTheme {
         let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().table.authored_geometry(key);
         let recipe = self.tokens.stylesheet.table.authored_geometry(key).with_fallback(&baseline);
         let mut look = TableLook {
+            column_resize_hit_width: recipe.column_resize_hit_width.unwrap_or_default(),
+            column_resize_line_width: recipe.column_resize_line_width.unwrap_or_default(),
+            column_resize_vertical_extension: recipe.column_resize_vertical_extension.unwrap_or_default(),
+
             background: if enabled {
                 palette.form.input.background
             } else {

@@ -893,3 +893,26 @@ fn virtualized_drop_motion_tracks_only_visible_rows_and_finishes_after_commit() 
     let end = cx.debug_bounds("table-motion-1").unwrap().top();
     assert!(mid < old.top() && mid > end);
 }
+
+#[test]
+fn resize_hit_target_uses_resolved_width_and_remains_centered_with_hidden_stroke() {
+    let mut app = TestAppContext::single();
+    let (table, cx) = resizable_grid(&mut app, true, false);
+    let original = cx.debug_bounds("table-column-resize-0").unwrap();
+    table.update(cx, |table, cx| {
+        table.set_look_override(
+            Some(std::sync::Arc::new(|mut look| {
+                look.column_resize_hit_width = 24.0;
+                look.column_resize_line_width = 0.0;
+                look.column_resize_vertical_extension = 7.0;
+                look
+            })),
+            cx,
+        );
+    });
+    cx.run_until_parked();
+    let updated = cx.debug_bounds("table-column-resize-0").unwrap();
+    assert_eq!(updated.size.width, px(24.0));
+    assert_eq!(updated.center(), original.center());
+    assert_eq!(updated.size.height, original.size.height + px(6.0));
+}

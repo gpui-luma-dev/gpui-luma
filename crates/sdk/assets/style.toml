@@ -654,6 +654,10 @@ chevron_size = 14.0
 
 # Table surface padding scales with shared control metrics; row hover is accent alpha.
 [common.table.geometry]
+# Column resize hit target width, painted stroke and vertical hit extension (pixels).
+column_resize_hit_width = 10.0
+column_resize_line_width = 1.0
+column_resize_vertical_extension = 4.0
 # Compact drag preview dimensions, padding and pointer offset in pixels.
 drag_offset = 12.0
 drag_width = 220.0

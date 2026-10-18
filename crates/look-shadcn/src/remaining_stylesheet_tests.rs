@@ -579,6 +579,9 @@ fn table_strokes_and_header_padding_use_selected_stylesheet() {
 border_width=0
 header_divider_width=3
 header_padding_bottom_scale="math(1 / 2)"
+column_resize_hit_width=24
+column_resize_line_width=0
+column_resize_vertical_extension=7
 "#])
     .unwrap();
     let tokens = config.common.theme_tokens(ThemeMode::Light, gpui_luma::color::GamutMapping::CssLocalMinde).unwrap();
@@ -586,6 +589,14 @@ header_padding_bottom_scale="math(1 / 2)"
     let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
     let themed = crate::controls::table::table_look(&look.mode_tokens(), true, false, ControlSize::Md);
     for resolved in [sdk, themed] {
+        assert_eq!(
+            (
+                resolved.column_resize_hit_width,
+                resolved.column_resize_line_width,
+                resolved.column_resize_vertical_extension
+            ),
+            (24.0, 0.0, 7.0)
+        );
         assert_eq!(
             (resolved.border_width, resolved.header_divider_width, resolved.header_padding_bottom_scale),
             (0.0, 3.0, 0.5)

@@ -443,7 +443,10 @@ geometry_family!(
         drag_padding_x,
         drag_padding_y,
         drag_border_width,
-        drag_marker_width
+        drag_marker_width,
+        column_resize_hit_width,
+        column_resize_line_width,
+        column_resize_vertical_extension
     ],
     unit[row_hover_opacity, row_disabled_opacity]
 );

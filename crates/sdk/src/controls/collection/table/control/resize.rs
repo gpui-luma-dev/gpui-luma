@@ -75,19 +75,19 @@ impl<T: 'static> TableControl<T> {
                         .absolute()
                         // Center the hit target on the divider. A target ending
                         // at the divider excludes clicks on its right edge.
-                        .left(px(divider_x - 5.0))
-                        .top(px(-4.0))
-                        .bottom(px(-4.0))
-                        .w(px(10.0))
+                        .left(px(divider_x - look.column_resize_hit_width * 0.5))
+                        .top(px(-look.column_resize_vertical_extension))
+                        .bottom(px(-look.column_resize_vertical_extension))
+                        .w(px(look.column_resize_hit_width))
                         .cursor_col_resize()
                         .group("table-column-resize")
                         .child(
                             div()
                                 .absolute()
-                                .left(px(4.5))
-                                .top(px(4.0))
-                                .bottom(px(4.0))
-                                .w(px(1.0))
+                                .left(px((look.column_resize_hit_width - look.column_resize_line_width) * 0.5))
+                                .top(px(look.column_resize_vertical_extension))
+                                .bottom(px(look.column_resize_vertical_extension))
+                                .w(px(look.column_resize_line_width))
                                 .bg(if active { look.header_label_color } else { look.border })
                                 .group_hover("table-column-resize", |style| style.bg(look.header_label_color)),
                         )

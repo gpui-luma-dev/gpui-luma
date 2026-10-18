@@ -121,6 +121,10 @@ pub fn table_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: 
         .authored_geometry(size.stylesheet_key());
     let recipe = mode.stylesheet().common.table.authored_geometry(size.stylesheet_key()).with_fallback(&baseline);
     let mut look = TableLook {
+        column_resize_hit_width: recipe.column_resize_hit_width.unwrap_or_default(),
+        column_resize_line_width: recipe.column_resize_line_width.unwrap_or_default(),
+        column_resize_vertical_extension: recipe.column_resize_vertical_extension.unwrap_or_default(),
+
         background: colors.background.hsla(),
         border: colors.border.hsla(),
         border_width: recipe.border_width.unwrap_or_default(),

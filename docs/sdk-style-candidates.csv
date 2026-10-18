@@ -220,14 +220,14 @@ crates/sdk/src/controls/collection/table/control/render.rs,108,control,0.0,revie
 crates/sdk/src/controls/collection/table/control/render.rs,129,control,0.0,review owner / derived calculation,needs classification,div().flex_1().min_w(px(0.0)).truncate().child(self.model.label_for_row(item)).into_any_element()
 crates/sdk/src/controls/collection/table/control/resize.rs,10,control,48.0,common.control.geometry.MIN_COLUMN_WIDTH,needs classification,const MIN_COLUMN_WIDTH: f32 = 48.0;
 crates/sdk/src/controls/collection/table/control/resize.rs,64,control,0.0,review owner / derived calculation,needs classification,let mut divider_x = 0.0;
-crates/sdk/src/controls/collection/table/control/resize.rs,78,control,5.0,review owner / derived calculation,needs classification,.left(px(divider_x - 5.0))
-crates/sdk/src/controls/collection/table/control/resize.rs,79,control,4.0,review owner / derived calculation,needs classification,.top(px(-4.0))
-crates/sdk/src/controls/collection/table/control/resize.rs,80,control,4.0,review owner / derived calculation,needs classification,.bottom(px(-4.0))
-crates/sdk/src/controls/collection/table/control/resize.rs,81,control,10.0,review owner / derived calculation,needs classification,.w(px(10.0))
-crates/sdk/src/controls/collection/table/control/resize.rs,87,control,4.5,review owner / derived calculation,needs classification,.left(px(4.5))
-crates/sdk/src/controls/collection/table/control/resize.rs,88,control,4.0,review owner / derived calculation,needs classification,.top(px(4.0))
-crates/sdk/src/controls/collection/table/control/resize.rs,89,control,4.0,review owner / derived calculation,needs classification,.bottom(px(4.0))
-crates/sdk/src/controls/collection/table/control/resize.rs,90,control,1.0,review owner / derived calculation,needs classification,.w(px(1.0))
+crates/sdk/src/controls/collection/table/control/resize.rs,78,control,5.0,common.table.geometry.column_resize_*,migrated: dimensions authored; centering derived,.left(px(divider_x - 5.0))
+crates/sdk/src/controls/collection/table/control/resize.rs,79,control,4.0,common.table.geometry.column_resize_*,migrated: dimensions authored; centering derived,.top(px(-4.0))
+crates/sdk/src/controls/collection/table/control/resize.rs,80,control,4.0,common.table.geometry.column_resize_*,migrated: dimensions authored; centering derived,.bottom(px(-4.0))
+crates/sdk/src/controls/collection/table/control/resize.rs,81,control,10.0,common.table.geometry.column_resize_*,migrated: dimensions authored; centering derived,.w(px(10.0))
+crates/sdk/src/controls/collection/table/control/resize.rs,87,control,4.5,common.table.geometry.column_resize_*,migrated: dimensions authored; centering derived,.left(px(4.5))
+crates/sdk/src/controls/collection/table/control/resize.rs,88,control,4.0,common.table.geometry.column_resize_*,migrated: dimensions authored; centering derived,.top(px(4.0))
+crates/sdk/src/controls/collection/table/control/resize.rs,89,control,4.0,common.table.geometry.column_resize_*,migrated: dimensions authored; centering derived,.bottom(px(4.0))
+crates/sdk/src/controls/collection/table/control/resize.rs,90,control,1.0,common.table.geometry.column_resize_*,migrated: dimensions authored; centering derived,.w(px(1.0))
 crates/sdk/src/controls/collection/table/control/resize.rs,119,control,1.0,review owner / derived calculation,needs classification,.is_some_and(|resize| (resize.viewport_width - width).abs() > 1.0);
 crates/sdk/src/controls/collection/table/control/resize.rs,152,control,0.0,review owner / derived calculation,needs classification,|| self.measured_column_widths.iter().any(|width| !width.is_finite() || *width < 0.0)
 crates/sdk/src/controls/collection/table/control/resize.rs,194,control,0.0,review owner / derived calculation,needs classification,0.0
