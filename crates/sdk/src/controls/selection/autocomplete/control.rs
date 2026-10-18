@@ -52,7 +52,15 @@ impl AutocompleteControl {
         AutocompleteBuilder::new(id, items)
     }
 
+    crate::presence_policy!(presence);
+
+    crate::motion_snapshot!(super::AutocompleteMotion, model.motion);
+
     pub(crate) fn from_builder(builder: AutocompleteBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
+        let motion_enabled = builder.model.motion.enabled();
         let model = builder.model;
 
         let textfield = text_selection::new(format!("{}-textfield", model.id))
@@ -90,7 +98,7 @@ impl AutocompleteControl {
             model,
             behavior: SelectionBehavior::new(),
             trigger_bounds: None,
-            presence: OverlayPresence::new(false, true),
+            presence: OverlayPresence::with_motion(false, motion_enabled, motion.presence.clone()),
             last_event: SharedString::from("none"),
             last_keyboard_event: SharedString::from("none"),
             _subscriptions: subscriptions,
@@ -377,7 +385,7 @@ impl AutocompleteControl {
             return false;
         }
 
-        self.presence.set_open_with_animation(self.behavior.state.open, self.behavior.state.open);
+        self.presence.set_open(self.behavior.state.open);
 
         cx.emit(AutocompleteEvent::OpenChanged { open: self.behavior.state.open });
         if dismissed && !self.behavior.state.open {
@@ -522,7 +530,7 @@ impl Render for AutocompleteControl {
             popup_bounds: self.trigger_bounds,
             popup_look: look,
             popup_content,
-            presence: self.presence,
+            presence: self.presence.clone(),
         };
 
         self.model.template.render(render_model, handlers, window, cx)

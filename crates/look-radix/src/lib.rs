@@ -220,3 +220,16 @@ mod interaction_tests;
 
 #[cfg(all(test, feature = "test-support"))]
 mod event_callback_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+gpui_luma::test_look_motion_contract!(crate::Look::built_in(), crate);
+
+#[cfg(all(test, feature = "test-support"))]
+gpui_luma::test_stylesheet_motion_contract!(
+    |source: &str| {
+        let look = crate::Look::built_in();
+        look.set_common_stylesheet(gpui_luma::theme::stylesheet::CommonStylesheet::parse(source).unwrap());
+        look
+    },
+    crate
+);

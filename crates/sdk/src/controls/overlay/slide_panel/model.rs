@@ -1,8 +1,8 @@
-use std::time::Instant;
-
 use gpui::{Context, FocusHandle, KeyDownEvent, Point, Pixels, Window, px};
 
-const PANEL_ANIMATION_SECONDS: f32 = 0.22;
+crate::motion_profile!(SlidePanelMotion => slide_panel {
+    presence: crate::motion::PresenceMotion,
+});
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SlidePanelEdge {
@@ -55,13 +55,6 @@ impl SlidePanelTopAnchor {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct SlidePanelAnimation {
-    from: f32,
-    to: f32,
-    started_at: Instant,
-}
-
-#[derive(Clone, Copy, Debug)]
 struct SlidePanelResizeSession {
     start_pointer: f32,
     start_size: f32,
@@ -83,7 +76,9 @@ impl SlidePanelSizeConfig {
 pub struct SlidePanelState {
     active_edge: Option<SlidePanelEdge>,
     open_progress: f32,
-    animation: Option<SlidePanelAnimation>,
+    transition: crate::motion::VisualTransition,
+    motion: crate::motion::MotionConfig<SlidePanelMotion>,
+    closing: bool,
     restore_focus: Option<FocusHandle>,
     pending_panel_focus: bool,
     pending_focus_restore: bool,
@@ -95,11 +90,32 @@ pub struct SlidePanelState {
 }
 
 impl SlidePanelState {
+    crate::motion_methods!(SlidePanelMotion, motion);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.set_motion_enabled(enabled);
+        self
+    }
+    pub fn set_motion_enabled(&mut self, enabled: bool) {
+        self.motion.set_enabled(enabled);
+        let profile = self.motion.resolve();
+        self.transition.set_transition(
+            if self.closing {
+                profile.presence.exit
+            } else {
+                profile.presence.enter
+            }
+            .enabled(enabled),
+        );
+        self.sync_animation();
+    }
+
     pub fn new(top_anchor: SlidePanelTopAnchor, size_config: SlidePanelSizeConfig) -> Self {
         Self {
             active_edge: None,
             open_progress: 0.0,
-            animation: None,
+            transition: crate::motion::VisualTransition::with_transition(0.0, crate::motion::Transition::instant()),
+            motion: Default::default(),
+            closing: false,
             restore_focus: None,
             pending_panel_focus: false,
             pending_focus_restore: false,
@@ -261,45 +277,24 @@ impl SlidePanelState {
     }
 
     pub fn sync_animation(&mut self) -> bool {
-        let Some(animation) = self.animation else {
-            return false;
-        };
-
-        let elapsed = animation.started_at.elapsed().as_secs_f32();
-        let linear = (elapsed / PANEL_ANIMATION_SECONDS).clamp(0.0, 1.0);
-        let eased = ease_out_cubic(linear);
-        self.open_progress = animation.from + ((animation.to - animation.from) * eased);
-
-        if linear >= 1.0 {
-            self.open_progress = animation.to;
-            self.animation = None;
-            if animation.to <= 0.0 {
-                self.active_edge = None;
-            }
+        let was_animating = self.transition.is_animating();
+        self.transition.sync();
+        self.open_progress = self.transition.progress();
+        if !self.transition.is_animating() && self.closing {
+            self.active_edge = None;
         }
-
-        true
+        was_animating
     }
 
-    pub fn schedule_animation_frame<T>(&self, window: &mut Window, cx: &mut Context<T>)
-    where
-        T: 'static,
-    {
-        if self.animation.is_none() {
-            return;
-        }
-
-        cx.on_next_frame(window, |this, _window, cx| {
-            let _ = this;
-            cx.notify();
-        });
+    pub fn schedule_animation_frame<T: 'static>(&self, window: &mut Window, cx: &mut Context<T>) {
+        self.transition.schedule_frame(window, cx);
     }
 
     pub fn schedule_pending_focus<T>(&mut self, window: &mut Window, cx: &mut Context<T>, primary_focus: FocusHandle)
     where
         T: 'static,
     {
-        if self.pending_panel_focus && self.open_progress >= 0.999 {
+        if self.pending_panel_focus && !self.transition.is_animating() && !self.closing {
             self.pending_panel_focus = false;
             cx.on_next_frame(window, move |_this, window, cx| {
                 primary_focus.focus(window, cx);
@@ -317,27 +312,56 @@ impl SlidePanelState {
     }
 
     fn start_animation(&mut self, target: f32) {
-        let from = self.open_progress;
-        if (from - target).abs() <= f32::EPSILON {
-            if target == 0.0 {
-                self.active_edge = None;
-            }
-            self.animation = None;
-            self.open_progress = target;
-            return;
+        self.motion.freeze();
+        self.closing = target == 0.0;
+        let profile = self.motion.profile();
+        let definition = if self.closing {
+            &profile.presence.exit
+        } else {
+            &profile.presence.enter
+        };
+        self.transition.set_transition(definition.enabled(self.motion.enabled()));
+        self.transition.set_target(target);
+        self.open_progress = self.transition.progress();
+        if self.closing && !self.transition.is_animating() {
+            self.active_edge = None;
         }
-
-        self.animation = Some(SlidePanelAnimation { from, to: target, started_at: Instant::now() });
     }
-}
-
-fn ease_out_cubic(t: f32) -> f32 {
-    1.0 - (1.0 - t).powi(3)
 }
 
 fn main_axis_pointer(pointer: Point<Pixels>, edge: SlidePanelEdge) -> f32 {
     match edge {
         SlidePanelEdge::Left | SlidePanelEdge::Right => pointer.x.as_f32(),
         SlidePanelEdge::Top | SlidePanelEdge::Bottom => pointer.y.as_f32(),
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod motion_tests {
+    use super::*;
+    use std::time::Duration;
+    #[test]
+    fn default_duration_and_custom_exit_preserve_presence_lifecycle() {
+        let mut state =
+            SlidePanelState::new(SlidePanelTopAnchor::WindowEdge, SlidePanelSizeConfig::new(360., 200., 500.));
+        state.active_edge = Some(SlidePanelEdge::Left);
+        state.transition.elapse_for_test(Duration::ZERO);
+        state.start_animation(1.);
+        state.transition.elapse_for_test(Duration::from_millis(110));
+        state.sync_animation();
+        assert_eq!(state.open_progress(), 0.875);
+        state.request_close();
+        assert!(state.active_edge().is_some());
+        state.transition.elapse_for_test(Duration::from_millis(220));
+        state.sync_animation();
+        assert!(state.active_edge().is_none());
+        let mut state = state.motion(|m| m.presence.exit = crate::motion::Transition::instant());
+        state.active_edge = Some(SlidePanelEdge::Right);
+        state.start_animation(1.);
+        state.transition.elapse_for_test(Duration::from_millis(220));
+        state.sync_animation();
+        state.request_close();
+        assert!(state.active_edge().is_none());
+        assert!(!state.transition.is_animating());
     }
 }

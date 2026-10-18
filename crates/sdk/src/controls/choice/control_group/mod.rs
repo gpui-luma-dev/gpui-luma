@@ -64,3 +64,5 @@ where
 
 mod callback;
 pub use callback::ControlGroupEventExt;
+
+pub use model::ControlGroupMotion;

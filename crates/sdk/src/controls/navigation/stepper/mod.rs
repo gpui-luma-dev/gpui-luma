@@ -19,3 +19,5 @@ pub type Stepper = Entity<StepperControl>;
 pub fn stepper(id: impl Into<SharedString>, step_count: usize) -> StepperBuilder {
     StepperBuilder::new(id, step_count)
 }
+
+pub use model::StepperMotion;

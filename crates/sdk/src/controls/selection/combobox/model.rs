@@ -1,3 +1,7 @@
+crate::motion_profile!(ComboBoxMotion => combobox {
+    presence: crate::motion::PresenceMotion,
+});
+
 use std::sync::Arc;
 
 use gpui::{App, AppContext, Entity, IntoElement, ParentElement, SharedString, Styled};
@@ -29,6 +33,7 @@ pub enum TypingPolicy {
 
 #[derive(Clone)]
 pub struct ComboBoxModel {
+    pub(crate) motion: crate::motion::MotionConfig<ComboBoxMotion>,
     pub(crate) id: SharedString,
     pub(crate) items: Vec<SelectionItem>,
     pub(crate) placeholder: SharedString,
@@ -61,6 +66,9 @@ pub struct ComboBoxBuilder {
 }
 
 impl ComboBoxBuilder {
+    crate::motion_methods!(ComboBoxMotion, model.motion);
+    crate::motion_policy!(model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -168,6 +176,7 @@ impl ComboBoxBuilder {
             callbacks: Default::default(),
 
             model: ComboBoxModel {
+                motion: Default::default(),
                 id: id.into(),
                 items: items.into_iter().collect(),
                 placeholder: SharedString::from("Select…"),
@@ -377,6 +386,7 @@ pub fn new(id: impl Into<SharedString>, items: impl IntoIterator<Item = Selectio
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]

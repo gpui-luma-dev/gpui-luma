@@ -6,7 +6,6 @@ use gpui::{
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::controls::button::ControlIcon;
-use std::time::Duration;
 
 use super::{PopupMenuBuilder, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, MenuPath};
 use crate::motion::{DisclosureMotion, VisualTransition};
@@ -62,20 +61,40 @@ impl PopupMenu {
         PopupMenuBuilder::new(id)
     }
 
+    pub fn motion_enabled(&self) -> bool {
+        self.model.motion.enabled()
+    }
+    pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.model.motion.set_enabled(enabled);
+        self.lifecycle.set_motion_enabled(enabled);
+        self.disclosure_transition.set_motion_enabled(enabled);
+        self.submenu_transition.set_motion_enabled(enabled);
+        if !enabled {
+            self.highlight_transition.finish();
+        }
+        cx.notify();
+    }
+
+    crate::motion_snapshot!(super::PopupMenuMotion, model.motion);
+
     pub(crate) fn from_builder(builder: PopupMenuBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
+        let motion_enabled = builder.model.motion.enabled();
         let enabled = builder.model.enabled;
         let tab_stop = builder.model.tab_stop;
 
         Self {
             model: builder.model,
             attachments: AttachmentHost::with_accessible_role(gpui::Role::Button),
-            lifecycle: PopupLifecycle::new(true),
+            lifecycle: PopupLifecycle::with_motion(motion_enabled, motion.presence.clone()),
             menu_state: FloatingMenuState::default(),
             highlight_from: None,
             highlight_to: None,
-            highlight_transition: VisualTransition::new(1.0, Duration::from_millis(180)),
-            disclosure_transition: DisclosureMotion::new(0.0, true),
-            submenu_transition: DisclosureMotion::new(0.0, true),
+            highlight_transition: VisualTransition::with_transition(1.0, motion.highlight.enabled(motion_enabled)),
+            disclosure_transition: DisclosureMotion::with_transition(0.0, motion_enabled, motion.disclosure.clone()),
+            submenu_transition: DisclosureMotion::with_transition(0.0, motion_enabled, motion.submenu.clone()),
             submenu_transition_index: None,
             submenu_target_open: false,
             interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx),
@@ -264,7 +283,10 @@ impl PopupMenu {
         if same_surface {
             self.highlight_from = previous;
             self.highlight_to = next;
-            self.highlight_transition = VisualTransition::new(0.0, Duration::from_millis(180));
+            self.highlight_transition = VisualTransition::with_transition(
+                0.0,
+                self.model.motion.profile().highlight.enabled(self.model.motion.enabled()),
+            );
             self.highlight_transition.set_target(1.0);
         } else {
             self.highlight_from = next;

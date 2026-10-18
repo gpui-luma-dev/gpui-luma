@@ -11,6 +11,7 @@ use crate::size::ShadcnSize;
 
 /// Builder in the guise of a checkbox: Shadcn axes plus SDK options, until `.spawn(cx)`.
 pub struct Checkbox {
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::checkbox::CheckboxMotion>,
     callbacks: CheckboxCallbacks,
     id: SharedString,
     look: Option<ShadcnLook>,
@@ -22,7 +23,7 @@ pub struct Checkbox {
     compact: bool,
     without_elevation: bool,
     indicator_only: bool,
-    animated: bool,
+    motion_enabled: bool,
     icons: Option<SelectionStatusIcons>,
     content: Option<ControlPresenter<ButtonContentContext<CheckboxData>>>,
 }
@@ -83,6 +84,7 @@ impl Checkbox {
             callbacks: CheckboxCallbacks::default(),
             id: id.into(),
             look: None,
+            motion: Default::default(),
             style: ShadcnButtonStyle::Primary,
             size: ShadcnSize::Md,
             checked: false,
@@ -91,11 +93,13 @@ impl Checkbox {
             compact: false,
             without_elevation: false,
             indicator_only: false,
-            animated: true,
+            motion_enabled: true,
             icons: None,
             content: None,
         }
     }
+
+    gpui_luma::forward_motion!(gpui_luma::controls::checkbox::CheckboxMotion, edits motion);
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
     pub fn look(mut self, look: &ShadcnLook) -> Self {
@@ -169,8 +173,8 @@ impl Checkbox {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -193,12 +197,14 @@ impl Checkbox {
     fn into_sdk_builder(self, look: ShadcnLook) -> CheckboxBuilder {
         let template = look.checkbox_template(self.style);
         let mut builder = gpui_luma::controls::checkbox::new(self.id)
+            .motion_defaults(look.motion_defaults().checkbox)
+            .with_motion_overrides(self.motion)
             .template(template)
             .size(self.size.control_size())
             .with_data(self.checked)
             .enabled(self.enabled)
             .tab_stop(self.tab_stop)
-            .animated(self.animated)
+            .motion_enabled(self.motion_enabled)
             .with_callbacks(self.callbacks);
         if self.indicator_only {
             builder = builder.indicator_only();

@@ -2,7 +2,6 @@
 
 use gpui::{App, Context, Div, Entity, IntoElement, Render, SharedString, Stateful, Window};
 use std::collections::HashMap;
-use std::time::Duration;
 use gpui_luma::controls::tabs::{TabsBuilder, TabsContent, TabsItem, TabsRenderModel, TabsWidthMode};
 use gpui_luma::infra::icon::DisclosureIcons;
 
@@ -24,9 +23,9 @@ pub struct Tabs {
     active_id: Option<SharedString>,
     reordering: bool,
     enabled: bool,
-    animated: bool,
+    motion_enabled: bool,
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::tabs::TabsMotion>,
     contents: HashMap<SharedString, TabsContent>,
-    fade_duration: Option<Duration>,
     disclosure_icons: Option<DisclosureIcons>,
     modifiers: Vec<TabsModifier>,
 }
@@ -294,9 +293,9 @@ impl Tabs {
             active_id: None,
             reordering: false,
             enabled: true,
-            animated: true,
+            motion_enabled: true,
+            motion: Default::default(),
             contents: HashMap::new(),
-            fade_duration: None,
             disclosure_icons: None,
             modifiers: Vec::new(),
         }
@@ -368,12 +367,6 @@ impl Tabs {
         self
     }
 
-    /// Fade incoming content on selection changes; first render stays fully visible.
-    pub fn fade_in(mut self, duration: Duration) -> Self {
-        self.fade_duration = Some(duration);
-        self
-    }
-
     pub fn active(mut self, active_id: impl Into<SharedString>) -> Self {
         self.active_id = Some(active_id.into());
         self
@@ -390,8 +383,10 @@ impl Tabs {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    gpui_luma::forward_motion!(gpui_luma::controls::tabs::TabsMotion, edits motion);
+
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -430,11 +425,9 @@ impl Tabs {
             .width_mode(self.width_mode)
             .enabled(self.enabled)
             .reordering(self.reordering)
-            .animated(self.animated)
-            .stylesheet(&look.common_stylesheet(), "radix");
-        if let Some(duration) = self.fade_duration {
-            builder = builder.fade_in(duration);
-        }
+            .motion_enabled(self.motion_enabled)
+            .motion_defaults(look.motion_defaults().tabs)
+            .with_motion_overrides(self.motion);
         for item in self.items {
             if let Some(content) = self.contents.get(item.id()) {
                 builder = builder.tab_content(item, content.clone());
@@ -458,39 +451,46 @@ impl Tabs {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
     use gpui_luma::theme::ControlSize;
 
     #[test]
-    fn look_edits_apply_to_future_builders_only() {
-        use gpui_luma::theme::stylesheet::{CommonStylesheet, MotionSource};
+    fn sdk_motion_roles_inherit_override_and_keep_their_snapshot() {
+        use gpui_luma::motion::{Easing, MotionState, Transition};
         let look = Look::built_in();
-        let existing = Tabs::new("existing").into_sdk_builder(look.clone());
-        look.set_common_stylesheet(CommonStylesheet::default());
-        assert_eq!(existing.body_motion().duration, Duration::from_millis(300));
-        let new = Tabs::new("new").into_sdk_builder(look);
-        assert_eq!(new.body_motion().source, MotionSource::SdkFallback);
+        look.motion(|m| {
+            m.tabs.indicator = Transition::timed(Duration::from_millis(800), Easing::Linear);
+            m.tabs.content = Transition::timed(Duration::from_millis(500), Easing::Linear);
+        });
+        let inherited = Tabs::new("inherited").into_sdk_builder(look.clone());
+        let edited = Tabs::new("edited")
+            .motion(|m| m.indicator = Transition::timed(Duration::from_millis(200), Easing::Linear))
+            .look(&look)
+            .into_sdk_builder(look.clone());
+        let sample = |transition: gpui_luma::motion::Transition| {
+            transition.start(MotionState::default(), 1.0).sample(Duration::from_millis(100)).state.value
+        };
+        assert_eq!(sample(inherited.motion_profile().indicator), 0.125);
+        assert_eq!(sample(edited.motion_profile().indicator), 0.5);
+        assert_eq!(sample(edited.motion_profile().content), 0.2);
+        look.motion(|m| m.tabs.content = Transition::instant());
+        assert_eq!(sample(inherited.motion_profile().content), 0.2);
+        assert_eq!(sample(Tabs::new("new").into_sdk_builder(look).motion_profile().content), 1.0);
     }
 
     #[test]
-    fn body_motion_inherits_look_and_respects_overrides() {
-        use gpui_luma::theme::stylesheet::MotionSource;
+    fn look_edits_apply_to_future_builders_only() {
+        use gpui_luma::theme::stylesheet::CommonStylesheet;
+        use gpui_luma::motion::{Transition, Easing};
         let look = Look::built_in();
-        let inherited = Tabs::new("motion").into_sdk_builder(look.clone()).body_motion();
-        assert_eq!(inherited.duration, Duration::from_millis(300));
+        let existing = Tabs::new("existing").into_sdk_builder(look.clone());
+        look.set_common_stylesheet(CommonStylesheet::default());
         assert_eq!(
-            inherited.source,
-            MotionSource::Look { name: "radix".into(), field: "common.tabs.content.fade_in_ms" }
+            existing.motion_profile().content.description(),
+            Transition::timed(Duration::from_millis(300), Easing::OutCubic).description()
         );
-        let explicit = Tabs::new("motion").fade_in(Duration::ZERO).into_sdk_builder(look.clone()).body_motion();
-        assert_eq!(explicit.duration, Duration::ZERO);
-        assert_eq!(explicit.source, MotionSource::InstanceOverride);
-        let disabled = Tabs::new("motion")
-            .fade_in(Duration::from_millis(900))
-            .animated(false)
-            .into_sdk_builder(look)
-            .body_motion();
-        assert_eq!(disabled.duration, Duration::ZERO);
-        assert_eq!(disabled.source, MotionSource::AnimationDisabled);
+        let new = Tabs::new("new").into_sdk_builder(look);
+        assert_eq!(new.motion_profile().content.description(), Transition::instant().description());
     }
 
     #[test]

@@ -51,7 +51,16 @@ impl SidebarControl {
         SidebarControlBuilder::new(id)
     }
 
+    pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        self.model.motion_enabled = enabled;
+        self.panel.update(cx, |engine, cx| engine.set_motion_enabled(enabled, cx));
+        cx.notify();
+    }
+    crate::motion_snapshot!(super::SidebarMotion, model.motion);
+
     pub(crate) fn from_builder(builder: SidebarControlBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
         let mut model = builder.model;
 
         if model.selected_id.is_none()
@@ -225,7 +234,8 @@ fn spawn_panel_engine(model: &SidebarControlModel, cx: &mut Context<SidebarContr
 
     let mut builder = SidebarPanelEngine::new(panel_id)
         .enabled(model.enabled)
-        .animated(model.animated)
+        .motion_enabled(model.motion_enabled)
+        .motion_defaults(model.motion.profile().clone())
         .disclosure_icons(panel_model.as_ref().map(|panel| panel.disclosure_icons.clone()).unwrap_or_default())
         .collapsed(model.presentation == SidebarPresentation::Icons)
         .template(model.panel_template.clone())
@@ -262,7 +272,7 @@ mod tests {
         let (sidebar, cx) = app.add_window_view(|_, cx| {
             SidebarControl::from_builder(
                 SidebarControl::new("nav")
-                    .animated(false)
+                    .motion_enabled(false)
                     .with_panel_template_modifier(|mut root| {
                         assert!(root.style().background.is_none());
                         assert!(root.style().padding.left.is_none());
@@ -312,7 +322,7 @@ mod tests {
             window.activate_window();
             SidebarControl::from_builder(
                 SidebarControl::new("nav")
-                    .animated(false)
+                    .motion_enabled(false)
                     .with_panel_template_modifier(|root| root.debug_selector(|| "help-nav".into()))
                     .sidebar(
                         sidebar("content").content(

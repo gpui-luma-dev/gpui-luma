@@ -16,6 +16,8 @@ pub struct Stepper {
 }
 
 impl Stepper {
+    gpui_luma::forward_motion!(gpui_luma::controls::stepper::StepperMotion, builder builder);
+
     pub fn new(id: impl Into<SharedString>, step_count: usize) -> Self {
         Self {
             look: None,
@@ -76,8 +78,8 @@ impl Stepper {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.builder = self.builder.animated(animated);
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(motion_enabled);
         self
     }
 
@@ -106,7 +108,8 @@ impl Stepper {
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> StepperBuilder {
-        let builder = self.builder.size(self.size.control_size());
+        let self_builder = self.builder.motion_defaults(look.motion_defaults().stepper);
+        let builder = self_builder.size(self.size.control_size());
         if self.custom_template {
             builder
         } else {

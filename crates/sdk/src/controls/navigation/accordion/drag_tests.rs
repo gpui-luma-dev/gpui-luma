@@ -30,7 +30,7 @@ fn setup(app: &mut TestAppContext, mode: u8) -> (Entity<Page>, &mut VisualTestCo
         let accordion = new("drag-accordion")
             .multiple()
             .reordering(true)
-            .animated(false)
+            .motion_enabled(false)
             .items([
                 item("a", 48.).expanded(true),
                 item("b", 75.).expanded(true),
@@ -118,7 +118,7 @@ fn native_move_preserves_expansion_measurements_focus_and_callback_order() {
         assert_eq!(a.content_heights_px[0], old[1]);
         assert!(!p.events.iter().any(|e| matches!(e, AccordionEvent::ExpandedChanged { .. })));
         assert_eq!(p.named, ["aggregate", "start", "aggregate", "reorder", "aggregate", "drop", "aggregate", "end"]);
-        assert!(!a.drop_layout.is_animating()); // animated(false)
+        assert!(!a.drop_layout.is_animating()); // motion_enabled(false)
     });
     assert!(matches!(
         &events(&page, cx)[..],
@@ -235,16 +235,19 @@ fn native_drop_motion_commits_before_interpolation_and_respects_zero_and_reduced
         let mut app = TestAppContext::single();
         let (page, cx) = setup(&mut app, 0);
         let a = cx.update(|_, cx| page.read(cx).accordion.clone());
-        a.update(cx, |a, cx| {
-            a.model.animated = true;
-            a.set_drop_layout_motion(
-                Some(if policy == 1 {
-                    Duration::ZERO
-                } else {
-                    Duration::from_millis(1000)
-                }),
-                cx,
-            );
+        a.update(cx, |a, _| {
+            a.model.motion_enabled = true;
+            a.model.motion.configure(move |m| {
+                m.drop_layout = crate::motion::Transition::timed(
+                    if policy == 1 {
+                        Duration::ZERO
+                    } else {
+                        Duration::from_millis(1000)
+                    },
+                    crate::motion::Easing::OutCubic,
+                )
+            });
+            a.model.motion.freeze();
         });
         if policy == 2 {
             cx.update(|_, cx| cx.set_reduce_motion(true));

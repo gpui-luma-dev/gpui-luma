@@ -35,3 +35,5 @@ pub use template::{
 
 mod callback;
 pub use callback::ComboBoxEventExt;
+
+pub use model::ComboBoxMotion;

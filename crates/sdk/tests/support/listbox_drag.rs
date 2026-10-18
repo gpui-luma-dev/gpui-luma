@@ -274,12 +274,12 @@ fn committed_list_motion_keeps_callback_order_and_animates_visible_siblings() {
     for destination in [(30.,185.),(300.,185.)] {
         let mut app=TestAppContext::single();let(view,cx)=app.add_window_view(|window,cx|{
             window.activate_window();let mut host=DragHarness::new(cx);host.lists[0].state.set_selected_keys([1,2]).unwrap();
-            for list in &host.lists{list.drop_layout_motion().set_duration(Some(Duration::from_secs(10)));}host
+            host.lists = host.lists.map(|list| list.motion(|m| m.drop_layout = gpui_luma::motion::Transition::timed(Duration::from_secs(10), gpui_luma::motion::Easing::OutCubic)));host
         });cx.run_until_parked();
         let first=cx.debug_bounds("sdk-left-item-0").unwrap();let third=cx.debug_bounds("sdk-left-item-2").unwrap();
         start_native(cx,destination);cx.simulate_mouse_up(point(px(destination.0),px(destination.1)),MouseButton::Left,Default::default());cx.run_until_parked();
         let moving=cx.debug_bounds("sdk-left-item-0").unwrap();assert!(moving.top()>first.top()&&moving.top()<=third.top());
         cx.update(|_,cx|{let host=view.read(cx);assert_eq!(host.items(0)[0],3);assert!(host.lists[0].drop_layout_motion().is_animating());assert!(host.named.iter().any(|(_,phase)|*phase=="end"));assert!(host.lists[0].drop_layout_motion().tracked_items()<=6);});
-        view.update(cx,|host,cx|{for list in &host.lists {list.set_drop_layout_motion(Some(Duration::ZERO),cx);}});cx.refresh().unwrap();cx.run_until_parked();assert_eq!(cx.debug_bounds("sdk-left-item-0").unwrap().top(),first.top());
+        view.update(cx,|host,cx|{for list in &mut host.lists {list.set_motion_enabled(false);}cx.notify();});cx.refresh().unwrap();cx.run_until_parked();assert_eq!(cx.debug_bounds("sdk-left-item-0").unwrap().top(),first.top());
     }
 }

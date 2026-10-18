@@ -6,13 +6,13 @@
 //! ```no_run
 //! use std::time::Duration;
 //! use gpui::{Context, div, prelude::*};
-//! use gpui_luma::controls::tabs::Tabs;
+//! use gpui_luma::{controls::tabs::Tabs, motion::{Transition, Easing}};
 //!
 //! # fn build<M: 'static>(cx: &mut Context<M>) {
 //! let tabs = Tabs::new("settings")
 //!     .tab_with("account", "Account", |_, _| div().child("Account settings"))
 //!     .tab_with("appearance", "Appearance", |_, _| div().child("Appearance settings"))
-//!     .fade_in(Duration::from_millis(300))
+//!     .motion(|m| m.content = Transition::timed(Duration::from_millis(300), Easing::OutCubic))
 //!     .active("account")
 //!     .spawn(cx);
 //!
@@ -26,12 +26,11 @@
 
 //! # Builder and state contract
 //!
-//! Radix and Shadcn look builders forward the same `tab`, `tab_with`,
-//! `tab_content`, `active`, `fade_in`, and `animated` options to this control.
-//! Configure before `.spawn(cx)`; use setters on the resulting entity afterward.
-//! Omit `fade_in` to inherit the look snapshot, use explicit zero to disable it,
-//! or `animated(false)` to disable both body and indicator motion. Runtime
-//! `set_fade_in(None, cx)` restores that snapshot, not later stylesheet edits.
+//! Radix and Shadcn look builders forward the same content, selection, and
+//! typed `.motion(...)` configuration to this control. Untouched roles inherit
+//! the look snapshot. Use `Transition::instant()` for one role or
+//! `motion_enabled(false)` to disable every role. Configure before `.spawn(cx)`;
+//! existing controls retain their captured profile when the look changes.
 //!
 //! Selection belongs to the control. An app can mirror it by observing the
 //! entity and calling `set_active`; setters do not emit selection events.
@@ -59,7 +58,7 @@
 //!
 //! ```no_run
 //! use gpui::{Context, Entity, Render};
-//! use gpui_luma::controls::tabs::Tabs;
+//! use gpui_luma::{controls::tabs::Tabs, motion::{Transition, Easing}};
 //!
 //! fn build<M: 'static, V: Render + 'static>(page: Entity<V>, cx: &mut Context<M>) {
 //!     // Construct `page` once, outside the presenter. Its state survives switching.
@@ -75,7 +74,7 @@
 //!
 //! ```no_run
 //! use gpui::{Context, Entity, Focusable, Render, Window};
-//! use gpui_luma::controls::tabs::Tabs;
+//! use gpui_luma::{controls::tabs::Tabs, motion::{Transition, Easing}};
 //!
 //! fn restore<V: Render + Focusable + 'static>(
 //!     tabs: &Entity<Tabs>, page: &Entity<V>, window: &mut Window, cx: &mut Context<V>,
@@ -92,7 +91,7 @@
 //!
 //! ```no_run
 //! use gpui::{Context, Entity, SharedString, div, prelude::*};
-//! use gpui_luma::controls::tabs::Tabs;
+//! use gpui_luma::{controls::tabs::Tabs, motion::{Transition, Easing}};
 //!
 //! struct Document { title: SharedString }
 //! fn build<M: 'static>(document: Entity<Document>, cx: &mut Context<M>) {
@@ -126,7 +125,7 @@ pub use content::TabsContent;
 use content::{TabsBody, TabsList};
 pub use indicator::{TabsIndicatorMotion, TabsIndicatorPaint, TabsIndicatorRect, indicator_rect_from_bounds};
 pub use model::{
-    TabsBuilder, TabsItem, TabsItemAccessory, TabsModel, TabsRenderItem, TabsRenderModel, TabsTriggerKind,
+    TabsMotion, TabsBuilder, TabsItem, TabsItemAccessory, TabsModel, TabsRenderItem, TabsRenderModel, TabsTriggerKind,
     TabsWidthMode,
 };
 pub use template::{

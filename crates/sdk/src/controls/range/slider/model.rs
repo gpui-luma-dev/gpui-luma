@@ -1,3 +1,7 @@
+crate::motion_profile!(SliderMotion => slider {
+    thumb: crate::motion::Transition,
+});
+
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::ops::RangeInclusive;
 use std::sync::Arc;
@@ -162,6 +166,7 @@ impl From<ControlSize> for SliderThumbSize {
 
 #[derive(Clone)]
 pub struct SliderModel {
+    pub(crate) motion: crate::motion::MotionConfig<SliderMotion>,
     pub(crate) id: SharedString,
     pub(crate) strategy: SliderInputStrategy,
     pub(crate) presentation: TrackPresentation,
@@ -213,10 +218,12 @@ pub struct SliderBuilder {
     callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::slider::SliderEvent>,
 
     pub(crate) model: SliderModel,
-    pub(crate) animated: bool,
+    pub(crate) motion_enabled: bool,
 }
 
 impl SliderBuilder {
+    crate::motion_methods!(SliderMotion, model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -363,8 +370,9 @@ impl SliderBuilder {
         Self {
             callbacks: Default::default(),
 
-            animated: true,
+            motion_enabled: true,
             model: SliderModel {
+                motion: Default::default(),
                 id: id.into(),
                 strategy: SliderInputStrategy::Horizontal,
                 presentation: TrackPresentation::Fill,
@@ -517,8 +525,8 @@ impl SliderBuilder {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -680,8 +688,8 @@ mod animated_tests {
 
     #[test]
     fn animated_defaults_true() {
-        assert!(SliderBuilder::new("slider-animated").animated);
-        assert!(!SliderBuilder::new("slider-animated-off").animated(false).animated);
+        assert!(SliderBuilder::new("slider-animated").motion_enabled);
+        assert!(!SliderBuilder::new("slider-animated-off").motion_enabled(false).motion_enabled);
     }
 }
 

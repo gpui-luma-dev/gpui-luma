@@ -1,15 +1,18 @@
+crate::motion_profile!(ToggleMotion => toggle {
+    state: crate::motion::Transition,
+});
+
 mod callback;
 pub use callback::{ToggleCallbacks, ToggleEventExt};
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use gpui::{
     AnyElement, App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
     Render, SharedString, Subscription, Window, div, hsla, prelude::*,
 };
 
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::VisualTransition;
 use crate::controls::button_family::{
     ButtonFamilyPalette, ButtonFamilyRole, button_family_effective_border, default_button_family_theme,
 };
@@ -54,8 +57,9 @@ pub enum ToggleEvent {
 
 pub struct ToggleControl {
     selected: bool,
-    animated: bool,
+    motion_enabled: bool,
     transition: VisualTransition,
+    motion: ToggleMotion,
     button: Entity<Button<ToggleData>>,
     _subscriptions: Vec<Subscription>,
 }
@@ -63,16 +67,17 @@ pub struct ToggleControl {
 impl EventEmitter<ToggleEvent> for ToggleControl {}
 
 impl ToggleControl {
+    /// Motion roles captured when this control was created.
+    pub fn motion_profile(&self) -> &ToggleMotion {
+        &self.motion
+    }
+
     fn from_builder(builder: ToggleBuilder, cx: &mut Context<Self>) -> Self {
         let selected = builder.button.model.data.selected;
-        let animated = builder.animated;
-        let duration = if animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        };
+        let motion_enabled = builder.motion_enabled;
+        let motion = builder.motion_profile();
         let progress = if selected { 1.0 } else { 0.0 };
-        let transition = VisualTransition::new(progress, duration);
+        let transition = VisualTransition::with_transition(progress, motion.state.enabled(motion_enabled));
 
         let mut button_builder = builder.button;
         button_builder.model.data = ToggleData { selected, progress };
@@ -85,7 +90,7 @@ impl ToggleControl {
         });
         let subscription = cx.subscribe(&button, Self::handle_button_event);
 
-        Self { selected, animated, transition, button, _subscriptions: vec![subscription] }
+        Self { selected, motion_enabled, transition, motion, button, _subscriptions: vec![subscription] }
     }
 
     fn push_button_data(&mut self, cx: &mut Context<Self>) {
@@ -117,21 +122,16 @@ impl ToggleControl {
         &self.selected
     }
 
-    pub fn animated(&self) -> bool {
-        self.animated
+    pub fn motion_enabled(&self) -> bool {
+        self.motion_enabled
     }
 
-    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.motion_enabled == motion_enabled {
             return;
         }
-        self.animated = animated;
-        let duration = if animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        };
-        self.transition = VisualTransition::new(self.transition.progress(), duration);
+        self.motion_enabled = motion_enabled;
+        self.transition.set_transition(self.motion.state.enabled(motion_enabled));
         self.transition.set_target(if self.selected { 1.0 } else { 0.0 });
         self.push_button_data(cx);
         cx.notify();
@@ -204,10 +204,13 @@ impl IntoElement for ToggleControl {
 pub struct ToggleBuilder {
     callbacks: ToggleCallbacks,
     button: ButtonBuilder<ToggleData>,
-    animated: bool,
+    motion_enabled: bool,
+    motion: crate::motion::MotionConfig<ToggleMotion>,
 }
 
 impl ToggleBuilder {
+    crate::motion_methods!(ToggleMotion, motion);
+
     /// Append an owner-bound callback; registrations are additive and owners are weak.
     pub fn on_event<M: 'static>(
         mut self,
@@ -302,8 +305,8 @@ impl ToggleBuilder {
     }
 
     /// Enables or disables the selected/unselected visual transition (default `true`).
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -333,7 +336,12 @@ fn button_builder(id: impl Into<SharedString>) -> ButtonBuilder<ToggleData> {
 }
 
 pub fn new(id: impl Into<SharedString>) -> ToggleBuilder {
-    ToggleBuilder { callbacks: ToggleCallbacks::default(), button: button_builder(id), animated: true }
+    ToggleBuilder {
+        callbacks: ToggleCallbacks::default(),
+        button: button_builder(id),
+        motion_enabled: true,
+        motion: Default::default(),
+    }
 }
 
 fn lerp_f32(start: f32, end: f32, t: f32) -> f32 {
@@ -408,8 +416,8 @@ mod tests {
 
     #[test]
     fn toggle_builder_animated_option() {
-        assert!(new("animated-default").animated);
-        assert!(!new("animated-off").animated(false).animated);
+        assert!(new("animated-default").motion_enabled);
+        assert!(!new("animated-off").motion_enabled(false).motion_enabled);
     }
 
     #[test]

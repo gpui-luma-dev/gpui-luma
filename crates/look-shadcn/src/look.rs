@@ -62,6 +62,7 @@ pub(crate) fn resolve_look_from(explicit: Option<&ShadcnLook>, cx: &App) -> Shad
 }
 
 struct ShadcnLookState {
+    motion: RwLock<gpui_luma::motion::MotionOverrides<gpui_luma::theme::MotionDefaults>>,
     snapshot: RwLock<Arc<ShadcnLookSnapshot>>,
     mode: AtomicU8,
 }
@@ -179,6 +180,7 @@ impl ShadcnLook {
         let catalog = parse_css_catalog(source)?;
         Ok(Self {
             state: Arc::new(ShadcnLookState {
+                motion: RwLock::new(Default::default()),
                 snapshot: RwLock::new(Arc::new(ShadcnLookSnapshot::new(
                     catalog,
                     crate::stylesheet::embedded_stylesheet().clone(),
@@ -196,6 +198,7 @@ impl ShadcnLook {
         let catalog = parse_css_catalog(source)?;
         Ok(Self {
             state: Arc::new(ShadcnLookState {
+                motion: RwLock::new(Default::default()),
                 snapshot: RwLock::new(Arc::new(ShadcnLookSnapshot::new(catalog, stylesheet)?)),
                 mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)),
             }),
@@ -213,6 +216,42 @@ impl ShadcnLook {
     /// Common SDK configuration; tabs builders snapshot it when spawning.
     pub fn common_stylesheet(&self) -> gpui_luma::theme::stylesheet::CommonStylesheet {
         self.stylesheet().common.clone()
+    }
+
+    /// Edit SDK-defined motion defaults for future controls. Clones share edits;
+    /// independent copies retain their own edits. Existing controls keep snapshots.
+    pub fn motion(&self, configure: impl Fn(&mut gpui_luma::theme::MotionDefaults) + Send + Sync + 'static) {
+        lock::write(&self.state.motion).push(configure);
+    }
+
+    /// Resolve stylesheet defaults followed by programmatic look edits.
+    pub fn motion_defaults(&self) -> gpui_luma::theme::MotionDefaults {
+        let mut defaults = self.common_stylesheet().motion_defaults();
+        let edits = lock::read(&self.state.motion).clone();
+        edits.apply(&mut defaults);
+        defaults
+    }
+
+    pub fn tabs_overlay_state(&self) -> gpui_luma::controls::tabs::TabsOverlayState {
+        gpui_luma::controls::tabs::TabsOverlayState::new().motion_defaults(self.motion_defaults().tabs_overlay)
+    }
+
+    pub fn scroll_container(
+        &self,
+        id: impl Into<SharedString>,
+        cx: &mut impl gpui::AppContext,
+    ) -> gpui_luma::controls::scroll_container::ScrollContainer {
+        gpui_luma::controls::scroll_container::ScrollContainer::new(id, self.scrollbar_template(), cx)
+            .motion_defaults(self.motion_defaults().scroll_container)
+    }
+
+    pub fn slide_panel_state(
+        &self,
+        anchor: gpui_luma::controls::slide_panel::SlidePanelTopAnchor,
+        size: gpui_luma::controls::slide_panel::SlidePanelSizeConfig,
+    ) -> gpui_luma::controls::slide_panel::SlidePanelState {
+        gpui_luma::controls::slide_panel::SlidePanelState::new(anchor, size)
+            .motion_defaults(self.motion_defaults().slide_panel)
     }
 
     pub fn mode(&self) -> ThemeMode {
@@ -405,6 +444,7 @@ impl ShadcnLook {
 
         Ok(Self {
             state: Arc::new(ShadcnLookState {
+                motion: RwLock::new(lock::read(&self.state.motion).clone()),
                 snapshot: RwLock::new(Arc::new(next)),
                 mode: AtomicU8::new(self.state.mode.load(Ordering::Relaxed)),
             }),
@@ -676,7 +716,9 @@ impl ShadcnLook {
         &self,
         id: impl Into<SharedString>,
     ) -> gpui_luma::controls::resizable_panels::ResizablePanelsBuilder {
-        gpui_luma::controls::resizable_panels::ResizablePanels::new(id).theme(self.resizable_panels_theme())
+        gpui_luma::controls::resizable_panels::ResizablePanels::new(id)
+            .theme(self.resizable_panels_theme())
+            .motion_defaults(self.motion_defaults().resizable_panels)
     }
 
     pub fn split_view_theme(&self) -> Arc<dyn gpui_luma::controls::split_view::SplitViewTheme> {
@@ -684,7 +726,9 @@ impl ShadcnLook {
     }
 
     pub fn split_view(&self, id: impl Into<SharedString>) -> gpui_luma::controls::split_view::SplitViewBuilder {
-        gpui_luma::controls::split_view::SplitView::new(id).theme(self.split_view_theme())
+        gpui_luma::controls::split_view::SplitView::new(id)
+            .theme(self.split_view_theme())
+            .motion_defaults(self.motion_defaults().split_view)
     }
 
     pub fn sidebar_panel_template(&self) -> Arc<dyn gpui_luma::controls::sidebar::SidebarPanelTemplate> {

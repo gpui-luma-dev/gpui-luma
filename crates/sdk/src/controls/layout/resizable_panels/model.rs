@@ -1,3 +1,7 @@
+crate::motion_profile!(ResizablePanelsMotion => resizable_panels {
+    extent: crate::motion::Transition,
+});
+
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -229,13 +233,14 @@ impl ResizablePanelSpec {
 
 #[derive(Clone)]
 pub struct ResizablePanelsModel {
+    pub(crate) motion: crate::motion::MotionConfig<ResizablePanelsMotion>,
     pub(crate) id: SharedString,
     pub(crate) orientation: ResizablePanelsOrientation,
     pub(crate) frame_width: Option<Pixels>,
     pub(crate) frame_height: Option<Pixels>,
     pub(crate) show_border: bool,
     pub(crate) enabled: bool,
-    pub(crate) animated: bool,
+    pub(crate) motion_enabled: bool,
     pub(crate) handle_visibility: ResizeHandleVisibility,
     pub(crate) double_click_collapse: Option<ResizeCollapseBehavior>,
     pub(crate) resize_handle: ResizeHandleSize,
@@ -273,6 +278,8 @@ pub struct ResizablePanelsBuilder {
 }
 
 impl ResizablePanelsBuilder {
+    crate::motion_methods!(ResizablePanelsMotion, model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -420,13 +427,14 @@ impl ResizablePanelsBuilder {
             callbacks: Default::default(),
 
             model: ResizablePanelsModel {
+                motion: Default::default(),
                 id: id.into(),
                 orientation,
                 frame_width: None,
                 frame_height: None,
                 show_border: true,
                 enabled: true,
-                animated: true,
+                motion_enabled: true,
                 handle_visibility: ResizeHandleVisibility::Hidden,
                 double_click_collapse: None,
                 resize_handle: ResizeHandleSize::Sm,
@@ -474,8 +482,8 @@ impl ResizablePanelsBuilder {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.model.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.model.motion_enabled = motion_enabled;
         self
     }
 
@@ -652,10 +660,10 @@ mod resize_handle_tests {
     #[test]
     fn test_resizable_panels_builder_animated_option() {
         let builder_default = ResizablePanelsBuilder::new("panels");
-        assert!(builder_default.model.animated);
+        assert!(builder_default.model.motion_enabled);
 
-        let builder_opt_out = ResizablePanelsBuilder::new("panels").animated(false);
-        assert!(!builder_opt_out.model.animated);
+        let builder_opt_out = ResizablePanelsBuilder::new("panels").motion_enabled(false);
+        assert!(!builder_opt_out.model.motion_enabled);
     }
 
     #[test]

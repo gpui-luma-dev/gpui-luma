@@ -10,8 +10,8 @@ against the selected configuration. SDK templates consume the resolved inputs.
 
 | Input or machinery | Current source | Ownership and migration decision |
 | --- | --- | --- |
-| Post-drop item position duration | `[common.drag_drop].drop_motion_ms`, SDK instance overrides | Shared `DropLayoutMotion` / `VisualTransition`, 200 ms SDK fallback, explicit zero, Look provenance and reduced-motion/disabled-animation handling. Looks resolve appearance; SDK controls own commits and keyed geometry. |
-| Incoming tab panel duration | SDK builder, Radix builder, Radix Studio constant | SDK `CommonStylesheet` defines types, fallback, precedence and provenance; looks supply `fade_in_ms`. |
+| Post-drop item motion | `[common.motion.<control>.drop_layout]`, instance `.motion(...)` | SDK keyed geometry executes the configured transition; commits remain synchronous. |
+| Incoming tab panel motion | `[common.motion.tabs.content]`, instance `.motion(...)` | SDK instant baseline; Shadcn and Radix supply 300 ms cubic out. |
 | Tab list gap, list padding and indicator height | SDK `TabsGeometryStylesheet`, per-look TOML | Shared fields with variant, general and supplied token/SDK fallback precedence. Paint and inspectors consume the same resolved metrics. |
 | Shadcn tab labels, disabled list fill and selected indicator colors | `stylesheet/config/tabs.rs`, `controls/tabs.rs` | Look extensions: CSS token names and recipes remain Shadcn-owned. |
 | Shadcn radii, trigger padding and typography | `controls/tabs.rs`, `tables/metrics/tabs.rs` | Catalog-derived trigger padding, typography and radii remain look recipes. Common list geometry retains its CSS spacing derivation when unset. |
@@ -24,7 +24,7 @@ against the selected configuration. SDK templates consume the resolved inputs.
 | Optional boolean and interaction matching | Shadcn `stylesheet/config/mod.rs` | Look-owned matching for palette recipes; rule order and disabled-state semantics remain intact. Shared geometry matching uses look-owned size/variant keys. |
 | `ButtonSelectorState` and normalized style/variant keys | Shadcn `stylesheet/selector.rs` | Mixed ownership: generic state matching is reusable, look enum mappings are extensions. |
 | Tab selection, retained panels, transition implementation, indicator bounds and slot layout | SDK `controls/navigation/tabs/*` | Structural Rust behavior; stays in SDK code. |
-| Color, metric and typography provenance | SDK `theme/provenance.rs`, Shadcn inspectors | Existing shared value types remain. Motion adds a shared source/value API. |
+| Color, metric and typography provenance | SDK `theme/provenance.rs`, Shadcn inspectors | Existing shared value types remain. Motion exposes typed profiles and transition descriptions. |
 
 ## Contract and lifetime
 
@@ -50,16 +50,13 @@ input-size restrictions. Public parsers
 return errors; the Radix embedded loader falls back safely, with tests validating
 the bundled values.
 
-Resolution is explicit instance override, then look value, then supplied SDK/token
-fallback. Tab body motion has a zero SDK fallback. Missing differs from authored
-zero. `animated(false)` disables effective body
-motion even when a duration is explicit; re-enabling restores the configured
-value. Both SDK builders and live controls expose `body_motion()` with value and
-source, including the look name and field path.
-
-Look builders capture motion when converted to SDK builders during spawn. SDK
-builders capture it when `.stylesheet(...)` is called. Existing controls keep
-that motion snapshot. Geometry is resolved on subsequent renders; callers notify
+Motion resolves the SDK baseline, look stylesheet roles, programmatic look edits,
+and instance `.motion(...)` edits, in that order. `motion_enabled(false)` makes
+motion immediate without erasing the authored profile. Inspect the captured
+roles with `motion_profile()` and transitions with `Transition::description()`.
+Look builders capture defaults during spawn. SDK builders accept the corresponding
+profile through `.motion_defaults(...)`. Existing controls keep their snapshot.
+Geometry is resolved on subsequent renders; callers notify
 affected views after Radix configuration changes. No setter schedules a redraw.
 Radix clones share configuration; forks copy it independently. Shadcn supplies
 configuration at construction through `from_css_str_with_stylesheet`; its
@@ -320,17 +317,45 @@ live edits, fork isolation and local Toolbar/Card/Avatar override precedence.
 
 ## Drop-layout motion (#140)
 
-`[common.drag_drop] drop_motion_ms = 200` configures post-drop position motion in
-ListBox, Table, TreeView, Sidebar, Tabs and Accordion. Missing uses the shared 200 ms cubic
-transition; explicit zero disables it. SDK instance duration overrides take
-precedence over the Look, and `None` restores inheritance. Existing control-wide
-animation disable and GPUI reduced motion settle without scheduling frames.
-Live Look/configuration changes settle an existing drop transition.
+`[common.motion.<control>.drop_layout]` configures post-drop motion. SDK collection
+builders accept `.motion(|m| m.drop_layout = Transition::spring(300.0, 28.0))`.
+Use `Transition::instant()` to disable one role, or `motion_enabled(false)` to
+disable all roles. Reduced motion settles immediately. Existing controls retain
+their captured look profile.
 
 The SDK commits collection state and lifecycle events before animation. The
-motion module owns bounded keyed geometry, while Looks supply the duration and
+motion module owns bounded keyed geometry, while looks supply transitions and
 row appearance. Only mounted local positions animate; there are no retained ghost
 views or extra off-screen construction. Transfer destinations show new keys at
 their final positions while displaced survivors animate. Native-dispatch and
 paint-output tests cover timing, interruption and final layout. See
 [Drag and drop](drag-drop.html#drop-motion) for the per-control coverage and limits.
+
+## Typed motion roles
+
+`[common.motion]` is SDK-owned and shared by vanilla SDK applications and looks.
+See [Motion](motion.html) for the schema, role list, and usage examples.
+`CommonStylesheet::motion_defaults()` overlays authored typed roles onto the vanilla SDK baseline.
+Programmatic look edits and instance overrides then apply as before. An authored
+role replaces a complete transition; missing roles inherit. Instant transitions
+and zero durations disable a role. Timed transitions require duration and easing;
+springs require positive finite stiffness and damping. Invalid fields fail parsing.
+
+Look authors can start with public `MotionDefaults::default()` and overlay
+`sheet.motion.apply_to(&mut defaults)`. SDK builders accept the same component
+profiles through `motion_defaults(...)`, without any dependency on a look crate.
+`Transition::description()` exposes built-in parameters or identifies custom
+motion.
+
+## Embedded SDK baseline
+
+The SDK embeds `crates/sdk/assets/style.toml` as the authoritative vanilla motion
+baseline. Both look stylesheets inherit it and author only their overrides.
+`CommonStylesheet::sdk_default()` exposes the parsed asset and
+`MotionDefaults::vanilla()` exposes the cached compiled profiles. Control profile
+`Default` implementations use those profiles; motion values are not repeated in
+Rust. Existing public duration constants are generated from the file at build time.
+`CommonStylesheet::default()` is still an empty override sheet, and resolving its
+motion inherits the SDK baseline. `common.motion.transition` configures the
+standalone `Transition::default()`; controls use their explicit typed roles.
+Geometry and palette continue to use the existing SDK template/theme factories.

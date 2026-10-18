@@ -52,7 +52,7 @@ fn lerp_switch_palette(off: &SwitchPalette, on: &SwitchPalette, progress: f32) -
 
 impl ButtonTemplate<SwitchData> for ThemedSwitchTemplate {
     fn render(&self, model: &ButtonRenderModel<SwitchData>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let progress = model.data.progress.clamp(0.0, 1.0);
+        let progress = model.data.progress;
         let checked = model.data.checked;
         let focused = model.state.focused && !model.state.disabled;
         let control_state = if focused {

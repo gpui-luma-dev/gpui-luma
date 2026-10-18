@@ -118,3 +118,5 @@ where
 
 mod callback;
 pub use callback::TableEventExt;
+
+pub use model::TableMotion;

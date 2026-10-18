@@ -10,3 +10,5 @@ pub use model::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibili
 
 mod motion;
 pub(crate) use motion::ScrollMotion;
+
+pub use model::ScrollContainerMotion;

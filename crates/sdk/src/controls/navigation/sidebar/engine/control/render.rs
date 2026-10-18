@@ -223,7 +223,8 @@ impl Render for SidebarPanelEngine {
             .on_action(cx.listener(Self::handle_activate_control))
             .child(self.model.template.render(model, &self.main_scroll, handlers, window, cx))
             .into_any_element();
-        self.drop_layout.configure(self.model.template.drop_layout_motion(), self.model.animated);
+        self.drop_layout.configure_transition(&self.model.motion.profile().drop_layout);
+        self.drop_layout.set_motion_enabled(self.model.motion_enabled);
         let scroll = self.main_scroll.drag_scroll_handle();
         self.drop_layout.scope(root, move || scroll.offset())
     }

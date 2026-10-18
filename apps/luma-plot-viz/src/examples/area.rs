@@ -1,3 +1,4 @@
+use gpui_luma::motion::{Transition, Easing};
 use std::time::Duration;
 
 use gpui::{App, Context, Entity, IntoElement, Render, Window, div, prelude::*, px};
@@ -45,7 +46,16 @@ impl AreaExample {
                 this.motion.set_target(1.0);
                 cx.notify();
             });
-            Self { entrance: 1.0, data, look, replay, motion: VisualTransition::new(1.0, Duration::from_millis(1400)) }
+            Self {
+                entrance: 1.0,
+                data,
+                look,
+                replay,
+                motion: VisualTransition::with_transition(
+                    1.0,
+                    Transition::timed(Duration::from_millis(1400), Easing::OutCubic),
+                ),
+            }
         }))
     }
 }

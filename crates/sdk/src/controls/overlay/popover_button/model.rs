@@ -39,6 +39,7 @@ pub struct PopoverRenderModel<'a, D> {
 pub struct PopoverButtonBuilder<D = ()> {
     callbacks: crate::infra::callbacks::EventCallbacks<crate::controls::popover_button::PopoverButtonEvent>,
 
+    pub(super) motion: crate::motion::MotionConfig<super::PopoverMotion>,
     pub(super) id: SharedString,
     pub(super) data: D,
     pub(super) trigger: PopoverTrigger<D>,
@@ -49,12 +50,13 @@ pub struct PopoverButtonBuilder<D = ()> {
     pub(super) window_margin: Pixels,
     pub(super) initial_content_size: Option<gpui::Size<Pixels>>,
     pub(super) focus_on_open: bool,
-    pub(super) animated: bool,
+    pub(super) motion_enabled: bool,
     pub(super) trigger_on_pointer_down: bool,
     pub(super) measure_trigger: bool,
 }
 
 impl<D: Default + 'static> PopoverButtonBuilder<D> {
+    crate::motion_methods!(super::PopoverMotion, motion);
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -81,6 +83,7 @@ impl<D: Default + 'static> PopoverButtonBuilder<D> {
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
         Self {
+            motion: Default::default(),
             callbacks: Default::default(),
 
             id: id.clone(),
@@ -93,7 +96,7 @@ impl<D: Default + 'static> PopoverButtonBuilder<D> {
             window_margin: px(8.0),
             initial_content_size: None,
             focus_on_open: true,
-            animated: true,
+            motion_enabled: true,
             trigger_on_pointer_down: true,
             measure_trigger: true,
         }
@@ -140,8 +143,8 @@ impl<D: Default + 'static> PopoverButtonBuilder<D> {
         self.focus_on_open = value;
         self
     }
-    pub fn animated(mut self, value: bool) -> Self {
-        self.animated = value;
+    pub fn motion_enabled(mut self, value: bool) -> Self {
+        self.motion_enabled = value;
         self
     }
     pub fn trigger_on_pointer_down(mut self, value: bool) -> Self {

@@ -1,3 +1,4 @@
+use gpui_luma::motion::{Transition, Easing};
 use std::{collections::HashMap, time::Duration};
 use gpui::{AnyElement, App, Bounds, Context, Pixels, Window, div, point, px, size, prelude::*};
 use gpui_luma::{
@@ -34,10 +35,12 @@ pub(super) fn expansions(
             .iter()
             .map(|slice| {
                 let target = if active == Some(slice.sample_index) { 1.0 } else { 0.0 };
-                let transition =
-                    state.motion.entry(slice.sample_index).or_insert_with(|| VisualTransition::new(target, duration));
+                let transition = state.motion.entry(slice.sample_index).or_insert_with(|| {
+                    VisualTransition::with_transition(target, Transition::timed(duration, Easing::OutCubic))
+                });
                 if reset {
-                    *transition = VisualTransition::new(target, duration);
+                    *transition =
+                        VisualTransition::with_transition(target, Transition::timed(duration, Easing::OutCubic));
                 }
                 transition.sync();
                 if duration.is_zero() {

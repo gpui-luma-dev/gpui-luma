@@ -14,7 +14,7 @@ use super::{
         ResizablePanelsModel, ResizablePanelsOrientation,
     },
 };
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::{VisualTransition};
 
 use self::collapse::CollapseRestoreState;
 use self::sizes::swap_region_ids;
@@ -102,7 +102,12 @@ impl ResizablePanels {
         ResizablePanelsBuilder::vertical(id)
     }
 
+    crate::motion_snapshot!(super::ResizablePanelsMotion, model.motion);
+
     pub(crate) fn from_builder(builder: ResizablePanelsBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
         let layout_states: Vec<PanelLayoutState> =
             builder.model.panels.iter().map(PanelLayoutState::from_spec).collect();
 
@@ -121,12 +126,11 @@ impl ResizablePanels {
         let panel_sizes_px =
             solve_layout_px_with_min_overrides(&builder.model.panels, &layout_states, &collapsed_min_overrides, 1.0);
 
-        let duration = if builder.model.animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            std::time::Duration::ZERO
-        };
-        let transitions = vec![VisualTransition::new(1.0, duration); builder.model.panels.len()];
+        let transitions =
+            vec![
+                VisualTransition::with_transition(1.0, motion.extent.enabled(builder.model.motion_enabled));
+                builder.model.panels.len()
+            ];
 
         Self {
             model: builder.model,
@@ -333,22 +337,17 @@ impl ResizablePanels {
         self.model.enabled
     }
 
-    pub fn animated(&self) -> bool {
-        self.model.animated
+    pub fn motion_enabled(&self) -> bool {
+        self.model.motion_enabled
     }
 
-    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.model.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.model.motion_enabled == motion_enabled {
             return;
         }
-        self.model.animated = animated;
-        let duration = if animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            std::time::Duration::ZERO
-        };
+        self.model.motion_enabled = motion_enabled;
         for transition in &mut self.transitions {
-            *transition = VisualTransition::new(transition.progress(), duration);
+            transition.set_transition(self.model.motion.profile().extent.enabled(motion_enabled));
         }
         cx.notify();
     }
@@ -449,7 +448,7 @@ impl ResizablePanels {
         self.refresh_panel_sizes_px();
         let sizes_px = self.panel_sizes_px.clone();
         cx.emit(ResizablePanelsEvent::ResizeStart);
-        if !self.model.animated {
+        if !self.model.motion_enabled {
             cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
             cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
         }
@@ -466,10 +465,10 @@ impl ResizablePanels {
             return;
         };
         if !self.is_panel_hidden(panel_index) {
-            let animated = self.model.animated
+            let motion_enabled = self.model.motion_enabled
                 && self.model.panels.len() == 2
                 && (self.transitions[panel_index].is_animating() || self.transitions[panel_index].progress() < 1.0);
-            if self.apply_restore_state(restore, !animated, cx) && animated {
+            if self.apply_restore_state(restore, !motion_enabled, cx) && motion_enabled {
                 self.transitions[panel_index].set_target(1.0);
                 self.refresh_panel_sizes_px();
                 cx.emit(ResizablePanelsEvent::ResizeStart);
@@ -477,13 +476,13 @@ impl ResizablePanels {
             return;
         }
         // When animated, suppress settle events here — render defers them when the transition ends.
-        if self.apply_restore_state(restore, !self.model.animated, cx) {
+        if self.apply_restore_state(restore, !self.model.motion_enabled, cx) {
             if let Some(panel_restore) = self.panel_hide_restore.get_mut(panel_index) {
                 *panel_restore = None;
             }
             self.transitions[panel_index].set_target(1.0);
             self.refresh_panel_sizes_px();
-            if self.model.animated {
+            if self.model.motion_enabled {
                 cx.emit(ResizablePanelsEvent::ResizeStart);
             }
             self.emit_panel_hidden_changed(panel_index, false, cx);

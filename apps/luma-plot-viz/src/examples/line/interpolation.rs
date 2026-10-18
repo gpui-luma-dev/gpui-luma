@@ -1,3 +1,4 @@
+use gpui_luma::motion::{Transition, Easing};
 use gpui_luma::controls::radio_group::RadioGroupEventExt;
 use std::time::Duration;
 
@@ -71,7 +72,10 @@ impl InterpolationExample {
                 interpolation,
                 selector,
                 replay,
-                motion: VisualTransition::new(1.0, Duration::from_millis(1400)),
+                motion: VisualTransition::with_transition(
+                    1.0,
+                    Transition::timed(Duration::from_millis(1400), Easing::OutCubic),
+                ),
                 _subscriptions: { Vec::new() },
             }
         }))

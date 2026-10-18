@@ -64,11 +64,7 @@ impl AccordionControl {
         self.drag_scroll = handle.unwrap_or_default();
         cx.notify();
     }
-    /// Override drop duration; None restores the inherited Look value.
-    pub fn set_drop_layout_motion(&mut self, duration: Option<std::time::Duration>, cx: &mut Context<Self>) {
-        self.drop_layout.set_duration(duration);
-        cx.notify();
-    }
+
     /// Retained motion and resolved duration diagnostics.
     pub fn drop_layout_motion(&self) -> crate::motion::DropLayoutMotion<SharedString> {
         self.drop_layout.clone()
@@ -103,7 +99,7 @@ impl AccordionControl {
             self.drop_layout.start();
             let focused = self.focused_item_index.and_then(|i| self.model.items.get(i)).map(|i| i.id.clone());
             self.model.items = order.iter().map(|i| self.model.items[*i].clone()).collect();
-            self.transitions = order.iter().map(|i| self.transitions[*i]).collect();
+            self.transitions = order.iter().map(|i| self.transitions[*i].clone()).collect();
             self.content_heights_px = order.iter().map(|i| self.content_heights_px[*i]).collect();
             self.focused_item_index = focused.and_then(|id| self.model.items.iter().position(|i| i.id == id));
             self.hovered_item_index = None;
@@ -180,7 +176,8 @@ impl AccordionControl {
         }
         let scope = cx.entity_id();
         let look = self.model.template.resolve_drag(self.model.size);
-        self.drop_layout.configure(self.model.template.drop_layout_motion(), self.model.animated);
+        self.drop_layout.configure_transition(&self.model.motion.profile().drop_layout);
+        self.drop_layout.set_motion_enabled(self.model.motion_enabled);
         let mut root = div().id(self.model.id.clone()).cancel_drag_on_escape();
         if !self.external_scroll {
             root = root.overflow_y_scroll().track_scroll(&self.drag_scroll);

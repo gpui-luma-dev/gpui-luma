@@ -68,7 +68,15 @@ impl SearchSelectorControl {
         SearchSelectorBuilder::new(id, items)
     }
 
+    crate::presence_policy!(presence, disclosure_transition);
+
+    crate::motion_snapshot!(super::SearchSelectorMotion, model.motion);
+
     pub(crate) fn from_builder(builder: SearchSelectorBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
+        let motion_enabled = builder.model.motion.enabled();
         let model = builder.model;
         let enabled = model.enabled;
 
@@ -121,12 +129,12 @@ impl SearchSelectorControl {
             behavior: SelectionBehavior::new(),
             interaction: ControlInteraction::new(enabled, cx),
             trigger_bounds: None,
-            presence: OverlayPresence::new(false, true),
+            presence: OverlayPresence::with_motion(false, motion_enabled, motion.presence.clone()),
             last_event: SharedString::from("none"),
             last_keyboard_event: SharedString::from("none"),
             committed_selection,
             trigger_toggle_pending: false,
-            disclosure_transition: DisclosureMotion::new(0.0, true),
+            disclosure_transition: DisclosureMotion::with_transition(0.0, motion_enabled, motion.disclosure.clone()),
             _subscriptions: subscriptions,
         }
     }
@@ -647,7 +655,7 @@ impl SearchSelectorControl {
             return false;
         }
 
-        self.presence.set_open_with_animation(self.behavior.state.open, self.behavior.state.open);
+        self.presence.set_open(self.behavior.state.open);
         self.disclosure_transition.set_target(if self.behavior.state.open { 1.0 } else { 0.0 });
 
         cx.emit(SearchSelectorEvent::OpenChanged { open: self.behavior.state.open });
@@ -895,7 +903,7 @@ impl Render for SearchSelectorControl {
             status_color: autocomplete_look.status_color,
             muted_text_color: autocomplete_look.muted_text_color,
             popup_content,
-            presence: self.presence,
+            presence: self.presence.clone(),
             disclosure_progress: self.disclosure_transition.progress(),
         };
 

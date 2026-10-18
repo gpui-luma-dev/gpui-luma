@@ -28,7 +28,6 @@ pub struct TabsControlExposition {
 }
 
 struct TabsExpositionLeftPane {
-    motion_controls: Entity<super::drop_motion::DropMotionControls<gpui::SharedString>>,
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     tabs: Entity<Tabs>,
@@ -59,7 +58,6 @@ impl Render for TabsExpositionLeftPane {
                 .flex_col()
                 .items_center()
                 .gap(px(12.0))
-                .child(self.motion_controls.clone())
                 .child(
                     div()
                         .text_sm()
@@ -121,11 +119,6 @@ impl TabsControlExposition {
             .width_mode(TabsWidthMode::Uniform)
             .spawn(cx);
 
-        let motion_controls = super::drop_motion::DropMotionControls::spawn(
-            look.clone(),
-            vec![tabs.read(cx).drop_layout_motion(), uniform_tabs.read(cx).drop_layout_motion()],
-            cx,
-        );
         let event_stream = cx.new(|cx| {
             ControlEventStream::new(
                 cx,
@@ -136,7 +129,6 @@ impl TabsControlExposition {
         });
 
         let left_pane = cx.new(|_| TabsExpositionLeftPane {
-            motion_controls,
             look: look.clone(),
             entry,
             tabs: tabs.clone(),

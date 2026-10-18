@@ -24,7 +24,7 @@ use crate::infra::value::{ControlRange, value_from_input};
 use crate::motion::VisualTransition;
 use crate::theme::{ControlSize, observe_theme_revision};
 
-use self::motion::{sync_thumb_preview, sync_thumb_previews, transition_duration};
+use self::motion::{sync_thumb_preview, sync_thumb_previews};
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum SliderEvent {
@@ -68,7 +68,7 @@ pub struct SliderControl {
     focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
     emitted_focused: bool,
-    animated: bool,
+    motion_enabled: bool,
     thumb_transitions: Vec<VisualTransition>,
     display_thumbs: Vec<SliderThumbValue>,
 }
@@ -81,15 +81,23 @@ impl SliderControl {
         SliderBuilder::new(id)
     }
 
+    crate::motion_snapshot!(super::SliderMotion, model.motion);
+
     pub(crate) fn from_builder(builder: SliderBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
         let enabled = builder.model.enabled;
-        let animated = builder.animated;
+        let motion_enabled = builder.motion_enabled;
         let active_thumb_id = builder.model.thumbs.first().map(|thumb| thumb.id);
         let mut model = builder.model;
         sync_thumb_previews(&mut model);
-        let duration = transition_duration(animated);
-        let thumb_transitions =
-            model.thumbs.iter().map(|thumb| VisualTransition::new(thumb.position, duration)).collect();
+        let definition = motion.thumb.enabled(motion_enabled);
+        let thumb_transitions = model
+            .thumbs
+            .iter()
+            .map(|thumb| VisualTransition::with_transition(thumb.position, definition.clone()))
+            .collect();
         let display_thumbs = model.thumbs.clone();
 
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
@@ -104,7 +112,7 @@ impl SliderControl {
             focus_in_subscription: None,
             focus_out_subscription: None,
             emitted_focused: false,
-            animated,
+            motion_enabled,
             thumb_transitions,
             display_thumbs,
         }
@@ -154,23 +162,23 @@ impl SliderControl {
         self.model.strategy.orientation()
     }
 
-    pub fn animated(&self) -> bool {
-        self.animated
+    pub fn motion_enabled(&self) -> bool {
+        self.motion_enabled
     }
 
-    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.motion_enabled == motion_enabled {
             return;
         }
-        self.animated = animated;
-        let duration = transition_duration(animated);
+        self.motion_enabled = motion_enabled;
+        let definition = self.model.motion.profile().thumb.enabled(motion_enabled);
         self.thumb_transitions = self
             .model
             .thumbs
             .iter()
             .zip(self.thumb_transitions.iter())
             .map(|(thumb, transition)| {
-                let mut next = VisualTransition::new(transition.progress(), duration);
+                let mut next = VisualTransition::with_transition(transition.progress(), definition.clone());
                 next.set_target(thumb.position);
                 next
             })
@@ -346,6 +354,36 @@ impl AttachmentTarget for SliderControl {
 mod attachment_tests {
     use super::*;
     use gpui::{AppContext, TestAppContext, point, px, Size};
+
+    #[test]
+    fn configured_thumb_spring_retargets_without_losing_velocity() {
+        use std::time::Duration;
+        let app = TestAppContext::single();
+        app.update(|cx| {
+            let slider = cx.new(|cx| {
+                SliderControl::from_builder(
+                    SliderBuilder::new("spring-thumb")
+                        .range(0..100)
+                        .value(0)
+                        .motion(|m| m.thumb = crate::motion::Transition::spring(200., 18.)),
+                    cx,
+                )
+            });
+            slider.update(cx, |slider, cx| {
+                slider.thumb_transitions[0].elapse_for_test(Duration::ZERO);
+                slider.set_value(100, cx);
+                slider.thumb_transitions[0].elapse_for_test(Duration::from_millis(100));
+                slider.thumb_transitions[0].sync();
+                let before = slider.thumb_transitions[0].state();
+                assert!(before.velocity > 0.);
+                slider.set_value(0, cx);
+                assert_eq!(slider.thumb_transitions[0].state(), before);
+                slider.set_motion_enabled(false, cx);
+                assert_eq!(slider.thumb_transitions[0].progress(), 0.);
+                assert!(!slider.thumb_transitions[0].is_animating());
+            });
+        });
+    }
 
     #[test]
     fn attachment_anchor_tracks_active_thumb_and_reversal() {

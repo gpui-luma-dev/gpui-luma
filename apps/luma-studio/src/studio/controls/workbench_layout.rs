@@ -54,7 +54,7 @@ impl WorkbenchLayout {
 
         let panels = look
             .resizable_panels(format!("{id}-panels"))
-            .animated(true)
+            .motion_enabled(true)
             .handle_visibility(ResizeHandleVisibility::Hover)
             .resize_handle(ResizeHandleSize::Sm)
             .handle_grip(true)

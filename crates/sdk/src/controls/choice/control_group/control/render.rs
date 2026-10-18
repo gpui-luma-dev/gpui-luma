@@ -7,7 +7,7 @@ use super::selection::selected_ids_contain;
 use super::ControlGroupControl;
 use crate::infra::state::{CompositeItemState, ControlFocusState};
 use crate::key_handling::ControlKeyProfile;
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::{VisualTransition};
 
 impl<T> ControlGroupControl<T>
 where
@@ -95,13 +95,13 @@ where
 
         for item in &self.model.items {
             self.selection_transitions.entry(item.id().clone()).or_insert_with(|| {
-                VisualTransition::new(
+                VisualTransition::with_transition(
                     if selected_ids_contain(&selected_ids, item.id()) {
                         1.0
                     } else {
                         0.0
                     },
-                    DEFAULT_TRANSITION_DURATION,
+                    self.model.motion.profile().selection.clone(),
                 )
             });
         }

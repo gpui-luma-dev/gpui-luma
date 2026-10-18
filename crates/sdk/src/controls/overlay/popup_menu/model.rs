@@ -1,3 +1,10 @@
+crate::motion_profile!(PopupMenuMotion => popup_menu {
+    submenu: crate::motion::Transition,
+    highlight: crate::motion::Transition,
+    disclosure: crate::motion::Transition,
+    presence: crate::motion::PresenceMotion,
+});
+
 use std::sync::Arc;
 
 use gpui::{AppContext, Bounds, Entity, Pixels, SharedString, div, prelude::*, px, svg};
@@ -61,6 +68,7 @@ pub fn icon_content(icon: impl Into<ControlIcon>) -> ControlPresenter<PopupMenuT
 
 #[derive(Clone)]
 pub struct PopupMenuModel {
+    pub(crate) motion: crate::motion::MotionConfig<PopupMenuMotion>,
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
     pub(crate) content: ControlPresenter<PopupMenuTriggerModel>,
@@ -122,6 +130,9 @@ pub struct PopupMenuBuilder {
 }
 
 impl PopupMenuBuilder {
+    crate::motion_methods!(PopupMenuMotion, model.motion);
+    crate::motion_policy!(model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -231,6 +242,7 @@ impl PopupMenuBuilder {
             callbacks: Default::default(),
 
             model: PopupMenuModel {
+                motion: Default::default(),
                 label: id.clone(),
                 id,
                 content: default_trigger_content(),

@@ -237,7 +237,7 @@ macro_rules! delegate_tooltips {
                 let (control, cx) = app.add_window_view(|window, cx| {
                     window.activate_window();
                     // Render the public control rather than just its internal Button.
-                    <$control>::from_builder(new("tooltip-choice").animated(false), cx)
+                    <$control>::from_builder(new("tooltip-choice").motion_enabled(false), cx)
                 });
                 let events = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
                 let log = events.clone();

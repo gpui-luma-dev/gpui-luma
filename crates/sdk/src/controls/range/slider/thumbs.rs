@@ -162,6 +162,7 @@ mod tests {
 
     fn test_model(thumbs: Vec<SliderThumbValue>, policy: SliderThumbPolicy) -> SliderModel {
         SliderModel {
+            motion: Default::default(),
             id: SharedString::from("test"),
             strategy: SliderInputStrategy::Horizontal,
             presentation: super::super::model::TrackPresentation::Fill,

@@ -69,7 +69,15 @@ where
         SelectorBuilder::new(id)
     }
 
+    crate::presence_policy!(presence);
+
+    crate::motion_snapshot!(super::SelectorMotion, model.motion);
+
     pub(crate) fn from_builder(builder: SelectorBuilder<T>, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
+        let motion_enabled = builder.model.motion.enabled();
         let enabled = builder.model.enabled;
         let tab_stop = builder.model.tab_stop;
         let selected_index = builder
@@ -85,7 +93,7 @@ where
             model: builder.model,
             attachments: AttachmentHost::with_accessible_role(gpui::Role::ComboBox),
             open: false,
-            presence: OverlayPresence::new(false, true),
+            presence: OverlayPresence::with_motion(false, motion_enabled, motion.presence.clone()),
             trigger_bounds: None,
             selected_index,
             active_index: None,
@@ -260,7 +268,7 @@ where
             selected_index: self.selected_index,
             items: &self.model.items,
             open: self.open,
-            presence: self.presence,
+            presence: self.presence.clone(),
             popup_scroll: Some(&self.popup_scroll),
             trigger_bounds: self.trigger_bounds,
             placement: self.model.placement,
@@ -399,7 +407,7 @@ where
         self.open = false;
         // The native popup viewport previously discarded its offset when unmounted.
         self.popup_scroll.set_offset(gpui::point(gpui::px(0.0), gpui::px(0.0)));
-        self.presence.set_open_with_animation(false, false);
+        self.presence.set_open(false);
         self.active_index = None;
     }
 
@@ -421,7 +429,7 @@ where
         let changed = !self.open || self.active_index != next_active;
         let open_changed = !self.open;
         self.open = true;
-        self.presence.set_open_with_animation(true, true);
+        self.presence.set_open(true);
         self.active_index = next_active;
         if open_changed {
             self.popup_geometry = None;

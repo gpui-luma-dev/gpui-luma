@@ -22,3 +22,5 @@ pub type Progress = Entity<ProgressControl>;
 pub fn new(id: impl Into<SharedString>) -> ProgressBuilder {
     ProgressBuilder::new(id)
 }
+
+pub use model::ProgressMotion;

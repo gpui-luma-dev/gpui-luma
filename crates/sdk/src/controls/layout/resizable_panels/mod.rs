@@ -20,3 +20,5 @@ pub use theme::{DefaultResizablePanelsTheme, ResizablePanelsLook, ResizablePanel
 
 mod callback;
 pub use callback::ResizablePanelsEventExt;
+
+pub use model::ResizablePanelsMotion;

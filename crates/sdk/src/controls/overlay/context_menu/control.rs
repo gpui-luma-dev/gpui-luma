@@ -31,6 +31,7 @@ pub enum ContextMenuEvent {
 pub struct ContextMenu {
     model: ContextMenuModel,
     menu_position: Option<Point<Pixels>>,
+    paint_position: Option<Point<Pixels>>,
     target_bounds: Option<Bounds<Pixels>>,
     menu_state: FloatingMenuState,
     presence: OverlayPresence,
@@ -53,18 +54,27 @@ impl ContextMenu {
         ContextMenuBuilder::new(id)
     }
 
+    crate::presence_policy!(presence, submenu_presence, submenu_transition);
+
+    crate::motion_snapshot!(super::ContextMenuMotion, model.motion);
+
     pub(crate) fn from_builder(builder: ContextMenuBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
+        let motion_enabled = builder.model.motion.enabled();
         let enabled = builder.model.enabled;
 
         Self {
             model: builder.model,
             menu_position: None,
+            paint_position: None,
             target_bounds: None,
             menu_state: FloatingMenuState::default(),
-            presence: OverlayPresence::new(false, true),
-            submenu_presence: OverlayPresence::new(false, true),
+            presence: OverlayPresence::with_motion(false, motion_enabled, motion.presence.clone()),
+            submenu_presence: OverlayPresence::with_motion(false, motion_enabled, motion.submenu.clone()),
             submenu_parent: None,
-            submenu_transition: DisclosureMotion::new(0.0, true),
+            submenu_transition: DisclosureMotion::with_transition(0.0, motion_enabled, motion.disclosure.clone()),
             submenu_transition_index: None,
             submenu_target_open: false,
             interaction: ControlInteraction::new(enabled, cx),
@@ -116,11 +126,16 @@ impl ContextMenu {
             label: &self.model.label,
             target_content: self.model.target_content.as_ref(),
             items: &self.model.items,
-            menu_position: self.menu_position,
-            presence: self.presence,
-            open_submenu: self.menu_state.open_submenu(),
+            menu_position: self
+                .menu_position
+                .or_else(|| self.presence.should_paint().then_some(self.paint_position).flatten()),
+            presence: self.presence.clone(),
+            open_submenu: self
+                .menu_state
+                .open_submenu()
+                .or_else(|| self.submenu_presence.should_paint().then_some(self.submenu_parent).flatten()),
             active_path: self.menu_state.active_path(),
-            submenu_presence: self.submenu_presence,
+            submenu_presence: self.submenu_presence.clone(),
             submenu_transition: self.submenu_transition_index.map(|index| (index, self.submenu_transition.progress())),
             enabled: self.model.enabled,
             focus: ControlFocusState::from_focus_handle(self.model.enabled, self.interaction.focus_handle(), window),
@@ -163,7 +178,8 @@ impl ContextMenu {
         let changed = self.menu_position != Some(position) || state_changed;
 
         self.menu_position = Some(position);
-        self.presence.set_open_with_animation(true, true);
+        self.paint_position = Some(position);
+        self.presence.set_open(true);
         self.sync_submenu_presence();
         if !was_open {
             cx.emit(ContextMenuEvent::OpenChanged { open: true });
@@ -176,7 +192,7 @@ impl ContextMenu {
         let was_open = self.menu_position.is_some();
         self.menu_position = None;
         self.menu_state.clear();
-        self.presence.set_open_with_animation(false, false);
+        self.presence.set_open(false);
         self.sync_submenu_presence();
         if was_open {
             cx.emit(ContextMenuEvent::OpenChanged { open: false });
@@ -186,13 +202,16 @@ impl ContextMenu {
 
     fn sync_submenu_presence(&mut self) {
         let next_parent = self.menu_state.open_submenu();
-        if next_parent != self.submenu_parent {
-            if next_parent.is_some() && self.submenu_parent.is_some() {
+        if let Some(next) = next_parent {
+            if self.submenu_parent.is_some_and(|old| old != next) {
                 self.submenu_presence.snap_open(false);
             }
-            self.submenu_parent = next_parent;
+            self.submenu_parent = Some(next);
         }
-        self.submenu_presence.set_open_with_animation(next_parent.is_some(), next_parent.is_some());
+        self.submenu_presence.set_open(next_parent.is_some());
+        if !self.submenu_presence.should_paint() {
+            self.submenu_parent = None;
+        }
     }
 
     fn sync_submenu_transition_target(&mut self) {
@@ -260,6 +279,9 @@ impl ContextMenu {
     }
 
     fn handle_item_click(&mut self, path: &[usize], event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.menu_position.is_none() {
+            return;
+        }
         if event.is_keyboard() {
             return;
         }
@@ -270,6 +292,9 @@ impl ContextMenu {
     }
 
     fn handle_item_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
+        if self.menu_position.is_none() {
+            return;
+        }
         if !hovered || self.menu_position.is_none() {
             return;
         }
@@ -516,5 +541,74 @@ impl Render for ContextMenu {
                 .on_action(cx.listener(Self::handle_activate_control)),
         )
         .into_any_element()
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod motion_tests {
+    use super::*;
+    use crate::infra::menu_item::MenuItem;
+    use crate::motion::{Transition, Easing};
+    use gpui::{AppContext, TestAppContext};
+    use std::time::Duration;
+
+    #[test]
+    fn custom_exit_retains_paint_position_and_submenu_after_logical_dismissal() {
+        let app = TestAppContext::single();
+        app.update(|cx| {
+            let entity = cx.new(|cx| {
+                ContextMenu::from_builder(
+                    ContextMenu::new("exit").items([MenuItem::new("parent").submenu([MenuItem::new("child")])]).motion(
+                        |m| {
+                            m.presence.exit = Transition::timed(Duration::from_secs(1), Easing::Linear);
+                            m.submenu.exit = Transition::timed(Duration::from_millis(500), Easing::Linear);
+                        },
+                    ),
+                    cx,
+                )
+            });
+            entity.update(cx, |menu, cx| {
+                menu.presence.elapse_for_test(Duration::ZERO);
+                let position = point(px(20.), px(30.));
+                menu.open_menu_at(position, None, cx);
+                menu.presence.elapse_for_test(Duration::from_millis(200));
+                menu.presence.sync();
+                menu.submenu_presence.elapse_for_test(Duration::ZERO);
+                menu.menu_state.hover_root_item(&menu.model.items, 0);
+                menu.sync_submenu_presence();
+                menu.submenu_presence.elapse_for_test(Duration::from_millis(200));
+                menu.submenu_presence.sync();
+                assert!(menu.close_menu(cx));
+                assert!(menu.menu_position.is_none());
+                assert_eq!(menu.paint_position, Some(position));
+                assert_eq!(menu.submenu_parent, Some(0));
+                assert!(menu.presence.should_paint() && menu.submenu_presence.should_paint());
+                menu.handle_item_hover(0, true, cx);
+                assert!(menu.menu_state.open_submenu().is_none());
+                menu.submenu_presence.elapse_for_test(Duration::from_millis(500));
+                menu.submenu_presence.sync();
+                assert!(!menu.submenu_presence.should_paint());
+                menu.presence.elapse_for_test(Duration::from_secs(1));
+                menu.presence.sync();
+                assert!(!menu.presence.should_paint());
+            });
+        });
+    }
+
+    #[test]
+    fn default_close_is_immediate_and_disabled_policy_survives_open() {
+        let app = TestAppContext::single();
+        app.update(|cx| {
+            let entity = cx.new(|cx| ContextMenu::from_builder(ContextMenu::new("default-exit"), cx));
+            entity.update(cx, |menu, cx| {
+                menu.open_menu_at(point(px(20.), px(30.)), None, cx);
+                menu.close_menu(cx);
+                assert!(!menu.presence.should_paint());
+                menu.set_motion_enabled(false, cx);
+                menu.open_menu_at(point(px(20.), px(30.)), None, cx);
+                assert_eq!(menu.presence.opacity(), 1.);
+                assert!(!menu.presence.is_animating());
+            });
+        });
     }
 }

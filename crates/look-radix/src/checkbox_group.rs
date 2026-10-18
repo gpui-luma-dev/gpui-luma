@@ -65,6 +65,12 @@ pub struct CheckboxGroup<T: ControlGroupItemLike + 'static = ControlGroupItem> {
     builder: ControlGroupBuilder<T>,
 }
 impl<T: ControlGroupItemLike + 'static> CheckboxGroup<T> {
+    gpui_luma::forward_motion!(gpui_luma::controls::control_group::ControlGroupMotion, builder builder);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(enabled);
+        self
+    }
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -204,6 +210,7 @@ impl<T: ControlGroupItemLike + 'static> CheckboxGroup<T> {
         let control = {
             let look = resolve_look(self.look.as_ref(), cx.try_global::<Look>());
             self.builder
+                .motion_defaults(look.motion_defaults().control_group)
                 .template(checkbox_group_template(&look, self.variant, self.paint, self.size, self.radius))
                 .spawn(cx)
         };

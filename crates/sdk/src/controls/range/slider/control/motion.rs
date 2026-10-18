@@ -1,13 +1,11 @@
-use std::time::Duration;
-
 use super::super::model::{SliderModel, ThumbId};
 use super::SliderControl;
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::{VisualTransition};
 
 impl SliderControl {
     pub(super) fn apply_thumb_motion(&mut self, thumb_id: ThumbId, percentage: f32, animate: bool) {
         self.sync_transitions_with_thumbs();
-        let should_animate = animate && self.animated;
+        let should_animate = animate && self.motion_enabled;
         let Some(transition) = self.transition_for_thumb_mut(thumb_id) else {
             return;
         };
@@ -24,11 +22,11 @@ impl SliderControl {
     }
 
     pub(super) fn sync_transitions_with_thumbs(&mut self) {
-        let duration = transition_duration(self.animated);
+        let definition = self.model.motion.profile().thumb.enabled(self.motion_enabled);
         while self.thumb_transitions.len() < self.model.thumbs.len() {
             let index = self.thumb_transitions.len();
             let position = self.model.thumbs[index].position;
-            self.thumb_transitions.push(VisualTransition::new(position, duration));
+            self.thumb_transitions.push(VisualTransition::with_transition(position, definition.clone()));
         }
         if self.thumb_transitions.len() > self.model.thumbs.len() {
             self.thumb_transitions.truncate(self.model.thumbs.len());
@@ -36,9 +34,13 @@ impl SliderControl {
     }
 
     pub(super) fn rebuild_thumb_transitions(&mut self) {
-        let duration = transition_duration(self.animated);
-        self.thumb_transitions =
-            self.model.thumbs.iter().map(|thumb| VisualTransition::new(thumb.position, duration)).collect();
+        let definition = self.model.motion.profile().thumb.enabled(self.motion_enabled);
+        self.thumb_transitions = self
+            .model
+            .thumbs
+            .iter()
+            .map(|thumb| VisualTransition::with_transition(thumb.position, definition.clone()))
+            .collect();
     }
 
     pub(super) fn refresh_display_thumbs(&mut self) {
@@ -54,14 +56,6 @@ impl SliderControl {
                 display
             })
             .collect();
-    }
-}
-
-pub(super) fn transition_duration(animated: bool) -> Duration {
-    if animated {
-        DEFAULT_TRANSITION_DURATION
-    } else {
-        Duration::ZERO
     }
 }
 

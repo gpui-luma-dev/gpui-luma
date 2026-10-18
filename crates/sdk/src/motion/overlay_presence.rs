@@ -1,8 +1,11 @@
-use std::time::Duration;
-
 use gpui::{Context, Pixels, Point, Size, Window, point};
 
-use super::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use super::VisualTransition;
+
+crate::motion_profile!(PresenceMotion => tabs_overlay {
+    enter: super::Transition,
+    exit: super::Transition,
+});
 
 /// Minimum scale factor for overlay enter/exit (Framer / Shadcn `zoom-in-95`).
 pub const OVERLAY_ENTER_SCALE_MIN: f32 = 0.95;
@@ -11,11 +14,12 @@ pub const OVERLAY_ENTER_SCALE_MIN: f32 = 0.95;
 ///
 /// Keeps the host mounted while the close animation runs, then reports
 /// [`should_paint`](Self::should_paint) as `false` once settled closed.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct OverlayPresence {
     transition: VisualTransition,
     logical_open: bool,
-    animated: bool,
+    motion_enabled: bool,
+    motion: PresenceMotion,
 }
 
 impl Default for OverlayPresence {
@@ -25,27 +29,43 @@ impl Default for OverlayPresence {
 }
 
 impl OverlayPresence {
-    pub fn new(open: bool, animated: bool) -> Self {
-        let duration = Self::duration(animated);
-        let target = if open { 1.0 } else { 0.0 };
-        Self { transition: VisualTransition::new(target, duration), logical_open: open, animated }
+    #[cfg(all(test, feature = "test-support"))]
+    pub(crate) fn elapse_for_test(&mut self, elapsed: std::time::Duration) {
+        self.transition.elapse_for_test(elapsed);
+    }
+    pub fn new(open: bool, motion_enabled: bool) -> Self {
+        Self::with_motion(open, motion_enabled, PresenceMotion::default())
     }
 
-    pub fn set_animated(&mut self, animated: bool) {
-        if self.animated == animated {
+    pub fn with_motion(open: bool, motion_enabled: bool, motion: PresenceMotion) -> Self {
+        let target = if open { 1.0 } else { 0.0 };
+        Self {
+            transition: VisualTransition::with_transition(target, motion.enter.enabled(motion_enabled)),
+            logical_open: open,
+            motion_enabled,
+            motion,
+        }
+    }
+
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool) {
+        if self.motion_enabled == motion_enabled {
             return;
         }
-        self.animated = animated;
-        let progress = self.transition.progress();
-        self.transition = VisualTransition::new(progress, Self::duration(animated));
-        if !animated {
+        self.motion_enabled = motion_enabled;
+        let definition = if self.logical_open {
+            &self.motion.enter
+        } else {
+            &self.motion.exit
+        };
+        self.transition.set_transition(definition.enabled(motion_enabled));
+        if !motion_enabled {
             let target = if self.logical_open { 1.0 } else { 0.0 };
             self.transition.snap_to(target);
         }
     }
 
-    pub fn is_animated(&self) -> bool {
-        self.animated
+    pub fn motion_enabled(&self) -> bool {
+        self.motion_enabled
     }
 
     pub fn is_logical_open(&self) -> bool {
@@ -53,17 +73,21 @@ impl OverlayPresence {
     }
 
     pub fn set_open(&mut self, open: bool) {
+        if self.logical_open != open {
+            let definition = if open { &self.motion.enter } else { &self.motion.exit };
+            self.transition.set_transition(definition.enabled(self.motion_enabled));
+        }
         self.logical_open = open;
         let target = if open { 1.0 } else { 0.0 };
-        if self.animated {
+        if self.motion_enabled {
             self.transition.set_target(target);
         } else {
             self.transition.snap_to(target);
         }
     }
 
-    pub fn set_open_with_animation(&mut self, open: bool, animated: bool) {
-        self.set_animated(animated);
+    pub fn set_open_with_animation(&mut self, open: bool, motion_enabled: bool) {
+        self.set_motion_enabled(motion_enabled);
         self.set_open(open);
     }
 
@@ -113,14 +137,6 @@ impl OverlayPresence {
         let scale = self.scale();
         Size { width: content_size.width * scale, height: content_size.height * scale }
     }
-
-    fn duration(animated: bool) -> Duration {
-        if animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        }
-    }
 }
 
 pub fn overlay_enter_scale(progress: f32) -> f32 {
@@ -140,6 +156,36 @@ mod tests {
     use gpui::px;
 
     use super::*;
+
+    #[cfg(feature = "test-support")]
+    #[test]
+    fn look_owned_exit_keeps_presence_until_completion_and_can_be_interrupted() {
+        use std::time::Duration;
+        let mut presence = OverlayPresence::with_motion(
+            true,
+            true,
+            PresenceMotion {
+                enter: super::super::Transition::spring(200.0, 18.0),
+                exit: super::super::Transition::spring(200.0, 18.0),
+            },
+        );
+        presence.transition.elapse_for_test(Duration::ZERO);
+        presence.set_open(false);
+        presence.transition.elapse_for_test(Duration::from_millis(100));
+        presence.sync();
+        assert!(presence.should_paint());
+        let before = presence.transition.state();
+        presence.set_open(true);
+        assert_eq!(presence.transition.state(), before);
+        presence.set_open(false);
+        presence.transition.elapse_for_test(Duration::from_secs(10));
+        assert!(!presence.sync());
+        assert!(!presence.should_paint());
+        presence.set_open(true);
+        presence.set_motion_enabled(false);
+        assert_eq!(presence.opacity(), 1.0);
+        assert!(!presence.is_animating());
+    }
 
     #[test]
     fn closed_endpoints_map_to_min_scale_and_zero_opacity() {

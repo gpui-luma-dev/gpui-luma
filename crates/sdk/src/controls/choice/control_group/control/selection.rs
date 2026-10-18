@@ -351,6 +351,7 @@ mod tests {
         selected_ids: Vec<SharedString>,
     ) -> ControlGroupModel<ControlGroupItem> {
         ControlGroupModel {
+            motion: Default::default(),
             id: "density".into(),
             items: items(),
             default_selected_ids: selected_ids,

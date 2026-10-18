@@ -82,7 +82,7 @@ fn tree_view_workspace_drag_transfers_hidden_selection_and_expansion_once() {
     let [source, target] = cx.update(|_, app| view.read(app).trees.clone());
     source.update(cx, |tree, cx| {
         tree.select_node_by_id("guide", cx);
-        tree.set_animated(false, cx);
+        tree.set_motion_enabled(false, cx);
         tree.collapse("docs", cx);
     });
     cx.run_until_parked();
@@ -346,7 +346,7 @@ fn tree_view_workspace_drop_into_filtered_empty_view_preserves_hidden_subtree_st
     let [source, target] = cx.update(|_, app| view.read(app).trees.clone());
     source.update(cx, |tree, cx| {
         tree.select_node_by_id("guide", cx);
-        tree.set_animated(false, cx);
+        tree.set_motion_enabled(false, cx);
         tree.collapse("docs", cx);
     });
     target.update(cx, |tree, cx| tree.set_filter(|node| node.id == "missing", cx));
@@ -484,7 +484,7 @@ fn tree_view_group_normalizes_ancestors_and_leaves_unrelated_hidden_selection() 
     toggle(cx, "guide");
     toggle(cx, "draft");
     source.update(cx, |tree, cx| {
-        tree.set_animated(false, cx);
+        tree.set_motion_enabled(false, cx);
         tree.collapse("docs", cx);
     });
     cx.run_until_parked();

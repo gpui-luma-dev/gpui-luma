@@ -120,7 +120,7 @@ impl ScreenNav {
                     .page()
                     .label(label)
                     .selected(tab == RadixStudioTab::CustomPalette)
-                    .animated(false)
+                    .motion_enabled(false)
                     .spawn(cx);
                 {
                     let callback_control = (&toggle).downgrade();

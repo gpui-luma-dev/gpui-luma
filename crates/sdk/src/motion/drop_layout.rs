@@ -5,8 +5,7 @@ use gpui::{
     Point, Window, point,
 };
 use gpui::prelude::*;
-use super::{VisualTransition, DEFAULT_TRANSITION_DURATION};
-use crate::theme::stylesheet::{MotionSource, ResolvedMotion};
+use super::{VisualTransition, Transition};
 
 /// Shared retained geometry for one collection. Data commits and lifecycle events
 /// remain synchronous; this animates existing keyed elements, never cloned views.
@@ -23,9 +22,10 @@ struct State<K> {
     viewport: Option<Bounds<Pixels>>,
     scroll: Point<Pixels>,
     pending: bool,
-    transition: VisualTransition,
-    inherited: ResolvedMotion,
-    duration: Option<Duration>,
+    channels: HashMap<K, (VisualTransition, VisualTransition)>,
+    definition: Transition,
+    #[cfg(all(test, feature = "test-support"))]
+    elapsed: Option<Duration>,
     enabled: bool,
 }
 impl<K> Default for DropLayoutMotion<K> {
@@ -37,53 +37,55 @@ impl<K> Default for DropLayoutMotion<K> {
             viewport: None,
             scroll: Point::default(),
             pending: false,
-            transition: VisualTransition::new(1., Duration::ZERO),
-            inherited: ResolvedMotion { duration: DEFAULT_TRANSITION_DURATION, source: MotionSource::SdkFallback },
-            duration: None,
+            channels: HashMap::new(),
+            definition: Transition::default(),
+            #[cfg(all(test, feature = "test-support"))]
+            elapsed: None,
             enabled: true,
         })))
     }
 }
 impl<K: Clone + 'static> DropLayoutMotion<K> {
-    /// Override this instance's duration; `None` restores its theme value.
-    /// Explicit zero disables drop motion independently of other animations.
-    pub fn set_duration(&self, duration: Option<Duration>) {
+    /// Change policy while retaining the captured timing and role.
+    pub fn set_motion_enabled(&self, enabled: bool) {
         let mut s = self.0.borrow_mut();
-        s.duration = duration;
-        Self::settle(&mut s);
-    }
-    /// Apply a Look snapshot and the control's animation policy.
-    pub fn configure(&self, inherited: ResolvedMotion, enabled: bool) {
-        let mut s = self.0.borrow_mut();
-        if s.inherited != inherited || s.enabled != enabled {
+        if s.enabled != enabled {
             Self::settle(&mut s);
+            s.enabled = enabled;
         }
-        s.inherited = inherited;
-        s.enabled = enabled;
     }
-    pub fn resolved(&self) -> ResolvedMotion {
-        let s = self.0.borrow();
-        s.inherited.clone().with_override(s.duration, s.enabled)
+    /// Apply the control's frozen role without reconfiguring trajectories on render.
+    pub fn configure_transition(&self, definition: &Transition) {
+        let mut s = self.0.borrow_mut();
+        if !s.definition.same_definition(definition) {
+            Self::settle(&mut s);
+            s.definition = definition.clone();
+        }
     }
+
     /// Call after a changed atomic commit, before the next render. A no-op,
     /// rejection or cancellation must not start a layout transition.
     pub fn start(&self) {
-        let duration = self.resolved().duration;
         let mut s = self.0.borrow_mut();
-        Self::settle(&mut s);
-        if duration.is_zero() {
+        if !s.enabled {
+            Self::settle(&mut s);
             return;
         }
+        let definition = s.definition.clone();
+        if definition.start(super::MotionState::default(), 1.0).sample(Duration::ZERO).complete {
+            Self::settle(&mut s);
+            return;
+        }
+        // Retain per-key channel velocity when another drop interrupts this one.
         s.from = s.current.clone();
+        s.targets.clear();
         s.pending = !s.from.is_empty();
         #[cfg(all(test, feature = "test-support"))]
-        let test_clock = s.transition.uses_test_clock();
-        s.transition = VisualTransition::new(0., duration);
-        #[cfg(all(test, feature = "test-support"))]
-        if test_clock {
-            s.transition.elapse_for_test(Duration::ZERO);
+        if s.elapsed.is_some() {
+            s.elapsed = Some(Duration::ZERO);
         }
     }
+
     /// Settle on new input/data/presentation changes. Keep last measured geometry
     /// available for a synchronous host-owned drop commit in the same turn.
     pub fn cancel(&self) {
@@ -93,7 +95,7 @@ impl<K: Clone + 'static> DropLayoutMotion<K> {
         s.from.clear();
         s.targets.clear();
         s.pending = false;
-        s.transition.snap_to(1.);
+        s.channels.clear();
     }
 }
 impl<K: Clone + Eq + Hash + 'static> DropLayoutMotion<K> {
@@ -111,7 +113,12 @@ impl<K: Clone + Eq + Hash + 'static> DropLayoutMotion<K> {
     /// zero before a drop freezes its first frame until advanced by the test.
     #[cfg(all(test, feature = "test-support"))]
     pub(crate) fn elapse_for_test(&self, elapsed: Duration) {
-        self.0.borrow_mut().transition.elapse_for_test(elapsed);
+        let mut s = self.0.borrow_mut();
+        s.elapsed = Some(elapsed);
+        for (x, y) in s.channels.values_mut() {
+            x.elapse_for_test(elapsed);
+            y.elapse_for_test(elapsed);
+        }
     }
     /// Number of visible measured identities retained (at most 512).
     pub fn tracked_items(&self) -> usize {
@@ -120,7 +127,7 @@ impl<K: Clone + Eq + Hash + 'static> DropLayoutMotion<K> {
 
     pub fn is_animating(&self) -> bool {
         let s = self.0.borrow();
-        s.pending || s.transition.is_animating()
+        s.pending || s.channels.values().any(|(x, y)| x.is_animating() || y.is_animating())
     }
     // Preserve stateful template roots (focus, style modifiers and native IDs).
     pub(crate) fn begin_surface(
@@ -168,10 +175,18 @@ impl<K: Clone + Eq + Hash + 'static> DropLayoutMotion<K> {
         }
         s.viewport = Some(bounds);
         s.scroll = scroll;
+        let mounted = s.current.clone();
+        s.channels.retain(|key, _| mounted.contains_key(key));
         s.current.clear();
-        if !s.pending && !s.transition.sync() {
+        let mut active = false;
+        for (x, y) in s.channels.values_mut() {
+            active |= x.sync();
+            active |= y.sync();
+        }
+        if !s.pending && !active {
             s.from.clear();
             s.targets.clear();
+            s.channels.clear();
         }
     }
     fn offset(&self, key: &K, bounds: Bounds<Pixels>, mask: Bounds<Pixels>) -> Point<Pixels> {
@@ -191,12 +206,31 @@ impl<K: Clone + Eq + Hash + 'static> DropLayoutMotion<K> {
             return Point::default();
         }
         s.targets.insert(key.clone(), bounds);
-        if s.pending {
-            s.pending = false;
-            s.transition.set_target(1.);
+        s.pending = false;
+        let definition = s.definition.clone();
+        #[cfg(all(test, feature = "test-support"))]
+        let elapsed = s.elapsed;
+        if !s.channels.contains_key(key) && s.channels.len() >= 512 {
+            return Point::default();
         }
-        let remaining = 1. - s.transition.progress();
-        point((from.origin.x - bounds.origin.x) * remaining, (from.origin.y - bounds.origin.y) * remaining)
+        let (x, y) = s.channels.entry(key.clone()).or_insert_with(|| {
+            (
+                VisualTransition::with_transition(from.origin.x.as_f32(), definition.clone()),
+                VisualTransition::with_transition(from.origin.y.as_f32(), definition),
+            )
+        });
+        x.set_target(bounds.origin.x.as_f32());
+        y.set_target(bounds.origin.y.as_f32());
+        #[cfg(all(test, feature = "test-support"))]
+        if let Some(elapsed) = elapsed {
+            x.elapse_for_test(elapsed);
+            y.elapse_for_test(elapsed);
+            x.sync();
+            y.sync();
+        }
+        let origin = point(gpui::px(x.progress()), gpui::px(y.progress()));
+        s.current.insert(key.clone(), Bounds { origin, ..bounds });
+        origin - bounds.origin
     }
 }
 struct Item<K> {
@@ -292,6 +326,45 @@ impl<K: Clone + Eq + Hash + 'static> IntoElement for Scope<K> {
 mod tests {
     use super::*;
     use gpui::{Context, Entity, Render, TestAppContext, VisualTestContext, div, px};
+
+    #[test]
+    fn visible_geometry_cache_is_bounded_with_typed_motion() {
+        let motion = DropLayoutMotion::<u32>::default();
+        motion.configure_transition(&Transition::spring(300.0, 28.0));
+        let bounds = Bounds::new(point(px(0.0), px(0.0)), gpui::size(px(120.0), px(90.0)));
+        motion.begin(bounds, Point::default(), false);
+        for key in 0..10_000 {
+            motion.offset(&key, bounds, bounds);
+        }
+        assert_eq!(motion.tracked_items(), 512);
+    }
+
+    #[test]
+    fn keyed_spring_channels_retain_velocity_across_interrupted_drops() {
+        use gpui::size;
+        let motion = DropLayoutMotion::<u32>::default();
+        let viewport = Bounds::new(point(px(0.), px(0.)), size(px(200.), px(200.)));
+        let bounds = |y| Bounds::new(point(px(0.), px(y)), size(px(100.), px(20.)));
+        motion.configure_transition(&Transition::spring(200., 18.));
+        motion.elapse_for_test(Duration::ZERO);
+        motion.begin(viewport, Point::default(), false);
+        motion.offset(&1, bounds(0.), viewport);
+        motion.start();
+        motion.begin(viewport, Point::default(), false);
+        motion.offset(&1, bounds(80.), viewport);
+        motion.elapse_for_test(Duration::from_millis(100));
+        motion.begin(viewport, Point::default(), false);
+        motion.offset(&1, bounds(80.), viewport);
+        let before = motion.0.borrow().channels[&1].1.state();
+        assert!(before.velocity > 0.);
+        motion.start();
+        motion.begin(viewport, Point::default(), false);
+        motion.offset(&1, bounds(20.), viewport);
+        assert_eq!(motion.0.borrow().channels[&1].1.state(), before);
+        motion.elapse_for_test(Duration::from_secs(10));
+        motion.begin(viewport, Point::default(), false);
+        assert!(!motion.is_animating());
+    }
     struct Page {
         order: Vec<u32>,
         motion: DropLayoutMotion<u32>,
@@ -393,7 +466,7 @@ mod tests {
             }
             page.update(cx, |p, cx| {
                 if mode == 1 {
-                    p.motion.set_duration(Some(Duration::ZERO));
+                    p.motion.configure_transition(&Transition::instant());
                 }
                 p.motion.start();
                 p.order = vec![1, 2, 0];
@@ -431,32 +504,5 @@ mod tests {
         });
         cx.run_until_parked();
         cx.update(|_, cx| assert!(!page.read(cx).motion.is_animating()));
-    }
-    #[test]
-    fn visible_cache_is_bounded_and_configuration_restores_the_live_look() {
-        let motion = DropLayoutMotion::<u32>::default();
-        let bounds = Bounds::new(point(px(0.), px(0.)), gpui::size(px(120.), px(90.)));
-        motion.begin(bounds, Point::default(), false);
-        for key in 0..10_000 {
-            motion.offset(&key, bounds, bounds);
-        }
-        assert_eq!(motion.tracked_items(), 512);
-        let original = motion.resolved();
-        motion.set_duration(Some(Duration::from_millis(800)));
-        motion.configure(
-            ResolvedMotion {
-                duration: Duration::from_millis(350),
-                source: MotionSource::Look { name: "Test".into(), field: "common.drag_drop.drop_motion_ms" },
-            },
-            true,
-        );
-        assert_eq!(motion.resolved().duration, Duration::from_millis(800));
-        motion.set_duration(None);
-        assert_eq!(motion.resolved().duration, Duration::from_millis(350));
-        motion.configure(original, false);
-        assert!(motion.resolved().duration.is_zero());
-        let weak = Rc::downgrade(&motion.0);
-        drop(motion);
-        assert!(weak.upgrade().is_none());
     }
 }

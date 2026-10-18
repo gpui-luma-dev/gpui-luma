@@ -8,7 +8,7 @@ use super::{
     template::SplitViewTemplateHandlers,
     SplitViewBuilder, SplitViewRenderModel,
 };
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::{VisualTransition};
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
@@ -59,7 +59,13 @@ impl SplitView {
         SplitViewBuilder::new(id)
     }
 
+    crate::motion_snapshot!(super::SplitViewMotion, model.motion);
+
     pub(crate) fn from_builder(builder: SplitViewBuilder, _cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
+        let definition = motion.extent.enabled(builder.model.motion_enabled);
         let initial_progress = if builder.model.collapsed { 0.0 } else { 1.0 };
         Self {
             model: builder.model,
@@ -69,7 +75,7 @@ impl SplitView {
             suppress_next_separator_click: false,
             drag_start_axis_px: 0.0,
             drag_start_width: px(0.0),
-            transition: VisualTransition::new(initial_progress, DEFAULT_TRANSITION_DURATION),
+            transition: VisualTransition::with_transition(initial_progress, definition),
         }
     }
 
@@ -140,7 +146,7 @@ impl SplitView {
         }
 
         self.model.collapsed = collapsed;
-        if self.model.animated {
+        if self.model.motion_enabled {
             self.transition.set_target(if collapsed { 0.0 } else { 1.0 });
         } else {
             self.transition.snap_to(if collapsed { 0.0 } else { 1.0 });
@@ -157,17 +163,18 @@ impl SplitView {
         self.set_collapsed(!self.model.collapsed, cx);
     }
 
-    pub fn animated(&self) -> bool {
-        self.model.animated
+    pub fn motion_enabled(&self) -> bool {
+        self.model.motion_enabled
     }
 
-    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.model.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.model.motion_enabled == motion_enabled {
             return;
         }
 
-        self.model.animated = animated;
-        if animated {
+        self.model.motion_enabled = motion_enabled;
+        self.transition.set_transition(self.model.motion.profile().extent.enabled(motion_enabled));
+        if motion_enabled {
             self.transition.set_target(if self.model.collapsed { 0.0 } else { 1.0 });
         } else {
             self.transition.snap_to(if self.model.collapsed { 0.0 } else { 1.0 });

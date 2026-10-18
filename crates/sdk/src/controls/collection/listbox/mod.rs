@@ -36,3 +36,5 @@ mod selection_tests;
 
 #[cfg(test)]
 mod projection_tests;
+
+pub use control::ListBoxMotion;

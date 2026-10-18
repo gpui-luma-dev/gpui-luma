@@ -1,17 +1,15 @@
-use std::time::Duration;
-
 use gpui::{Context, IntoElement, Render, SharedString, Window, div, prelude::*};
 
 use super::direction::ProgressDirection;
 use super::{ProgressBuilder, ProgressRenderModel};
-use crate::motion::{ContinuousPhase, DEFAULT_CONTINUOUS_PERIOD, DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::{ContinuousPhase, VisualTransition};
 use crate::controls::progress::model::ProgressModel;
 use crate::infra::value::{ControlRange, value_from_input};
 use crate::theme::{ControlSize, observe_theme_revision};
 
 pub struct ProgressControl {
     model: ProgressModel,
-    animated: bool,
+    motion_enabled: bool,
     transition: VisualTransition,
     phase: ContinuousPhase,
 }
@@ -22,21 +20,21 @@ impl ProgressControl {
         ProgressBuilder::new(id)
     }
 
+    crate::motion_snapshot!(super::ProgressMotion, model.motion);
+
     pub(crate) fn from_builder(builder: ProgressBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
-        let animated = builder.animated;
-        let duration = if animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        };
+        let motion_enabled = builder.motion_enabled;
         let percentage = builder.model.range.percentage(builder.model.value);
-        let transition = VisualTransition::new(percentage, duration);
-        let mut phase = ContinuousPhase::new(DEFAULT_CONTINUOUS_PERIOD);
-        if builder.model.indeterminate {
+        let transition = VisualTransition::with_transition(percentage, motion.value.enabled(motion_enabled));
+        let mut phase = ContinuousPhase::new(motion.period);
+        if builder.model.indeterminate && motion_enabled {
             phase.start();
         }
-        Self { model: builder.model, animated, transition, phase }
+        Self { model: builder.model, motion_enabled, transition, phase }
     }
 
     pub fn value(&self) -> f32 {
@@ -63,8 +61,8 @@ impl ProgressControl {
         self.model.show_thumb
     }
 
-    pub fn animated(&self) -> bool {
-        self.animated
+    pub fn motion_enabled(&self) -> bool {
+        self.motion_enabled
     }
 
     pub fn is_indeterminate(&self) -> bool {
@@ -124,19 +122,18 @@ impl ProgressControl {
         cx.notify();
     }
 
-    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.motion_enabled == motion_enabled {
             return;
         }
 
-        self.animated = animated;
-        let duration = if animated {
-            DEFAULT_TRANSITION_DURATION
+        self.motion_enabled = motion_enabled;
+        if self.model.indeterminate && motion_enabled {
+            self.phase.start();
         } else {
-            Duration::ZERO
-        };
-        let progress = self.transition.progress();
-        self.transition = VisualTransition::new(progress, duration);
+            self.phase.stop();
+        }
+        self.transition.set_transition(self.model.motion.profile().value.enabled(motion_enabled));
         if !self.model.indeterminate {
             self.transition.set_target(self.model.range.percentage(self.model.value));
         }
@@ -149,7 +146,7 @@ impl ProgressControl {
         }
 
         self.model.indeterminate = indeterminate;
-        if indeterminate {
+        if indeterminate && self.motion_enabled {
             self.phase.start();
         } else {
             self.phase.stop();

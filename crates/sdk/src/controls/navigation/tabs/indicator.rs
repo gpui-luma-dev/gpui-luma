@@ -1,9 +1,8 @@
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use gpui::{Bounds, Hsla, Pixels};
 
-use crate::motion::{DEFAULT_TRANSITION_DURATION, VisualTransition};
+use crate::motion::{Transition, VisualTransition};
 use crate::infra::lock;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -22,52 +21,42 @@ pub struct TabsIndicatorPaint {
 
 #[derive(Debug)]
 struct TabsIndicatorMotionInner {
-    transition: VisualTransition,
-    from: TabsIndicatorRect,
+    left: VisualTransition,
+    width: VisualTransition,
     to: TabsIndicatorRect,
     list_bounds: Option<Bounds<Pixels>>,
     pending_item_bounds: Option<Bounds<Pixels>>,
     padding_x: f32,
     height: f32,
     color: Option<Hsla>,
-    animated: bool,
+    motion_enabled: bool,
     has_geometry: bool,
 }
 
 impl TabsIndicatorMotionInner {
-    fn new(animated: bool) -> Self {
+    fn new(motion_enabled: bool, definition: Transition) -> Self {
         Self {
-            transition: VisualTransition::new(1.0, Self::duration(animated)),
-            from: TabsIndicatorRect::default(),
+            left: VisualTransition::with_transition(0.0, definition.clone()),
+            width: VisualTransition::with_transition(0.0, definition.clone()),
             to: TabsIndicatorRect::default(),
             list_bounds: None,
             pending_item_bounds: None,
             padding_x: 0.0,
             height: 2.0,
             color: None,
-            animated,
+            motion_enabled,
             has_geometry: false,
         }
     }
 
-    fn duration(animated: bool) -> Duration {
-        if animated {
-            DEFAULT_TRANSITION_DURATION
-        } else {
-            Duration::ZERO
-        }
-    }
-
-    fn set_animated(&mut self, animated: bool) {
-        if self.animated == animated {
+    fn set_motion_enabled(&mut self, motion_enabled: bool) {
+        if self.motion_enabled == motion_enabled {
             return;
         }
-        self.animated = animated;
-        let progress = self.transition.progress();
-        self.transition = VisualTransition::new(progress, Self::duration(animated));
-        if !animated {
-            self.from = self.to;
-            self.transition.snap_to(1.0);
+        self.motion_enabled = motion_enabled;
+        if !motion_enabled {
+            self.left.snap_to(self.to.left);
+            self.width.snap_to(self.to.width);
         }
     }
 
@@ -93,9 +82,9 @@ impl TabsIndicatorMotionInner {
         self.list_bounds = None;
         self.pending_item_bounds = None;
         self.has_geometry = false;
-        self.from = TabsIndicatorRect::default();
         self.to = TabsIndicatorRect::default();
-        self.transition.snap_to(1.0);
+        self.left.snap_to(self.to.left);
+        self.width.snap_to(self.to.width);
     }
 
     fn apply_item_bounds(&mut self, item_bounds: Bounds<Pixels>, animate: bool) {
@@ -108,10 +97,10 @@ impl TabsIndicatorMotionInner {
     }
 
     fn retarget(&mut self, next: TabsIndicatorRect, animate: bool) {
-        if !self.has_geometry || !animate || !self.animated {
-            self.from = next;
+        if !self.has_geometry || !animate || !self.motion_enabled {
             self.to = next;
-            self.transition.snap_to(1.0);
+            self.left.snap_to(self.to.left);
+            self.width.snap_to(self.to.width);
             self.has_geometry = true;
             return;
         }
@@ -120,27 +109,23 @@ impl TabsIndicatorMotionInner {
             return;
         }
 
-        let current = self.display_rect();
-        self.from = current;
         self.to = next;
-        self.transition = VisualTransition::new(0.0, Self::duration(self.animated));
-        self.transition.set_target(1.0);
+        self.left.set_target(next.left);
+        self.width.set_target(next.width);
         self.has_geometry = true;
     }
 
     fn display_rect(&self) -> TabsIndicatorRect {
-        TabsIndicatorRect {
-            left: self.transition.interpolate(self.from.left, self.to.left),
-            width: self.transition.interpolate(self.from.width, self.to.width),
-        }
+        TabsIndicatorRect { left: self.left.progress(), width: self.width.progress() }
     }
 
     fn sync(&mut self) -> bool {
-        self.transition.sync()
+        let left = self.left.sync();
+        self.width.sync() || left
     }
 
     fn is_animating(&self) -> bool {
-        self.transition.is_animating()
+        self.left.is_animating() || self.width.is_animating()
     }
 
     fn paint(&self) -> Option<TabsIndicatorPaint> {
@@ -163,16 +148,20 @@ pub struct TabsIndicatorMotion {
 }
 
 impl TabsIndicatorMotion {
-    pub fn new(animated: bool) -> Self {
-        Self { inner: Arc::new(Mutex::new(TabsIndicatorMotionInner::new(animated))) }
+    pub fn new(motion_enabled: bool) -> Self {
+        Self::with_transition(motion_enabled, Transition::default())
+    }
+
+    pub fn with_transition(motion_enabled: bool, definition: Transition) -> Self {
+        Self { inner: Arc::new(Mutex::new(TabsIndicatorMotionInner::new(motion_enabled, definition))) }
     }
 
     fn inner(&self) -> std::sync::MutexGuard<'_, TabsIndicatorMotionInner> {
         lock::mutex(&self.inner)
     }
 
-    pub fn set_animated(&self, animated: bool) {
-        self.inner().set_animated(animated);
+    pub fn set_motion_enabled(&self, motion_enabled: bool) {
+        self.inner().set_motion_enabled(motion_enabled);
     }
 
     pub fn set_metrics(&self, padding_x: f32, height: f32, color: Option<Hsla>) {
@@ -237,6 +226,36 @@ mod tests {
     use gpui::{point, px, size, Bounds};
 
     use super::*;
+
+    #[cfg(feature = "test-support")]
+    #[test]
+    fn spring_geometry_retarget_preserves_velocity_and_disable_settles() {
+        use std::time::Duration;
+        let mut motion = TabsIndicatorMotionInner::new(true, Transition::spring(200.0, 18.0));
+        motion.retarget(TabsIndicatorRect { left: 0.0, width: 40.0 }, false);
+        motion.left.elapse_for_test(Duration::ZERO);
+        motion.width.elapse_for_test(Duration::ZERO);
+        motion.retarget(TabsIndicatorRect { left: 200.0, width: 80.0 }, true);
+        motion.left.elapse_for_test(Duration::from_millis(100));
+        motion.width.elapse_for_test(Duration::from_millis(100));
+        motion.sync();
+        let position = motion.left.state();
+        let width = motion.width.state();
+        motion.retarget(TabsIndicatorRect { left: -50.0, width: 50.0 }, true);
+        assert_eq!(motion.left.state(), position);
+        assert_eq!(motion.width.state(), width);
+        motion.left.elapse_for_test(Duration::from_secs(10));
+        motion.width.elapse_for_test(Duration::from_secs(10));
+        assert!(!motion.sync());
+        assert_eq!(motion.display_rect(), TabsIndicatorRect { left: -50.0, width: 50.0 });
+        motion.retarget(TabsIndicatorRect { left: 100.0, width: 90.0 }, true);
+        motion.set_motion_enabled(false);
+        assert_eq!(motion.display_rect(), TabsIndicatorRect { left: 100.0, width: 90.0 });
+        assert!(!motion.is_animating());
+        motion.set_motion_enabled(true);
+        motion.retarget(TabsIndicatorRect { left: 0.0, width: 40.0 }, true);
+        assert!(motion.is_animating());
+    }
 
     #[test]
     fn indicator_rect_insets_by_padding() {

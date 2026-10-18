@@ -60,7 +60,15 @@ impl ComboBoxControl {
         ComboBoxBuilder::new(id, items)
     }
 
+    crate::presence_policy!(presence);
+
+    crate::motion_snapshot!(super::ComboBoxMotion, model.motion);
+
     pub(crate) fn from_builder(builder: ComboBoxBuilder, cx: &mut Context<Self>) -> Self {
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
+        let motion_enabled = builder.model.motion.enabled();
         let model = builder.model;
 
         let textfield = text_selection::new(format!("{}-textfield", model.id))
@@ -103,7 +111,7 @@ impl ComboBoxControl {
             last_keyboard_event: SharedString::from("none"),
             committed_selection: None,
             open_popup_on_next_focus: false,
-            presence: OverlayPresence::new(false, true),
+            presence: OverlayPresence::with_motion(false, motion_enabled, motion.presence.clone()),
             _subscriptions: subscriptions,
         }
     }
@@ -572,7 +580,7 @@ impl ComboBoxControl {
             return false;
         }
 
-        self.presence.set_open_with_animation(self.behavior.state.open, self.behavior.state.open);
+        self.presence.set_open(self.behavior.state.open);
 
         use crate::infra::attachments::AttachmentTarget;
         self.textfield.update(cx, |field, cx| {
@@ -748,7 +756,7 @@ impl Render for ComboBoxControl {
             popup_bounds: self.trigger_bounds,
             popup_look: look,
             popup_content,
-            presence: self.presence,
+            presence: self.presence.clone(),
         };
 
         self.model.template.render(render_model, handlers, window, cx)

@@ -21,6 +21,8 @@ pub struct Accordion {
 }
 
 impl Accordion {
+    gpui_luma::forward_motion!(gpui_luma::controls::accordion::AccordionMotion, builder builder);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -260,8 +262,8 @@ impl Accordion {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.builder = self.builder.animated(animated);
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(motion_enabled);
         self
     }
 
@@ -358,7 +360,8 @@ impl Accordion {
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> AccordionBuilder {
-        let builder = self.builder.size(self.size.control_size());
+        let self_builder = self.builder.motion_defaults(look.motion_defaults().accordion);
+        let builder = self_builder.size(self.size.control_size());
         if self.custom_template {
             builder
         } else {

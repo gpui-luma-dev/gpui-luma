@@ -1,3 +1,4 @@
+use gpui_luma::motion::{Transition, Easing};
 use std::time::Duration;
 use gpui::{Bounds, Context, Pixels, Point, Window, point, px};
 use gpui_luma::motion::VisualTransition;
@@ -18,7 +19,7 @@ impl Default for AnchorMotion {
             target: None,
             bounds: None,
             duration: Duration::ZERO,
-            transition: VisualTransition::new(1.0, Duration::ZERO),
+            transition: VisualTransition::with_transition(1.0, Transition::timed(Duration::ZERO, Easing::OutCubic)),
         }
     }
 }
@@ -51,12 +52,12 @@ impl AnchorMotion {
             // Enter near the final anchor; never fly in from a stale scrolled plot.
             self.from = target + point(px(0.0), px(8.0));
             self.target = Some(target);
-            self.transition = VisualTransition::new(0.0, duration);
+            self.transition = VisualTransition::with_transition(0.0, Transition::timed(duration, Easing::OutCubic));
             self.transition.set_target(1.0);
         } else if self.target != Some(target) || self.duration != duration {
             self.from = self.position();
             self.target = Some(target);
-            self.transition = VisualTransition::new(0.0, duration);
+            self.transition = VisualTransition::with_transition(0.0, Transition::timed(duration, Easing::OutCubic));
             self.transition.set_target(1.0);
         }
         self.bounds = Some(bounds);

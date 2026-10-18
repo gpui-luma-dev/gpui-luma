@@ -241,7 +241,7 @@ mod coverage_tests {
             window.activate_window();
             let target = crate::Sidebar::new("sidebar")
                 .look(&look)
-                .animated(false)
+                .motion_enabled(false)
                 .sidebar(crate::Sidebar::panel("content").content(crate::Sidebar::content().group(
                     crate::Sidebar::group().menu(crate::Sidebar::menu("main").item(
                         crate::Sidebar::menu_item("first", "First").icon(lucide_svg_static::Icon::House).tooltip(

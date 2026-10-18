@@ -68,7 +68,7 @@ fn setup(app: &mut TestAppContext) -> (Entity<TreeViewControl<()>>, &mut VisualT
         crate::key_handling::bind_default_control_keys(cx);
         let tree = TreeViewBuilder::new("scale-tree")
             .items(items())
-            .animated(false)
+            .motion_enabled(false)
             .wrap_navigation(false)
             .template(Arc::new(Measured { base: super::super::default_tree_view_template(), counts: counts.clone() }))
             .spawn(cx);
@@ -163,7 +163,7 @@ fn large_tree_filter_sort_deep_reveal_and_animation_preserve_keyed_state() {
     });
     reset(&counts);
     tree.update(cx, |tree, cx| {
-        tree.set_animated(true, cx);
+        tree.set_motion_enabled(true, cx);
         tree.collapse("folder-0", cx);
         tree.collapse("folder-50", cx);
     });
@@ -218,7 +218,7 @@ fn very_wide_branch_collapse_keeps_row_construction_bounded() {
             ],
             cx,
         );
-        tree.set_animated(true, cx);
+        tree.set_motion_enabled(true, cx);
     });
     cx.run_until_parked();
     reset(&counts);
@@ -241,7 +241,7 @@ fn simultaneous_branch_motion_obeys_one_row_budget_and_small_branches_still_anim
     let mut app = TestAppContext::single();
     let (tree, cx, counts) = setup(&mut app);
     tree.update(cx, |tree, cx| {
-        tree.set_animated(true, cx);
+        tree.set_motion_enabled(true, cx);
         tree.collapse("folder-0", cx);
     });
     frame(cx);

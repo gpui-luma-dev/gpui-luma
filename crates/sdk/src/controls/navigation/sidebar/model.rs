@@ -1,3 +1,9 @@
+crate::motion_profile!(SidebarMotion => sidebar {
+    expansion: crate::motion::Transition,
+    drop_layout: crate::motion::Transition,
+    popup: crate::motion::PresenceMotion,
+});
+
 use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
@@ -68,10 +74,11 @@ pub struct SidebarPanelModel {
 
 #[derive(Clone)]
 pub struct SidebarControlModel {
+    pub(crate) motion: crate::motion::MotionConfig<SidebarMotion>,
     pub(crate) id: SharedString,
     pub(crate) presentation: SidebarPresentation,
     pub(crate) enabled: bool,
-    pub(crate) animated: bool,
+    pub(crate) motion_enabled: bool,
     pub(crate) selected_id: Option<SharedString>,
     pub(crate) drag_drop: Option<super::SidebarDragDrop>,
     pub(crate) sidebar: Option<SidebarPanelModel>,
@@ -381,6 +388,8 @@ pub struct SidebarControlBuilder {
 }
 
 impl SidebarControlBuilder {
+    crate::motion_methods!(SidebarMotion, model.motion);
+
     /// Observe the complete drag lifecycle through the semantic event stream.
     pub fn on_drag_drop<M: 'static>(
         self,
@@ -617,10 +626,11 @@ impl SidebarControlBuilder {
             callbacks: Default::default(),
 
             model: SidebarControlModel {
+                motion: Default::default(),
                 id: id.into(),
                 presentation: SidebarPresentation::Expanded,
                 enabled: true,
-                animated: true,
+                motion_enabled: true,
                 selected_id: None,
                 drag_drop: None,
                 sidebar: None,
@@ -650,8 +660,8 @@ impl SidebarControlBuilder {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.model.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.model.motion_enabled = motion_enabled;
         self
     }
 
@@ -845,9 +855,9 @@ mod tests {
     #[test]
     fn test_sidebar_builder_animated_option() {
         let builder_default = SidebarControlBuilder::new("sidebar");
-        assert!(builder_default.model.animated);
+        assert!(builder_default.model.motion_enabled);
 
-        let builder_opt_out = SidebarControlBuilder::new("sidebar").animated(false);
-        assert!(!builder_opt_out.model.animated);
+        let builder_opt_out = SidebarControlBuilder::new("sidebar").motion_enabled(false);
+        assert!(!builder_opt_out.model.motion_enabled);
     }
 }

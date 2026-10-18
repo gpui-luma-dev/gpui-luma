@@ -1,3 +1,7 @@
+crate::motion_profile!(TableMotion => table {
+    drop_layout: crate::motion::Transition,
+});
+
 use crate::interaction::{ScrollInteraction, WheelScrollPolicy, ScrollBoundaryPolicy, WheelFocusScope};
 use std::sync::Arc;
 
@@ -295,6 +299,7 @@ pub struct TableModel<T>
 where
     T: 'static,
 {
+    pub(crate) motion: crate::motion::MotionConfig<TableMotion>,
     pub(crate) id: SharedString,
     pub(crate) items: Vec<T>,
     pub(crate) selected_indices: Vec<usize>,
@@ -366,6 +371,9 @@ impl<T> TableBuilder<T>
 where
     T: 'static,
 {
+    crate::motion_methods!(TableMotion, model.motion);
+    crate::motion_policy!(model.motion);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -648,6 +656,7 @@ where
             callbacks: Default::default(),
 
             model: TableModel {
+                motion: Default::default(),
                 id: id.into(),
                 items: Vec::new(),
                 selected_indices: Vec::new(),

@@ -31,6 +31,8 @@ impl<T> IconGroup<T>
 where
     T: ControlGroupItemLike + Clone + Send + Sync + 'static,
 {
+    gpui_luma::forward_motion!(gpui_luma::controls::control_group::ControlGroupMotion, builder builder);
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -190,6 +192,11 @@ where
         self
     }
 
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(enabled);
+        self
+    }
+
     pub fn animated_selection(mut self, animated_selection: bool) -> Self {
         self.builder = self.builder.animated_selection(animated_selection);
         self
@@ -250,13 +257,13 @@ where
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> ControlGroupBuilder<T> {
+        let self_builder = self.builder.motion_defaults(look.motion_defaults().control_group);
         if self.custom_template {
-            return self.builder;
+            return self_builder;
         }
         match self.kind {
-            IconGroupKind::Group => self.builder.template(look.control_group_template()),
-            IconGroupKind::Toolbar => self
-                .builder
+            IconGroupKind::Group => self_builder.template(look.control_group_template()),
+            IconGroupKind::Toolbar => self_builder
                 .template(control_group_template_with_theme(look.control_group_theme()))
                 .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0))),
         }

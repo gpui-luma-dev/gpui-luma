@@ -302,10 +302,10 @@ fn scrollable_body() -> gpui::Div {
 mod tests {
     use super::*;
     use std::time::Duration;
-    use gpui_luma::theme::stylesheet::MotionSource;
+    use gpui_luma::motion::{Transition, Easing};
 
     #[test]
-    fn main_tabs_route_panels_through_the_inherited_body_motion() {
+    fn main_tabs_route_panels_through_the_inherited_content_role() {
         struct Page {
             tabs: Entity<Tabs>,
         }
@@ -332,9 +332,10 @@ mod tests {
         cx.run_until_parked();
         let tabs = cx.update(|_, cx| page.read(cx).tabs.clone());
         cx.update(|_, cx| {
-            let motion = tabs.read(cx).body_motion();
-            assert_eq!(motion.duration, Duration::from_millis(300));
-            assert!(matches!(motion.source, MotionSource::Look { .. }));
+            assert_eq!(
+                tabs.read(cx).motion_profile().content.description(),
+                Transition::timed(Duration::from_millis(300), Easing::OutCubic).description()
+            );
         });
         assert!(cx.debug_bounds("panel-Cards").is_some());
         assert!(cx.debug_bounds("panel-Dashboard").is_none());

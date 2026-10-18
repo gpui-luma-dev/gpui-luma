@@ -53,6 +53,9 @@ struct DragDropBindings<'a, M: 'static, T, K> {
 /// Look-owned fixed-size or content-sized list composition. Reuse SDK state and handles between renders.
 /// No DnD handlers or gap overlays are installed unless `drag_and_drop` is used.
 pub struct ListBoxBuilder<'a, M: 'static, T, K> {
+    motion_edits: gpui_luma::motion::MotionOverrides<gpui_luma::controls::listbox::ListBoxMotion>,
+    motion_enabled: Option<bool>,
+    raw_motion: gpui_luma::motion::MotionConfig<gpui_luma::controls::listbox::ListBoxMotion>,
     id: &'static str,
     look: Option<ShadcnLook>,
     state: &'a ListBoxState<T, K>,
@@ -70,9 +73,16 @@ pub struct ListBoxBuilder<'a, M: 'static, T, K> {
     empty: Option<AnyElement>,
     drag_drop: Option<DragDropBindings<'a, M, T, K>>,
     drop_layout: Option<gpui_luma::motion::DropLayoutMotion<K>>,
+    motion_config: Option<&'a mut gpui_luma::motion::MotionConfig<gpui_luma::controls::listbox::ListBoxMotion>>,
 }
 
 impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<'a, M, T, K> {
+    gpui_luma::forward_motion!(gpui_luma::controls::listbox::ListBoxMotion, edits motion_edits);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.motion_enabled = Some(enabled);
+        self
+    }
+
     /// Reuse the host's existing SDK state and handles. Stable item IDs must be
     /// unique within this list and remain the same when items move or reorder.
     pub fn new<E: IntoElement>(
@@ -85,6 +95,9 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         item: impl Fn(Surface, ListBoxVisibleItem<'_, T, K>, &mut App) -> E + 'a,
     ) -> Self {
         Self {
+            motion_edits: Default::default(),
+            motion_enabled: None,
+            raw_motion: Default::default(),
             id,
             state,
             binding,
@@ -108,6 +121,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
             empty: None,
             drag_drop: None,
             drop_layout: None,
+            motion_config: None,
         }
     }
 
@@ -121,8 +135,17 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         let parts = control.render_parts();
         Self::new(id, parts.state, parts.binding, parts.scroll, parts.on_input, parts.item_id, item)
             .virtualization(parts.virtualization)
+            .motion_config(parts.motion_config)
             .drop_layout_motion(parts.drop_layout)
             .control_drag_drop(parts.drag_drop, parts.item_label)
+    }
+
+    fn motion_config(
+        mut self,
+        config: &'a mut gpui_luma::motion::MotionConfig<gpui_luma::controls::listbox::ListBoxMotion>,
+    ) -> Self {
+        self.motion_config = Some(config);
+        self
     }
 
     /// Reuse SDK-owned drop motion for raw/host-owned composition.
@@ -296,11 +319,21 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
     }
 
     /// Assemble one frame using the existing SDK bindings and scroll handle.
-    pub fn build(self, window: &mut Window, cx: &mut Context<M>) -> Surface {
+    pub fn build(mut self, window: &mut Window, cx: &mut Context<M>) -> Surface {
         self.scroll.set_wheel_focus_owner(self.binding.focus_handle().clone());
         let content_sized = self.content_sized && self.axis == ListBoxAxis::Vertical;
         let scope = cx.entity_id();
         let look = resolve_look_from(self.look.as_ref(), cx);
+        let config = self.motion_config.take().unwrap_or(&mut self.raw_motion);
+        if let Some(enabled) = self.motion_enabled {
+            config.set_enabled(enabled);
+        }
+        let motion_enabled = config.enabled();
+        let profile = config.inherit_with(|| look.motion_defaults().listbox, self.motion_edits);
+        self.scroll.set_motion(profile.scroll.enabled(motion_enabled));
+        if let Some(drop) = &self.drop_layout {
+            drop.configure_transition(&profile.drop_layout);
+        }
         let highlight = look.token_color("ring").unwrap_or(look.chrome().border);
         let insertion_target = |before: Option<K>, edge: DropEdge, cx: &mut Context<M>| {
             let zone = DropZone {
@@ -455,7 +488,7 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         let surface =
             self.binding.bind_root(surface, self.axis, self.state.selection_mode(), window, cx, self.on_input);
         if let Some(motion) = &self.drop_layout {
-            motion.configure(look.stylesheet().common.drop_layout_motion("Shadcn"), true);
+            motion.set_motion_enabled(motion_enabled);
             return div().id(format!("{}-drop-motion", self.id)).child(self.scroll.drop_layout_scope(motion, surface));
         }
         surface
@@ -507,6 +540,7 @@ impl ShadcnLook {
             },
         )
         .control_drag_drop(parts.drag_drop, parts.item_label)
+        .motion_config(parts.motion_config)
         .drop_layout_motion(parts.drop_layout)
         .look(self)
         .layout(layout)
@@ -534,6 +568,39 @@ mod persistent_drag_tests {
             |surface, item, _| surface.child(item.item.to_string()),
         )
         .build(window, cx)
+    }
+
+    #[test]
+    fn retained_list_captures_typed_look_roles_once() {
+        use gpui_luma::motion::{Transition, Easing};
+        use std::time::Duration;
+        let make_look = |ms| {
+            let source =
+                format!("[common.motion.listbox.drop_layout]\nkind = 'timed'\nduration_ms = {ms}\neasing = 'linear'");
+            let sheet = crate::stylesheet::StylesheetConfig::parse(&source).unwrap();
+            crate::ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, sheet).unwrap()
+        };
+        let expected = Transition::timed(Duration::from_millis(350), Easing::Linear).description();
+        let mut app = TestAppContext::single();
+        let (view, cx) = app.add_window_view(|_, cx| {
+            cx.set_global(make_look(350));
+            DragHarness::new(cx)
+        });
+        cx.run_until_parked();
+        view.update(cx, |host, cx| {
+            assert_eq!(host.lists[0].motion_profile().drop_layout.description(), expected);
+            cx.set_global(make_look(800));
+            host.lists[0].set_motion_enabled(false);
+            cx.notify();
+        });
+        cx.run_until_parked();
+        view.update(cx, |host, cx| {
+            assert_eq!(host.lists[0].motion_profile().drop_layout.description(), expected);
+            host.lists[0].set_motion_enabled(true);
+            cx.notify();
+        });
+        cx.run_until_parked();
+        cx.update(|_, app| assert_eq!(view.read(app).lists[0].motion_profile().drop_layout.description(), expected));
     }
     include!("../../../sdk/tests/support/listbox_drag.rs");
 }

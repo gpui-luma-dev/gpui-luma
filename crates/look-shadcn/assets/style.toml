@@ -1,3 +1,6 @@
+# Inherits the vanilla motion baseline from gpui-luma/assets/style.toml.
+# This file supplies look-specific overrides.
+
 [common.switch.geometry]
 track_padding = 2.0
 
@@ -5,9 +8,10 @@ track_padding = 2.0
 list_padding = 0.0
 indicator_height = 3.0
 
-[common.tabs.content]
-# Match Radix tab body motion.
-fade_in_ms = 300
+[common.motion.tabs.content]
+kind = "timed"
+duration_ms = 300
+easing = "out_cubic"
 
 # style.toml - Unified Stylesheet Mapping Configuration
 

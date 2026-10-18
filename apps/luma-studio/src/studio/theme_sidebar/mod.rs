@@ -188,7 +188,7 @@ fn sidebar_scroll_body() -> gpui::Stateful<gpui::Div> {
 mod tests {
     use super::*;
     use std::time::Duration;
-    use gpui_luma::theme::stylesheet::MotionSource;
+    use gpui_luma::motion::{Transition, Easing};
 
     struct Panel(&'static str);
     impl Render for Panel {
@@ -233,9 +233,10 @@ mod tests {
         cx.run_until_parked();
         let tabs = cx.update(|_, cx| page.read(cx).tabs.clone());
         cx.update(|_, cx| {
-            let motion = tabs.read(cx).body_motion();
-            assert_eq!(motion.duration, Duration::from_millis(300));
-            assert!(matches!(motion.source, MotionSource::Look { .. }));
+            assert_eq!(
+                tabs.read(cx).motion_profile().content.description(),
+                Transition::timed(Duration::from_millis(300), Easing::OutCubic).description()
+            );
         });
         for id in ["colors", "typography", "other", "colors"] {
             cx.update(|_, cx| tabs.update(cx, |tabs, cx| tabs.set_active(id, cx)));

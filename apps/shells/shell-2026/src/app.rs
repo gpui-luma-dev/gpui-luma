@@ -146,7 +146,7 @@ fn spawn_rail(
     let navigation = shadcn::Sidebar::new("shell-2026-rail")
         .look(look)
         .presentation(SidebarPresentation::Icons)
-        .animated(false)
+        .motion_enabled(false)
         .auto_hide_scrollbar(true)
         .sidebar(
             shadcn::Sidebar::panel("shell-2026-rail-panel")
@@ -173,7 +173,7 @@ fn spawn_panels(look: &ShadcnLook, cx: &mut Context<Shell2026App>) -> Entity<Res
         .spawn(cx);
     look.resizable_panels("shell-2026-panels")
         .show_border(false)
-        .animated(true)
+        .motion_enabled(true)
         .handle_visibility(ResizeHandleVisibility::Hover)
         .double_click_collapse(Some(ResizeCollapseBehavior::new(
             ResizeCollapseMode::Completely,

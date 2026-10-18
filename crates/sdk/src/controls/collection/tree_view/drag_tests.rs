@@ -51,7 +51,7 @@ fn setup(app: &mut TestAppContext, foreign: bool) -> (Entity<Pair>, &mut VisualT
             };
             TreeViewBuilder::new(if i == 0 { "drag-source" } else { "drag-target" })
                 .items(items)
-                .animated(false)
+                .motion_enabled(false)
                 .require_focus_for_scroll(true)
                 .expand_on_row_click(false)
                 .drag_drop(config)
@@ -459,8 +459,12 @@ fn same_tree_commit_animates_visible_keyed_rows_after_ended_event() {
         let builder = TreeViewBuilder::new("motion-tree")
             .items([TreeNode::new("a", "A", ()), TreeNode::new("b", "B", ()), TreeNode::new("c", "C", ())])
             .drag_drop(config);
-        let tree = TreeViewControl::from_builder(builder, cx);
-        tree.drop_layout_motion().set_duration(Some(Duration::from_millis(1000)));
+        let mut tree = TreeViewControl::from_builder(builder, cx);
+        tree.model.motion.configure(|m| {
+            m.drop_layout =
+                crate::motion::Transition::timed(Duration::from_millis(1000), crate::motion::Easing::OutCubic)
+        });
+        tree.model.motion.freeze();
         tree
     });
     cx.update(|_, cx| {

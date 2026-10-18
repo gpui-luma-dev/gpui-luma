@@ -74,7 +74,7 @@ impl Render for TabsBody {
                 let content = tabs.active_id.as_ref().and_then(|id| tabs.contents.get(id)).cloned();
                 (tabs.body_transition.progress(), content)
             });
-            root = root.opacity(opacity);
+            root = root.opacity(opacity.clamp(0.0, 1.0));
             if let Some(content) = content {
                 root = root.child(content.render(window, cx));
             }
@@ -89,6 +89,73 @@ mod tests {
     use std::time::Duration;
     use gpui::{SharedString, TestAppContext, px};
     use crate::controls::tabs::{TabsItem};
+
+    #[test]
+    fn captured_content_role_survives_disable_and_later_configuration_edits() {
+        use crate::motion::{Transition, Easing};
+        let app = TestAppContext::single();
+        let mut defaults = crate::theme::MotionDefaults::default().tabs;
+        defaults.content = Transition::timed(Duration::from_millis(300), Easing::Linear);
+        let expected = defaults.content.description();
+        let tabs = app.update(|cx| {
+            Tabs::new("snapshot")
+                .motion_defaults(defaults.clone())
+                .motion_enabled(false)
+                .tab_with("one", "One", |_, _| div())
+                .tab_with("two", "Two", |_, _| div())
+                .spawn(cx)
+        });
+        defaults.content = Transition::instant();
+        app.update(|cx| {
+            tabs.update(cx, |tabs, cx| {
+                assert_eq!(tabs.motion_profile().content.description(), expected);
+                tabs.set_active("two", cx);
+                assert!(!tabs.body_transition.is_animating());
+                tabs.set_motion_enabled(true, cx);
+                tabs.set_active("one", cx);
+                assert!(tabs.body_transition.is_animating());
+                let running = format!("{:?}", tabs.body_transition);
+                tabs.set_active("one", cx);
+                tabs.set_active("missing", cx);
+                tabs.refresh_content(cx);
+                assert_eq!(format!("{:?}", tabs.body_transition), running);
+                tabs.set_motion_enabled(false, cx);
+                assert!(!tabs.body_transition.is_animating());
+                assert_eq!(tabs.body_transition.progress(), 1.0);
+                assert_eq!(tabs.motion_profile().content.description(), expected);
+            })
+        });
+    }
+
+    #[test]
+    fn role_profile_drives_content_and_animation_disable_wins() {
+        let app = TestAppContext::single();
+        let tabs = app.update(|cx| {
+            Tabs::new("role-motion")
+                .motion(|m| m.content = crate::motion::Transition::spring(200.0, 18.0))
+                .tab_with("one", "One", |_, _| div())
+                .tab_with("two", "Two", |_, _| div())
+                .spawn(cx)
+        });
+        app.update(|cx| {
+            tabs.update(cx, |tabs, cx| {
+                tabs.set_active("two", cx);
+                tabs.body_transition.elapse_for_test(Duration::from_millis(100));
+                assert!(tabs.body_transition.sync());
+                assert!(tabs.body_transition.state().velocity > 0.0);
+                tabs.body_transition.elapse_for_test(Duration::from_secs(10));
+                assert!(!tabs.body_transition.sync());
+                assert_eq!(tabs.body_transition.progress(), 1.0);
+                tabs.set_motion_enabled(false, cx);
+                tabs.set_active("one", cx);
+                assert!(!tabs.body_transition.is_animating());
+                assert_eq!(tabs.body_transition.progress(), 1.0);
+                tabs.set_motion_enabled(true, cx);
+                tabs.set_active("two", cx);
+                assert!(tabs.body_transition.is_animating());
+            })
+        });
+    }
 
     struct Panel {
         value: usize,
@@ -123,7 +190,12 @@ mod tests {
                 let tabs = Tabs::new("content-tabs")
                     .tab("first", "First", panel)
                     .tab_with("second", "Second", |_, _| div().debug_selector(|| "second-panel".into()).child("Second"))
-                    .fade_in(Duration::from_millis(300))
+                    .motion(move |m| {
+                        m.content = crate::motion::Transition::timed(
+                            Duration::from_millis(300),
+                            crate::motion::Easing::OutCubic,
+                        )
+                    })
                     .spawn(cx);
                 Page { tabs, split }
             });
@@ -140,7 +212,7 @@ mod tests {
                     assert!(tabs.body_transition.is_animating());
                     tabs.set_active("second", cx);
                     assert!(tabs.body_transition.is_animating());
-                    tabs.set_animated(false, cx);
+                    tabs.set_motion_enabled(false, cx);
                     assert_eq!(tabs.body_transition.progress(), 1.0);
                     assert!(!tabs.body_transition.is_animating());
                 })
@@ -162,7 +234,12 @@ mod tests {
                 tabs: Tabs::new("frame-tabs")
                     .tab_with("one", "One", |_, _| div())
                     .tab_with("two", "Two", |_, _| div())
-                    .fade_in(Duration::from_millis(200))
+                    .motion(move |m| {
+                        m.content = crate::motion::Transition::timed(
+                            Duration::from_millis(200),
+                            crate::motion::Easing::OutCubic,
+                        )
+                    })
                     .spawn(cx),
                 split,
             });
@@ -210,7 +287,7 @@ mod tests {
                     .tab_with("one", "One", |_, _| div())
                     .tab_content(TabsItem::new("disabled").enabled(false), TabsContent::new(|_, _| div()))
                     .tab_with("two", "Two", |_, _| div())
-                    .animated(false)
+                    .motion_enabled(false)
                     .spawn(cx)
             });
             let events = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
@@ -305,7 +382,7 @@ mod tests {
                 tabs: Tabs::new("scroll-tabs")
                     .tab("one", "One", panel.clone())
                     .tab_with("two", "Two", |_, _| div())
-                    .animated(false)
+                    .motion_enabled(false)
                     .spawn(cx),
                 split,
             });
@@ -360,7 +437,9 @@ mod tests {
                         div().debug_selector(|| "original-panel".into())
                     })
                     .item(TabsItem::new("two"))
-                    .fade_in(Duration::ZERO)
+                    .motion(move |m| {
+                        m.content = crate::motion::Transition::timed(Duration::ZERO, crate::motion::Easing::OutCubic)
+                    })
                     .spawn(cx);
                 Page { tabs, split }
             });
@@ -452,55 +531,17 @@ mod tests {
     }
 
     #[test]
-    fn runtime_motion_changes_do_not_restart_running_fades() {
-        use crate::theme::stylesheet::{CommonStylesheet, MotionSource};
-        let app = TestAppContext::single();
-        let stylesheet = CommonStylesheet::parse("[common.tabs.content]\nfade_in_ms = 300").unwrap();
-        let tabs = app.update(|cx| {
-            Tabs::new("runtime-motion")
-                .stylesheet(&stylesheet, "test")
-                .tab_with("one", "One", |_, _| div())
-                .tab_with("two", "Two", |_, _| div())
-                .spawn(cx)
-        });
-        app.update(|cx| {
-            tabs.update(cx, |tabs, cx| {
-                tabs.set_active("two", cx);
-                let transition = format!("{:?}", tabs.body_transition);
-                tabs.set_active("two", cx);
-                tabs.set_active("missing", cx);
-                tabs.refresh_content(cx);
-                tabs.set_content("two", TabsContent::new(|_, _| div()), cx);
-                tabs.set_fade_in(Some(Duration::ZERO), cx);
-                assert_eq!(format!("{:?}", tabs.body_transition), transition);
-                assert_eq!(tabs.body_motion().source, MotionSource::InstanceOverride);
-                tabs.set_active("one", cx);
-                assert!(!tabs.body_transition.is_animating());
-                tabs.set_fade_in(None, cx);
-                assert_eq!(tabs.body_motion().duration, Duration::from_millis(300));
-                tabs.set_active("two", cx);
-                assert!(tabs.body_transition.is_animating());
-                tabs.set_animated(false, cx);
-                assert!(!tabs.body_transition.is_animating());
-                tabs.set_fade_in(Some(Duration::from_millis(50)), cx);
-                assert_eq!(tabs.body_motion().source, MotionSource::AnimationDisabled);
-                tabs.set_animated(true, cx);
-                assert!(!tabs.body_transition.is_animating());
-                assert_eq!(tabs.body_motion().duration, Duration::from_millis(50));
-            })
-        });
-    }
-
-    #[test]
     fn disabled_animation_and_zero_duration_select_without_fading() {
-        for (animated, duration) in [(false, Duration::from_millis(300)), (true, Duration::ZERO)] {
+        for (motion_enabled, duration) in [(false, Duration::from_millis(300)), (true, Duration::ZERO)] {
             let app = TestAppContext::single();
             let tabs = app.update(|cx| {
                 Tabs::new("instant-tabs")
                     .tab_with("one", "One", |_, _| div())
                     .tab_with("two", "Two", |_, _| div())
-                    .animated(animated)
-                    .fade_in(duration)
+                    .motion_enabled(motion_enabled)
+                    .motion(move |m| {
+                        m.content = crate::motion::Transition::timed(duration, crate::motion::Easing::OutCubic)
+                    })
                     .spawn(cx)
             });
             app.update(|cx| {
@@ -515,39 +556,6 @@ mod tests {
     }
 
     #[test]
-    fn inherited_motion_survives_runtime_disable_and_configuration_edits() {
-        use crate::theme::stylesheet::{CommonStylesheet, MotionSource};
-        let app = TestAppContext::single();
-        let mut stylesheet = CommonStylesheet::parse("[common.tabs.content]\nfade_in_ms = 300").unwrap();
-        let tabs = app.update(|cx| {
-            Tabs::new("inherited-tabs")
-                .stylesheet(&stylesheet, "test")
-                .tab_with("one", "One", |_, _| div())
-                .tab_with("two", "Two", |_, _| div())
-                .animated(false)
-                .spawn(cx)
-        });
-        stylesheet.tabs.content.fade_in_ms = Some(0);
-        assert_eq!(stylesheet.tabs_content_motion("test").duration, Duration::ZERO);
-        app.update(|cx| {
-            tabs.update(cx, |tabs, cx| {
-                assert_eq!(tabs.body_motion().source, MotionSource::AnimationDisabled);
-                tabs.set_active("two", cx);
-                assert!(!tabs.body_transition.is_animating());
-                tabs.set_animated(true, cx);
-                assert_eq!(tabs.body_motion().duration, Duration::from_millis(300));
-                assert!(matches!(tabs.body_motion().source, MotionSource::Look { .. }));
-                tabs.set_active("one", cx);
-                assert_eq!(tabs.body_transition.progress(), 0.0);
-                assert!(tabs.body_transition.is_animating());
-                tabs.set_animated(false, cx);
-                assert_eq!(tabs.body_transition.progress(), 1.0);
-                assert_eq!(tabs.body_motion().duration, Duration::ZERO);
-            });
-        });
-    }
-
-    #[test]
     fn user_selection_and_rapid_changes_restart_only_the_incoming_body() {
         let app = TestAppContext::single();
         let tabs = app.update(|cx| {
@@ -555,7 +563,10 @@ mod tests {
                 .tab_with("one", "One", |_, _| div())
                 .tab_content(TabsItem::new("disabled").enabled(false), TabsContent::new(|_, _| div()))
                 .tab_with("two", "Two", |_, _| div())
-                .fade_in(Duration::from_millis(300))
+                .motion(move |m| {
+                    m.content =
+                        crate::motion::Transition::timed(Duration::from_millis(300), crate::motion::Easing::OutCubic)
+                })
                 .spawn(cx)
         });
         app.update(|cx| {

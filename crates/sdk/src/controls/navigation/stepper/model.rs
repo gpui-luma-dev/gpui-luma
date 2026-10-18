@@ -1,3 +1,7 @@
+crate::motion_profile!(StepperMotion => stepper {
+    selection: crate::motion::Transition,
+});
+
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, AppContext, Entity, SharedString, Window};
@@ -39,6 +43,7 @@ pub struct StepperItem {
 
 #[derive(Clone)]
 pub struct StepperModel {
+    pub(crate) motion: crate::motion::MotionConfig<StepperMotion>,
     pub(crate) id: SharedString,
     pub(crate) step_count: usize,
     pub(crate) current_step: usize,
@@ -49,7 +54,7 @@ pub struct StepperModel {
     pub(crate) size: ControlSize,
     pub(crate) enabled: bool,
     pub(crate) workflow_complete: bool,
-    pub(crate) animated: bool,
+    pub(crate) motion_enabled: bool,
     pub(crate) icons: SelectionStatusIcons,
     pub(crate) step_contents: Vec<Option<StepperContentRenderer>>,
     pub(crate) content_height: Option<f32>,
@@ -88,10 +93,13 @@ pub struct StepperBuilder {
 }
 
 impl StepperBuilder {
+    crate::motion_methods!(StepperMotion, model.motion);
+
     pub fn new(id: impl Into<SharedString>, step_count: usize) -> Self {
         let step_count = step_count.max(1);
         Self {
             model: StepperModel {
+                motion: Default::default(),
                 id: id.into(),
                 step_count,
                 current_step: 0,
@@ -102,7 +110,7 @@ impl StepperBuilder {
                 size: ControlSize::Md,
                 enabled: true,
                 workflow_complete: false,
-                animated: true,
+                motion_enabled: true,
                 icons: SelectionStatusIcons::default(),
                 step_contents: vec![None; step_count],
                 content_height: None,
@@ -159,8 +167,8 @@ impl StepperBuilder {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.model.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.model.motion_enabled = motion_enabled;
         self
     }
 
@@ -281,7 +289,7 @@ mod tests {
 
     #[test]
     fn builder_animated_defaults_true() {
-        assert!(StepperBuilder::new("stepper", 3).model.animated);
-        assert!(!StepperBuilder::new("stepper", 3).animated(false).model.animated);
+        assert!(StepperBuilder::new("stepper", 3).model.motion_enabled);
+        assert!(!StepperBuilder::new("stepper", 3).motion_enabled(false).model.motion_enabled);
     }
 }

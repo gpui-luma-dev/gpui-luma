@@ -33,8 +33,14 @@ pub struct PopoverPanel {
 impl EventEmitter<PopoverPanelEvent> for PopoverPanel {}
 
 impl PopoverPanel {
+    crate::motion_snapshot!(super::PopoverMotion, model.motion);
+
     pub(crate) fn from_builder(builder: PopoverPanelBuilder, cx: &mut Context<Self>) -> Self {
-        let presence = OverlayPresence::new(builder.model.open, builder.model.animated);
+        let mut builder = builder;
+        builder.model.motion.freeze();
+        let motion = builder.model.motion.profile().clone();
+        let presence =
+            OverlayPresence::with_motion(builder.model.open, builder.model.motion_enabled, motion.presence.clone());
         Self {
             pending_focus: builder.model.open && builder.model.focus_on_open,
             presence,
@@ -113,12 +119,12 @@ impl PopoverPanel {
         cx.notify();
     }
 
-    pub fn set_animated(&mut self, animated: bool, cx: &mut Context<Self>) {
-        if self.model.animated == animated {
+    pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
+        if self.model.motion_enabled == motion_enabled {
             return;
         }
-        self.model.animated = animated;
-        self.presence.set_animated(animated);
+        self.model.motion_enabled = motion_enabled;
+        self.presence.set_motion_enabled(motion_enabled);
         cx.notify();
     }
 

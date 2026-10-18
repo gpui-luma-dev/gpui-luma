@@ -24,3 +24,6 @@ pub use tokens::{
     StateTonePalette, SurfacePalette, SurfaceTonePalette, SurfaceWithBorderPalette, TextRoleTokens, TextScaleTokens,
     TextTokens, ThemeMode, ThemeModes, ThemeTokens, SrgbPalette, SrgbElevation,
 };
+
+mod motion;
+pub use motion::MotionDefaults;

@@ -66,6 +66,12 @@ pub struct RadioGroup<T: ControlGroupItemLike + 'static = ControlGroupItem> {
 }
 
 impl<T: ControlGroupItemLike + 'static> RadioGroup<T> {
+    gpui_luma::forward_motion!(gpui_luma::controls::control_group::ControlGroupMotion, builder builder);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(enabled);
+        self
+    }
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -185,6 +191,7 @@ impl<T: ControlGroupItemLike + 'static> RadioGroup<T> {
                 self.size,
             ));
             self.builder
+                .motion_defaults(look.motion_defaults().control_group)
                 .item_element_template(item)
                 .template(radio_group_template(&look, self.variant, self.paint, self.size, self.layout))
                 .spawn(cx)

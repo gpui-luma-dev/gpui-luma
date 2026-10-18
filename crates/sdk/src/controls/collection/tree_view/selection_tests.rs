@@ -24,7 +24,7 @@ fn setup(app: &mut TestAppContext) -> (Entity<TreeViewControl<()>>, &mut VisualT
                 .items(items())
                 .selection_mode(TreeViewSelectionMode::Extended)
                 .expand_on_row_click(false)
-                .animated(false)
+                .motion_enabled(false)
                 .wrap_navigation(false),
             cx,
         )
@@ -275,7 +275,7 @@ fn extended_plain_navigation_respects_wrap_but_ranges_do_not() {
             TreeViewBuilder::new("selection-tree")
                 .items(items())
                 .selection_mode(TreeViewSelectionMode::Extended)
-                .animated(false),
+                .motion_enabled(false),
             cx,
         )
     });

@@ -18,6 +18,7 @@ use crate::size::ShadcnSize;
 
 /// Builder in the guise of a slider: Shadcn axes plus SDK options, until `.spawn(cx)`.
 pub struct Slider {
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::slider::SliderMotion>,
     callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::slider::SliderEvent>,
 
     id: SharedString,
@@ -29,7 +30,7 @@ pub struct Slider {
     step: f64,
     value: Option<f64>,
     enabled: bool,
-    animated: bool,
+    motion_enabled: bool,
     wrapping: bool,
     reversed: bool,
     orientation: Option<SliderOrientation>,
@@ -190,6 +191,7 @@ impl Slider {
 
             id: id.into(),
             look: None,
+            motion: Default::default(),
             style: ShadcnButtonStyle::Primary,
             size: ShadcnSize::Md,
             radius: None,
@@ -197,7 +199,7 @@ impl Slider {
             step: 1.0,
             value: None,
             enabled: true,
-            animated: true,
+            motion_enabled: true,
             wrapping: false,
             reversed: false,
             orientation: None,
@@ -210,6 +212,8 @@ impl Slider {
             modifiers: Vec::new(),
         }
     }
+
+    gpui_luma::forward_motion!(gpui_luma::controls::slider::SliderMotion, edits motion);
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
     pub fn look(mut self, look: &ShadcnLook) -> Self {
@@ -260,8 +264,8 @@ impl Slider {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -357,12 +361,14 @@ impl Slider {
     fn into_sdk_builder(self, look: ShadcnLook) -> SliderBuilder {
         let template = self.template.unwrap_or_else(|| look.slider_template_with_style(self.style));
         let mut builder = gpui_luma::controls::slider::new(self.id)
+            .motion_defaults(look.motion_defaults().slider)
+            .with_motion_overrides(self.motion)
             .template(template)
             .size(self.size.control_size())
             .range(self.range)
             .step(self.step)
             .enabled(self.enabled)
-            .animated(self.animated)
+            .motion_enabled(self.motion_enabled)
             .wrapping(self.wrapping)
             .reversed(self.reversed);
         if let Some(preset) = self.radius {

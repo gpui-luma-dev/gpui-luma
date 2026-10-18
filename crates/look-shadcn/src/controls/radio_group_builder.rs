@@ -27,6 +27,12 @@ impl<T> RadioGroup<T>
 where
     T: ControlGroupItemLike + Clone + Send + Sync + 'static,
 {
+    gpui_luma::forward_motion!(gpui_luma::controls::control_group::ControlGroupMotion, builder builder);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(enabled);
+        self
+    }
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -177,9 +183,10 @@ where
     }
 
     fn into_sdk_builder(self, look: ShadcnLook) -> RadioGroupBuilder<T> {
+        let self_builder = self.builder.motion_defaults(look.motion_defaults().control_group);
         let radio_template = look.radio_button_template(self.style);
         let mut builder =
-            self.builder.item_element_template(radio_group_button_item_element_template(radio_template.clone()));
+            self_builder.item_element_template(radio_group_button_item_element_template(radio_template.clone()));
         if !self.custom_template {
             let layout = if self.horizontal {
                 RadioGroupLayout::Horizontal

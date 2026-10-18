@@ -24,9 +24,6 @@ pub fn tree_view_frame(look: &Look) -> Div {
 }
 
 impl TreeViewTheme for RadixTreeViewTheme {
-    fn drop_layout_motion(&self) -> gpui_luma::theme::stylesheet::ResolvedMotion {
-        self.look.common_stylesheet().drop_layout_motion("Radix")
-    }
     fn resolve_row(&self, state: InteractionState, selected: bool, size: ControlSize) -> TreeViewPalette {
         let gray = |step| self.look.resolve_step(ScaleFamily::Gray, step).hsla();
         let accent = |step| self.look.resolve_step(ScaleFamily::Color, step).hsla();
@@ -92,6 +89,12 @@ pub struct TreeView<T: Clone + Send + Sync + 'static> {
 }
 
 impl<T: Clone + Send + Sync + 'static> TreeView<T> {
+    gpui_luma::forward_motion!(gpui_luma::controls::tree_view::TreeViewMotion, builder builder);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.builder = self.builder.motion_enabled(enabled);
+        self
+    }
+
     /// Append an owner-bound handler for every semantic event.
     /// Registrations append in order; released owners are skipped.
     pub fn on_event<M: 'static>(
@@ -450,7 +453,10 @@ impl<T: Clone + Send + Sync + 'static> TreeView<T> {
         let callbacks = std::mem::take(&mut self.callbacks);
         let control = {
             let look = crate::look::resolve_look(self.look.as_ref(), cx.try_global::<Look>());
-            self.builder.template(tree_view_template(&look)).spawn(cx)
+            self.builder
+                .motion_defaults(look.motion_defaults().tree_view)
+                .template(tree_view_template(&look))
+                .spawn(cx)
         };
         callbacks.bind(&control, cx);
         control

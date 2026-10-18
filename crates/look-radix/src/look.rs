@@ -103,6 +103,7 @@ pub(crate) fn sdk_size_key(size: gpui_luma::theme::ControlSize) -> &'static str 
 }
 
 struct LookState {
+    motion: RwLock<gpui_luma::motion::MotionOverrides<gpui_luma::theme::MotionDefaults>>,
     scales: RwLock<ScalePair>,
     palettes: RwLock<[ThemePalettes; 2]>,
     custom_contrast: RwLock<[Option<(ColorValue, Hsla)>; 2]>,
@@ -134,6 +135,7 @@ impl Look {
     pub fn new(scales: ScalePair, metrics: MetricTokens, mode: ThemeMode) -> Self {
         Self {
             state: Arc::new(LookState {
+                motion: RwLock::new(Default::default()),
                 scales: RwLock::new(scales),
                 palettes: RwLock::new([ThemePalettes { accent: PaletteSlot::Custom, gray: PaletteSlot::Custom }; 2]),
                 custom_contrast: RwLock::new([None; 2]),
@@ -155,6 +157,8 @@ impl Look {
     pub fn fork(&self) -> Self {
         let scales = *self.state.scales.read().unwrap_or_else(|poisoned| poisoned.into_inner());
         let forked = Self::new(scales, self.metrics(), self.mode());
+        *forked.state.motion.write().unwrap_or_else(|p| p.into_inner()) =
+            self.state.motion.read().unwrap_or_else(|p| p.into_inner()).clone();
         if let Ok(mut palettes) = forked.state.palettes.write() {
             *palettes = *self.state.palettes.read().unwrap_or_else(|poisoned| poisoned.into_inner());
         }
@@ -172,6 +176,33 @@ impl Look {
         *forked.state.common_stylesheet.write().unwrap_or_else(|poisoned| poisoned.into_inner()) =
             self.common_stylesheet();
         forked
+    }
+
+    /// Edit SDK-defined motion defaults for future controls. Clones share edits;
+    /// forks copy independently. Existing controls keep their spawn-time snapshot.
+    pub fn motion(&self, configure: impl Fn(&mut gpui_luma::theme::MotionDefaults) + Send + Sync + 'static) {
+        self.state.motion.write().unwrap_or_else(|p| p.into_inner()).push(configure);
+        self.bump_revision();
+    }
+
+    pub fn motion_defaults(&self) -> gpui_luma::theme::MotionDefaults {
+        let mut defaults = self.common_stylesheet().motion_defaults();
+        let edits = self.state.motion.read().unwrap_or_else(|p| p.into_inner()).clone();
+        edits.apply(&mut defaults);
+        defaults
+    }
+
+    pub fn tabs_overlay_state(&self) -> gpui_luma::controls::tabs::TabsOverlayState {
+        gpui_luma::controls::tabs::TabsOverlayState::new().motion_defaults(self.motion_defaults().tabs_overlay)
+    }
+
+    pub fn slide_panel_state(
+        &self,
+        anchor: gpui_luma::controls::slide_panel::SlidePanelTopAnchor,
+        size: gpui_luma::controls::slide_panel::SlidePanelSizeConfig,
+    ) -> gpui_luma::controls::slide_panel::SlidePanelState {
+        gpui_luma::controls::slide_panel::SlidePanelState::new(anchor, size)
+            .motion_defaults(self.motion_defaults().slide_panel)
     }
 
     /// Common SDK configuration. Clones share edits; forks copy independently.
@@ -479,9 +510,16 @@ mod tests {
         fork.set_common_stylesheet(CommonStylesheet::default());
         assert_eq!(look.common_stylesheet(), snapshot);
         assert_ne!(fork.common_stylesheet(), snapshot);
-        let sdk = gpui_luma::controls::tabs::Tabs::new("snapshot").stylesheet(&snapshot, "radix");
+        let sdk = gpui_luma::controls::tabs::Tabs::new("snapshot").motion_defaults(snapshot.motion_defaults().tabs);
         look.set_common_stylesheet(CommonStylesheet::default());
-        assert_eq!(sdk.body_motion().duration, std::time::Duration::from_millis(300));
+        assert_eq!(
+            sdk.motion_profile().content.description(),
+            gpui_luma::motion::Transition::timed(
+                std::time::Duration::from_millis(300),
+                gpui_luma::motion::Easing::OutCubic
+            )
+            .description()
+        );
         assert_eq!(look.common_stylesheet(), CommonStylesheet::default());
     }
 

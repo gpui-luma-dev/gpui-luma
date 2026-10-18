@@ -43,3 +43,5 @@ where
 
 mod callback;
 pub use callback::TreeViewEventExt;
+
+pub use model::TreeViewMotion;

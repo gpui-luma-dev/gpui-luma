@@ -15,9 +15,6 @@ impl AccordionTheme for ShadcnAccordionTheme {
         crate::tooltip_theme(&self.theme)
     }
 
-    fn drop_layout_motion(&self) -> gpui_luma::theme::stylesheet::ResolvedMotion {
-        self.theme.stylesheet().common.drop_layout_motion("Shadcn")
-    }
     fn resolve_drag(&self, size: ControlSize) -> gpui_luma::infra::drag_drop::DragDropLook {
         let tokens = self.theme.mode_tokens();
         let palette = &tokens.palette;
@@ -73,7 +70,7 @@ pub fn accordion_theme(theme: ShadcnLook) -> Arc<dyn AccordionTheme> {
 mod drag_tests {
     use super::*;
     #[test]
-    fn drag_palette_and_motion_follow_live_look_in_both_modes() {
+    fn drag_palette_follows_live_look_in_both_modes() {
         use gpui_luma::theme::ThemeMode;
         let look = ShadcnLook::built_in();
         let theme = accordion_theme(look.clone());
@@ -85,7 +82,6 @@ mod drag_tests {
             assert_eq!(drag.foreground, expected.foreground);
             assert_eq!(drag.valid_marker, expected.valid_marker);
             assert_eq!(drag.invalid_marker, expected.invalid_marker);
-            assert_eq!(theme.drop_layout_motion(), look.stylesheet().common.drop_layout_motion("Shadcn"));
         }
     }
 }

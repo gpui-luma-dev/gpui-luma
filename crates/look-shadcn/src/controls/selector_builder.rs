@@ -18,6 +18,8 @@ pub struct Selector<T = SelectorItem>
 where
     T: SelectorItemLike + 'static,
 {
+    motion_enabled: bool,
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::selector::SelectorMotion>,
     callbacks: gpui_luma::infra::callbacks::EventCallbacks<gpui_luma::controls::selector::SelectorEvent>,
 
     id: SharedString,
@@ -118,6 +120,8 @@ where
 
             id: id.into(),
             look: None,
+            motion: Default::default(),
+            motion_enabled: true,
             label: None,
             items: Vec::new(),
             selected_id: None,
@@ -134,6 +138,12 @@ where
             item_template: None,
             modifiers: Vec::new(),
         }
+    }
+
+    gpui_luma::forward_motion!(gpui_luma::controls::selector::SelectorMotion, edits motion);
+    pub fn motion_enabled(mut self, enabled: bool) -> Self {
+        self.motion_enabled = enabled;
+        self
     }
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
@@ -269,6 +279,9 @@ where
 
     fn into_sdk_builder(self, look: ShadcnLook) -> SelectorBuilder<T> {
         let mut builder = gpui_luma::controls::selector::Selector::new_typed(self.id)
+            .motion_defaults(look.motion_defaults().selector)
+            .with_motion_overrides(self.motion)
+            .motion_enabled(self.motion_enabled)
             .template(look.selector_template())
             .items(self.items)
             .size(self.size.control_size())

@@ -19,7 +19,7 @@ fn setup(
 ) -> (Entity<TreeViewControl<()>>, &mut VisualTestContext) {
     app.add_window_view(|_, cx| {
         TreeViewControl::from_builder(
-            TreeViewBuilder::new("tree-test").items(items()).selection_mode(mode).animated(false),
+            TreeViewBuilder::new("tree-test").items(items()).selection_mode(mode).motion_enabled(false),
             cx,
         )
     })
@@ -133,7 +133,7 @@ fn duplicate_descendants_leave_data_motion_scroll_and_events_untouched() {
     let (tree, cx) = setup(&mut app, TreeViewSelectionMode::Single);
     tree.update(cx, |tree, cx| {
         tree.select_node_by_id("x", cx);
-        tree.set_animated(true, cx);
+        tree.set_motion_enabled(true, cx);
         tree.collapse("a", cx);
         tree.hovered_node_id = Some("a".into());
         tree.pressed_node_id = Some("a".into());

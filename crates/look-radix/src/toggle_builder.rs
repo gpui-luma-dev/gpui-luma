@@ -14,6 +14,7 @@ use crate::tone::Tone;
 
 /// Builder in the guise of a toggle: Radix axes plus SDK options, until `.spawn(cx)`.
 pub struct Toggle {
+    motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::toggle::ToggleMotion>,
     callbacks: ToggleCallbacks,
     id: SharedString,
     look: Option<Look>,
@@ -25,7 +26,7 @@ pub struct Toggle {
     tab_stop: bool,
     compact: bool,
     without_elevation: bool,
-    animated: bool,
+    motion_enabled: bool,
     round: bool,
     icon: Option<ControlIcon>,
     content: Option<ControlPresenter<ButtonContentContext<ToggleData>>>,
@@ -87,6 +88,7 @@ impl Toggle {
             callbacks: ToggleCallbacks::default(),
             id: id.into(),
             look: None,
+            motion: Default::default(),
             page: false,
             paint: Paint::accent(),
             size: ButtonSize::default(),
@@ -95,12 +97,14 @@ impl Toggle {
             tab_stop: true,
             compact: false,
             without_elevation: false,
-            animated: true,
+            motion_enabled: true,
             round: false,
             icon: None,
             content: None,
         }
     }
+
+    gpui_luma::forward_motion!(gpui_luma::controls::toggle::ToggleMotion, edits motion);
 
     /// Bind a look. Draft / fork paths must call this; ambient Global is not enough.
     pub fn look(mut self, look: &Look) -> Self {
@@ -166,8 +170,8 @@ impl Toggle {
         self
     }
 
-    pub fn animated(mut self, animated: bool) -> Self {
-        self.animated = animated;
+    pub fn motion_enabled(mut self, motion_enabled: bool) -> Self {
+        self.motion_enabled = motion_enabled;
         self
     }
 
@@ -194,12 +198,14 @@ impl Toggle {
     fn into_sdk_builder(self, look: Look) -> ToggleBuilder {
         let template = toggle_template_for_size(&look, self.paint, self.page, self.size);
         let mut builder = gpui_luma::controls::toggle::new(self.id)
+            .motion_defaults(look.motion_defaults().toggle)
+            .with_motion_overrides(self.motion)
             .template(template)
             .size(self.size.control_size())
             .with_data(self.selected)
             .enabled(self.enabled)
             .tab_stop(self.tab_stop)
-            .animated(self.animated)
+            .motion_enabled(self.motion_enabled)
             .with_callbacks(self.callbacks);
         if let Some(icon) = self.icon {
             builder = builder.icon(icon);

@@ -46,7 +46,7 @@ fn setup(
         let tree = TreeViewBuilder::new("position-tree")
             .items((0..100).map(|i| node(i, if varied { 20 + (i % 4) * 17 } else { 24 })))
             .template(Arc::new(Heights))
-            .animated(false)
+            .motion(|m| m.expansion = crate::motion::Transition::instant())
             .spawn(cx);
         Page { tree, height: 120.0 }
     });
@@ -272,4 +272,20 @@ fn unmeasured_oversized_row_reveals_its_leading_edge_and_sorted_keys_resolve_at_
     });
     settle(cx);
     cx.update(|_, app| centered(tree.read(app), "50"));
+}
+
+#[test]
+fn control_wide_motion_disable_also_settles_smooth_positioning() {
+    let mut app = TestAppContext::single();
+    let (_, cx, tree) = setup(&mut app, false);
+    tree.update(cx, |tree, cx| {
+        tree.set_motion_enabled(false, cx);
+        tree.scroll_to_center_smooth("80", cx);
+    });
+    settle(cx);
+    cx.update(|_, app| {
+        let tree = tree.read(app);
+        centered(tree, "80");
+        assert!(tree.position.is_none());
+    });
 }
