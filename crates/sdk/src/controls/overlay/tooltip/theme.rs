@@ -83,27 +83,34 @@ impl TooltipTheme for TooltipLook {
     }
 }
 
+impl TooltipLook {
+    /// Capture complete tooltip styling from a resolved SDK/common token snapshot.
+    pub fn from_tokens(tokens: &ThemeTokens, key: &str) -> Self {
+        let geometry = tokens
+            .stylesheet
+            .tooltip
+            .resolve_geometry(key, crate::theme::stylesheet::TooltipGeometry::default());
+        let palette = tokens.stylesheet.recipes.palette("tooltip", &tokens.palette);
+        Self {
+            placement: (&geometry).into(),
+            shortcut_gap: geometry.shortcut_gap.value_px,
+            shortcut_font_size: geometry.shortcut_font_size.value_px,
+            shortcut_opacity: geometry.shortcut_opacity.value_px,
+            background: palette.surface.floating.background,
+            foreground: palette.surface.floating.foreground,
+            padding: geometry.padding.value_px,
+            padding_y: geometry.padding_y.value_px,
+            radius: tokens.metrics.radius.md,
+            max_width: geometry.max_width.value_px,
+            text_size: geometry.font_size.value_px,
+            line_height: geometry.line_height.value_px,
+            shadow: tokens.elevation.menu.to_box_shadows(),
+        }
+    }
+}
+
 pub fn default_tooltip_theme() -> Arc<dyn TooltipTheme> {
-    let tokens = ThemeTokens::default();
-    let geometry = tokens
-        .stylesheet
-        .tooltip
-        .resolve_geometry("md", crate::theme::stylesheet::TooltipGeometry::default());
-    Arc::new(TooltipLook {
-        placement: (&geometry).into(),
-        shortcut_gap: geometry.shortcut_gap.value_px,
-        shortcut_font_size: geometry.shortcut_font_size.value_px,
-        shortcut_opacity: geometry.shortcut_opacity.value_px,
-        background: tokens.palette.surface.floating.background,
-        foreground: tokens.palette.surface.floating.foreground,
-        padding: geometry.padding.value_px,
-        padding_y: geometry.padding_y.value_px,
-        radius: tokens.metrics.radius.md,
-        max_width: geometry.max_width.value_px,
-        text_size: geometry.font_size.value_px,
-        line_height: geometry.line_height.value_px,
-        shadow: tokens.elevation.menu.to_box_shadows(),
-    })
+    Arc::new(TooltipLook::from_tokens(&ThemeTokens::default(), "md"))
 }
 
 /// Presentation-only input, resolved from the explicitly bound draft look on every frame.

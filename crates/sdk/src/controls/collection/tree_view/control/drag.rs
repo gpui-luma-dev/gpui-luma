@@ -65,6 +65,7 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
         let style_target = target.clone();
         let style_location = location.clone();
         let color = self.model.template.drop_color(self.model.size);
+        let scale = self.model.template.resolve_scale(self.model.size, 1.0);
         surface
             .can_drop(move |value, window, cx| {
                 if admit_location.anchor_id.is_none()
@@ -90,7 +91,7 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
                 if Self::proposal(&style_target, drag, style_location.clone(), cx)
                     .is_some_and(|p| p.validate(cx).is_ok())
                 {
-                    style.border_color(color).bg(color.opacity(0.12))
+                    style.border_color(color).bg(color.opacity(scale.drag_opacity))
                 } else {
                     style
                 }
@@ -198,7 +199,7 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
             let zone = div()
                 .id(("drop-zone", position as usize))
                 .absolute()
-                .left(px(node.depth as f32 * 16.0))
+                .left(px(node.depth as f32 * self.model.template.resolve_scale(self.model.size, 1.0).indentation_width))
                 .right_0()
                 .border_color(gpui::transparent_black());
             #[cfg(any(test, feature = "test-support"))]
@@ -208,9 +209,21 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
                 zone.debug_selector(move || format!("{debug_tree_id}-{debug_node_id}-{position:?}"))
             };
             let zone = match position {
-                TreeDropPosition::Before => zone.top_0().bottom(relative(1.0 - boundary)).border_t_2(),
-                TreeDropPosition::After => zone.top(relative(1.0 - boundary)).bottom_0().border_b_2(),
-                TreeDropPosition::Into => zone.top(relative(boundary)).bottom(relative(boundary)).border_1(),
+                TreeDropPosition::Before => zone.top_0().bottom(relative(1.0 - boundary)).border_t(px(self
+                    .model
+                    .template
+                    .resolve_scale(self.model.size, 1.0)
+                    .drag_insert_width)),
+                TreeDropPosition::After => zone.top(relative(1.0 - boundary)).bottom_0().border_b(px(self
+                    .model
+                    .template
+                    .resolve_scale(self.model.size, 1.0)
+                    .drag_insert_width)),
+                TreeDropPosition::Into => zone.top(relative(boundary)).bottom(relative(boundary)).border(px(self
+                    .model
+                    .template
+                    .resolve_scale(self.model.size, 1.0)
+                    .drag_marker_width)),
             };
             row = row.child(self.bind_drop_zone(zone, location, cx));
         }

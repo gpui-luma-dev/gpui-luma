@@ -59,10 +59,24 @@ fn default_trigger_content() -> ControlPresenter<PopupMenuTriggerModel> {
 /// Presenter used by the icon-only face preset ([`PopupMenuBuilder::icon`] / [`PopupMenu::set_icon`](super::PopupMenu::set_icon)).
 pub fn icon_content(icon: impl Into<ControlIcon>) -> ControlPresenter<PopupMenuTriggerModel> {
     match icon.into() {
-        ControlIcon::Lucide(icon) => {
-            Arc::new(move |_, _| crate::infra::icon::lucide_icon(icon, gpui::hsla(0.0, 0.0, 1.0, 1.0), 16.0))
-        }
-        ControlIcon::SvgPath(path) => Arc::new(move |_, _| svg().size(px(16.0)).path(path.clone()).into_any_element()),
+        ControlIcon::Lucide(icon) => Arc::new(move |_, _| {
+            svg()
+                .path(icon.asset_path())
+                .size(px(crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .shared_geometry()
+                    .popup_icon_size
+                    .value_px))
+                .into_any_element()
+        }),
+        ControlIcon::SvgPath(path) => Arc::new(move |_, _| {
+            svg()
+                .size(px(crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .shared_geometry()
+                    .popup_icon_size
+                    .value_px))
+                .path(path.clone())
+                .into_any_element()
+        }),
     }
 }
 

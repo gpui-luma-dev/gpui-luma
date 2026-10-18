@@ -2259,6 +2259,8 @@ dependencies = [
  "anyhow",
  "gpui-luma",
  "gpui-unofficial",
+ "serde",
+ "toml 0.8.23",
 ]
 
 [[package]]

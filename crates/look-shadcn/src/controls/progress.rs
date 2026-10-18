@@ -8,11 +8,6 @@ use crate::mode::ShadcnModeTokens;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
 use crate::stylesheet::{StylesheetConfig, find_progress_color_rule, resolve_progress_color_rule, resolve_progress_metrics};
 
-const DEFAULT_PROGRESS_SIZE: f32 = 64.0;
-const DEFAULT_PROGRESS_STROKE_WIDTH: f32 = 6.0;
-const DEFAULT_PROGRESS_TRACK_HEIGHT: f32 = 6.0;
-const DEFAULT_PROGRESS_THUMB_SIZE: f32 = 16.0;
-
 #[derive(Clone, Debug)]
 pub struct ProgressColorTable {
     pub track_color: ResolvedColor,
@@ -54,12 +49,17 @@ pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) 
         .metrics_for_size(size)
         .map(resolve_progress_metrics)
         .map(|metrics| (metrics.size, metrics.stroke_width, metrics.track_height, metrics.thumb_size))
-        .unwrap_or((
-            DEFAULT_PROGRESS_SIZE,
-            DEFAULT_PROGRESS_STROKE_WIDTH,
-            DEFAULT_PROGRESS_TRACK_HEIGHT,
-            DEFAULT_PROGRESS_THUMB_SIZE,
-        ));
+        .unwrap_or_else(|| {
+            let baseline = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default()
+                .progress
+                .resolve_geometry(size_key, Default::default());
+            (
+                baseline.size.value_px,
+                baseline.stroke_width.value_px,
+                baseline.track_height.value_px,
+                baseline.thumb_size.value_px,
+            )
+        });
 
     let mut look = ProgressLook {
         geometry: mode.stylesheet().common.progress.resolve_geometry(size_key, Default::default()),

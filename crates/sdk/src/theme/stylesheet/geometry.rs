@@ -115,6 +115,66 @@ macro_rules! geometry_family_impl {
     };
 }
 geometry_family!(
+    ShellStylesheet,
+    ShellGeometryStylesheet,
+    ShellGeometry,
+    ResolvedShellGeometry,
+    "shell",
+    [
+        height,
+        macos_left_padding,
+        left_padding,
+        traffic_light_inset,
+        icon_size,
+        border_width,
+        fullscreen_left_padding
+    ]
+);
+geometry_family!(
+    SharedStylesheet,
+    SharedGeometryStylesheet,
+    SharedGeometry,
+    ResolvedSharedGeometry,
+    "shared",
+    [
+        popup_viewport_height,
+        popup_row_height,
+        menu_row_height,
+        menu_row_gap,
+        compact_textfield_height,
+        compact_textfield_padding_y,
+        textarea_resize_icon_size,
+        textarea_resize_inset,
+        textarea_resize_hit_size,
+        textarea_scrollbar_width,
+        textarea_scrollbar_inset,
+        scrollbar_width,
+        composition_underline_width,
+        label_baseline_sm,
+        label_baseline_md,
+        label_baseline_lg,
+        drag_offset,
+        drag_preview_width,
+        drag_padding_x,
+        drag_padding_y,
+        drag_border_width,
+        drag_marker_width,
+        split_sidebar_width,
+        split_sidebar_min_width,
+        split_sidebar_max_width,
+        selection_scrollbar_width,
+        wide_middle_gap,
+        wide_side_min_width,
+        wide_side_preferred_width,
+        wide_middle_min_width,
+        wide_middle_max_width,
+        form_field_gap,
+        page_size_trigger_width,
+        popup_icon_size
+    ],
+    unit[textarea_resize_opacity]
+);
+geometry_family!(
     TreeViewStylesheet,
     TreeViewGeometryStylesheet,
     TreeViewGeometry,
@@ -131,9 +191,9 @@ geometry_family!(
         chevron_size,
         chevron_inset,
         preview_padding_x,
-        preview_padding_y
+        preview_padding_y, drag_marker_width, drag_insert_width, scrollbar_width
     ],
-    unit[disabled_opacity]
+    unit[disabled_opacity, drag_opacity]
 );
 geometry_family!(
     AccordionStylesheet,
@@ -439,7 +499,7 @@ geometry_family!(
     ResolvedScrollbarGeometry,
     "scrollbar",
     [thickness, track_thickness, thumb_thickness, min_thumb_length, length_h, length_v],
-    unit[disabled_opacity]
+    unit[disabled_opacity, thumb_fraction]
 );
 
 geometry_family!(
@@ -451,6 +511,8 @@ geometry_family!(
     [
         step_badge_size,
         track_thickness,
+        side_label_width,
+        label_width,
         content_gap,
         label_gap,
         side_label_gap,
@@ -710,6 +772,8 @@ mod tests {
     #[test]
     fn typed_family_contracts_validate_every_field_and_preserve_precedence() {
         ScrollbarStylesheet::validate_contract();
+        ShellStylesheet::validate_contract();
+        SharedStylesheet::validate_contract();
         TreeViewStylesheet::validate_contract();
         AccordionStylesheet::validate_contract();
         DockSplitterStylesheet::validate_contract();

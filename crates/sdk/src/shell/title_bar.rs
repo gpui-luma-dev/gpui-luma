@@ -3,11 +3,12 @@ use std::rc::Rc;
 use gpui::{
     AnyElement, App, ClickEvent, Context, Decorations, Hsla, InteractiveElement, IntoElement, MouseButton,
     MouseDownEvent, MouseMoveEvent, ParentElement, Pixels, Point, Render, RenderOnce, StatefulInteractiveElement as _,
-    StyleRefinement, Styled, TitlebarOptions, Window, WindowControlArea, div, hsla, point, prelude::*, px,
+    StyleRefinement, Styled, TitlebarOptions, Window, WindowControlArea, div, point, prelude::*, px,
 };
-use lucide_svg_static::Icon as LucideIcon;
+use crate::infra::icon::{IconSource, render_icon_source};
+use crate::theme::stylesheet::{CommonStylesheet, IconRole};
 
-pub const TITLE_BAR_HEIGHT: Pixels = px(34.0);
+include!(concat!(env!("OUT_DIR"), "/shell.rs"));
 const TITLE_BAR_DRAG_THRESHOLD_PX: f64 = 4.0;
 
 /// Check if the left mouse button is currently pressed at the OS level.
@@ -34,12 +35,6 @@ pub fn is_left_mouse_down() -> bool {
     }
 }
 
-/// Left inset before custom title-bar content (macOS traffic lights, etc.).
-#[cfg(target_os = "macos")]
-pub const TITLE_BAR_LEFT_PADDING: Pixels = px(80.0);
-#[cfg(not(target_os = "macos"))]
-pub const TITLE_BAR_LEFT_PADDING: Pixels = px(12.0);
-
 type CloseWindowHandler = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;
 
 /// TitleBar used to customize the look of the title bar.
@@ -48,12 +43,13 @@ type CloseWindowHandler = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;
 #[derive(IntoElement)]
 pub struct TitleBar {
     style: StyleRefinement,
-    height: Pixels,
+    height: Option<Pixels>,
     children: Vec<AnyElement>,
     on_close_window: Option<CloseWindowHandler>,
     background_color: Option<Hsla>,
     border_color: Option<Hsla>,
     text_color: Option<Hsla>,
+    stylesheet: CommonStylesheet,
 }
 
 impl TitleBar {
@@ -61,13 +57,20 @@ impl TitleBar {
     pub fn new() -> Self {
         Self {
             style: StyleRefinement::default(),
-            height: TITLE_BAR_HEIGHT,
+            height: None,
             children: Vec::new(),
             on_close_window: None,
             background_color: None,
             border_color: None,
             text_color: None,
+            stylesheet: CommonStylesheet::sdk_default().clone(),
         }
+    }
+
+    /// Capture shared shell chrome; explicit color and height setters remain final.
+    pub fn stylesheet(mut self, stylesheet: &CommonStylesheet) -> Self {
+        self.stylesheet = stylesheet.with_sdk_defaults();
+        self
     }
 
     /// Default title bar options compatible with this `TitleBar`.
@@ -75,14 +78,17 @@ impl TitleBar {
         TitlebarOptions {
             title: None,
             appears_transparent: true,
-            traffic_light_position: Some(point(px(9.0), px(9.0))),
+            traffic_light_position: Some({
+                let inset = CommonStylesheet::sdk_default().shell.geometry.traffic_light_inset.unwrap_or_default();
+                point(px(inset), px(inset))
+            }),
         }
     }
 
     /// Set the title bar height. Defaults to [`TITLE_BAR_HEIGHT`].
     /// Adjust native traffic-light positioning in the window options when needed.
     pub fn height(mut self, height: Pixels) -> Self {
-        self.height = height;
+        self.height = Some(height);
         self
     }
 
@@ -155,13 +161,13 @@ impl ControlIcon {
         }
     }
 
-    fn icon(&self) -> LucideIcon {
-        match self {
-            Self::Minimize => LucideIcon::Minus,
-            Self::Restore => LucideIcon::Copy,
-            Self::Maximize => LucideIcon::Square,
-            Self::Close { .. } => LucideIcon::X,
-        }
+    fn icon(&self, stylesheet: &CommonStylesheet) -> IconSource {
+        stylesheet.icons.resolve(match self {
+            Self::Minimize => IconRole::WindowMinimize,
+            Self::Restore => IconRole::WindowRestore,
+            Self::Maximize => IconRole::WindowMaximize,
+            Self::Close { .. } => IconRole::WindowClose,
+        })
     }
 
     fn window_control_area(&self) -> WindowControlArea {
@@ -175,37 +181,32 @@ impl ControlIcon {
     fn is_close(&self) -> bool {
         matches!(self, Self::Close { .. })
     }
-
-    #[inline]
-    fn hover_bg(&self) -> Hsla {
-        if self.is_close() {
-            hsla(0.0, 0.78, 0.56, 1.0)
-        } else {
-            hsla(0.0, 0.0, 1.0, 0.12)
-        }
-    }
-
-    #[inline]
-    fn active_bg(&self) -> Hsla {
-        if self.is_close() {
-            hsla(0.0, 0.78, 0.50, 1.0)
-        } else {
-            hsla(0.0, 0.0, 1.0, 0.2)
-        }
-    }
 }
 
-fn render_control_icon(icon: ControlIcon, text_color: Hsla) -> AnyElement {
+fn render_control_icon(icon: ControlIcon, text_color: Hsla, stylesheet: &CommonStylesheet) -> AnyElement {
     let is_linux = cfg!(target_os = "linux");
     let is_windows = cfg!(target_os = "windows");
 
+    let tokens = stylesheet
+        .theme_tokens(crate::theme::ThemeMode::Light, crate::color::GamutMapping::CssLocalMinde)
+        .unwrap_or_default();
+    let resolved_palette = stylesheet.recipes.palette("shell", &tokens.palette);
+    let palette = &resolved_palette.shell;
     let hover_fg = if icon.is_close() {
-        hsla(0.0, 0.0, 1.0, 1.0)
+        palette.close_foreground
     } else {
         text_color
     };
-    let hover_bg = icon.hover_bg();
-    let active_bg = icon.active_bg();
+    let hover_bg = if icon.is_close() {
+        palette.close_hover_background
+    } else {
+        palette.hover_background
+    };
+    let active_bg = if icon.is_close() {
+        palette.close_active_background
+    } else {
+        palette.active_background
+    };
     let icon_for_click = icon.clone();
     let on_close_window = match &icon {
         ControlIcon::Close { on_close_window } => on_close_window.clone(),
@@ -215,7 +216,7 @@ fn render_control_icon(icon: ControlIcon, text_color: Hsla) -> AnyElement {
     div()
         .id(icon.id())
         .flex()
-        .w(TITLE_BAR_HEIGHT)
+        .w(px(stylesheet.shell.geometry.height.unwrap_or_default()))
         .h_full()
         .flex_shrink_0()
         .justify_center()
@@ -244,7 +245,11 @@ fn render_control_icon(icon: ControlIcon, text_color: Hsla) -> AnyElement {
                 }
             })
         })
-        .child(render_lucide_icon(icon.icon(), text_color, 16.0))
+        .child(render_icon_source(
+            &icon.icon(stylesheet),
+            text_color,
+            stylesheet.shell.geometry.icon_size.unwrap_or_default(),
+        ))
         .into_any_element()
 }
 
@@ -252,6 +257,7 @@ fn render_window_controls(
     window: &mut Window,
     on_close_window: Option<CloseWindowHandler>,
     text_color: Hsla,
+    stylesheet: &CommonStylesheet,
 ) -> AnyElement {
     if cfg!(target_os = "macos") {
         return div().id("window-controls").into_any_element();
@@ -264,7 +270,7 @@ fn render_window_controls(
         .items_center()
         .flex_shrink_0()
         .h_full()
-        .child(render_control_icon(ControlIcon::minimize(), text_color))
+        .child(render_control_icon(ControlIcon::minimize(), text_color, stylesheet))
         .child(render_control_icon(
             if window.is_maximized() {
                 ControlIcon::restore()
@@ -272,8 +278,9 @@ fn render_window_controls(
                 ControlIcon::maximize()
             },
             text_color,
+            stylesheet,
         ))
-        .child(render_control_icon(ControlIcon::close(on_close_window), text_color))
+        .child(render_control_icon(ControlIcon::close(on_close_window), text_color, stylesheet))
         .into_any_element()
 }
 
@@ -305,9 +312,15 @@ impl RenderOnce for TitleBar {
         let is_client_decorated = matches!(window.window_decorations(), Decorations::Client { .. });
         let is_linux = cfg!(target_os = "linux");
         let is_macos = cfg!(target_os = "macos");
-        let border_color = self.border_color.unwrap_or(hsla(0.0, 0.0, 1.0, 0.1));
-        let background_color = self.background_color.unwrap_or(hsla(0.0, 0.0, 0.11, 1.0));
-        let text_color = self.text_color.unwrap_or(hsla(0.0, 0.0, 1.0, 0.85));
+        let tokens = self
+            .stylesheet
+            .theme_tokens(crate::theme::ThemeMode::Light, crate::color::GamutMapping::CssLocalMinde)
+            .unwrap_or_default();
+        let resolved_palette = self.stylesheet.recipes.palette("shell", &tokens.palette);
+        let palette = &resolved_palette.shell;
+        let border_color = self.border_color.unwrap_or(palette.border);
+        let background_color = self.background_color.unwrap_or(palette.background);
+        let text_color = self.text_color.unwrap_or(palette.foreground);
 
         let state = window.use_state(cx, |_, _| TitleBarState { drag_start_position: None });
 
@@ -318,9 +331,14 @@ impl RenderOnce for TitleBar {
                 .flex_row()
                 .items_center()
                 .justify_between()
-                .h(self.height)
-                .pl(TITLE_BAR_LEFT_PADDING)
-                .border_b_1()
+                .h(self.height.unwrap_or_else(|| px(self.stylesheet.shell.geometry.height.unwrap_or_default())))
+                .pl(px(if is_macos {
+                    self.stylesheet.shell.geometry.macos_left_padding
+                } else {
+                    self.stylesheet.shell.geometry.left_padding
+                }
+                .unwrap_or_default()))
+                .border_b(px(self.stylesheet.shell.geometry.border_width.unwrap_or_default()))
                 .border_color(border_color)
                 .bg(background_color)
                 .on_mouse_down_out(window.listener_for(&state, |state, _, _, _| {
@@ -383,7 +401,9 @@ impl RenderOnce for TitleBar {
                     div()
                         .id("bar")
                         .window_control_area(WindowControlArea::Drag)
-                        .when(window.is_fullscreen(), |this| this.pl_3())
+                        .when(window.is_fullscreen(), |this| {
+                            this.pl(px(self.stylesheet.shell.geometry.fullscreen_left_padding.unwrap_or_default()))
+                        })
                         .h_full()
                         .flex()
                         .flex_row()
@@ -406,19 +426,7 @@ impl RenderOnce for TitleBar {
                         })
                         .children(self.children),
                 )
-                .child(render_window_controls(window, self.on_close_window, text_color)),
+                .child(render_window_controls(window, self.on_close_window, text_color, &self.stylesheet)),
         )
     }
-}
-
-fn render_lucide_icon(icon: LucideIcon, color: Hsla, size: f32) -> AnyElement {
-    div()
-        .size(px(size))
-        .flex()
-        .items_center()
-        .justify_center()
-        .text_size(px(size))
-        .line_height(px(size))
-        .child(crate::infra::icon::lucide_icon(icon, color, size))
-        .into_any_element()
 }

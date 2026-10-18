@@ -425,7 +425,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                     model.items,
                     model.open_submenu,
                     model.active_path,
-                    look.floating_menu,
+                    look.floating_menu.clone(),
                     item_hovers,
                     submenu_hovers,
                     item_clicks,
@@ -435,7 +435,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 ),
             );
             let overlay = anchored()
-                .snap_to_window_with_margin(px(8.0))
+                .snap_to_window_with_margin(px(look.floating_menu.window_margin))
                 .anchor(placement.anchor)
                 .position(placement.position)
                 .offset(offset)
@@ -495,7 +495,7 @@ fn resolve_popup_menu_placement(
     let offset_y = px(look.menu_offset_y);
     let resolved = match placement {
         PopupMenuPlacement::Smart => {
-            let viewport_bottom = viewport_size.height - px(8.0);
+            let viewport_bottom = viewport_size.height - px(look.floating_menu.window_margin);
             if trigger_bounds.bottom() + offset_y + menu_size.height <= viewport_bottom {
                 PopupMenuPlacement::BelowStart
             } else {

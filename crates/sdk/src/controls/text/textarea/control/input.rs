@@ -196,7 +196,11 @@ impl TextArea {
         {
             return;
         }
-        let line_height = self.layout_cache.as_ref().map(|cache| cache.line_height).unwrap_or(px(20.0));
+        let line_height = self
+            .layout_cache
+            .as_ref()
+            .map(|cache| cache.line_height)
+            .unwrap_or_else(|| px(crate::theme::LumaTypography::default().text.body.line_height));
         let Some(delta) = crate::interaction::wheel_delta(event, line_height, false) else {
             return;
         };

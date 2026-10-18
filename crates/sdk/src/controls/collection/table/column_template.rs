@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, FontWeight, SharedString, Window, div, prelude::*};
+use gpui::{AnyElement, App, SharedString, Window, div, prelude::*};
 
 use super::model::{TableColumnCellTemplate, TableRowRenderModel};
 
@@ -38,7 +38,11 @@ where
 {
     Arc::new(move |model, _window, _cx| {
         let value = value_fn(model.row);
-        div().font_weight(FontWeight::SEMIBOLD).truncate().child(value.into()).into_any_element()
+        div()
+            .font_weight(model.look.column_emphasis_weight)
+            .truncate()
+            .child(value.into())
+            .into_any_element()
     })
 }
 

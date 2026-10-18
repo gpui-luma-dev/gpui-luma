@@ -48,16 +48,17 @@ impl ListRowScale {
             padding_y: snap_to_pixel(metrics.padding_y(size), scale_factor),
             radius: metrics.radius(size),
             gap: snap_to_pixel(metrics.gap(size), scale_factor),
-            label_baseline_shift: label_baseline_shift(size),
+            label_baseline_shift: label_baseline_shift(size, crate::theme::stylesheet::CommonStylesheet::sdk_default()),
         }
     }
 }
 
-pub(crate) fn label_baseline_shift(size: ControlSize) -> f32 {
+pub(crate) fn label_baseline_shift(size: ControlSize, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> f32 {
+    let geometry = stylesheet.shared_geometry();
     match size {
-        ControlSize::Sm => 0.5,
-        ControlSize::Md => 1.0,
-        ControlSize::Lg => 1.5,
+        ControlSize::Sm => geometry.label_baseline_sm.value_px,
+        ControlSize::Md => geometry.label_baseline_md.value_px,
+        ControlSize::Lg => geometry.label_baseline_lg.value_px,
     }
 }
 

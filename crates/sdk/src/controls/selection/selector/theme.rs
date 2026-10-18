@@ -119,7 +119,7 @@ impl SelectorTheme for DefaultSelectorTheme {
         without_elevation: bool,
     ) -> SelectorPalette {
         let _ = without_elevation;
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("selector", &self.tokens.palette);
         let typography = &self.tokens.typography;
 
         let trigger_background = match state.layer() {
@@ -180,11 +180,13 @@ impl SelectorTheme for DefaultSelectorTheme {
              line_height => trigger_typography.line_height, radius => trigger_radius, menu_offset_y => menu_offset_y],
             defaults = Default::default());
         if state.invalid && !state.disabled {
-            let invalid_border = self.tokens.palette.form.input.invalid_border;
+            let invalid_border =
+                self.tokens.stylesheet.recipes.palette("selector", &self.tokens.palette).form.input.invalid_border;
             look.trigger_border = Some(invalid_border);
             look.trigger_focus_border = Some(invalid_border);
         } else if state.focused && !state.disabled && palette.trigger_border.is_some() {
-            look.trigger_focus_border = Some(self.tokens.palette.focus.ring);
+            look.trigger_focus_border =
+                Some(self.tokens.stylesheet.recipes.palette("selector", &self.tokens.palette).focus.ring);
         }
         look
     }

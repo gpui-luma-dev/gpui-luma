@@ -12,6 +12,7 @@ use std::{
 #[serde(deny_unknown_fields)]
 pub struct LumaPalette<C = ColorValue> {
     pub app: AppPalette<C>,
+    pub shell: ShellPalette<C>,
     pub surface: SurfacePalette<C>,
     pub state: StatePalette<C>,
     pub form: FormPalette<C>,
@@ -19,6 +20,19 @@ pub struct LumaPalette<C = ColorValue> {
     pub border: BorderPalette<C>,
     pub navigation: NavigationPalette<C>,
     pub data: DataPalette<C>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ShellPalette<C = ColorValue> {
+    pub background: C,
+    pub foreground: C,
+    pub border: C,
+    pub hover_background: C,
+    pub active_background: C,
+    pub close_hover_background: C,
+    pub close_active_background: C,
+    pub close_foreground: C,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -162,6 +176,19 @@ impl<C> LumaPalette<C> {
 impl<C> LumaPalette<C> {
     fn map_colors<D>(self, map: &mut impl FnMut(C) -> Result<D>) -> Result<LumaPalette<D>> {
         Ok(LumaPalette {
+            shell: ShellPalette {
+                background: map(self.shell.background).with_context(|| "palette.shell.background")?,
+                foreground: map(self.shell.foreground).with_context(|| "palette.shell.foreground")?,
+                border: map(self.shell.border).with_context(|| "palette.shell.border")?,
+                hover_background: map(self.shell.hover_background).with_context(|| "palette.shell.hover_background")?,
+                active_background: map(self.shell.active_background)
+                    .with_context(|| "palette.shell.active_background")?,
+                close_hover_background: map(self.shell.close_hover_background)
+                    .with_context(|| "palette.shell.close_hover_background")?,
+                close_active_background: map(self.shell.close_active_background)
+                    .with_context(|| "palette.shell.close_active_background")?,
+                close_foreground: map(self.shell.close_foreground).with_context(|| "palette.shell.close_foreground")?,
+            },
             app: AppPalette {
                 background: map(self.app.background).with_context(|| "palette.app.background")?,
                 foreground: map(self.app.foreground).with_context(|| "palette.app.foreground")?,

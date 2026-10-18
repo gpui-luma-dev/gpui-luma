@@ -372,8 +372,12 @@ where
                             content_height: px(look.items_panel.item_height) * model.items.len(),
                             inset: px(look.items_panel.padding + look.items_panel.border_width),
                         });
-                    popup_metrics =
-                        resolve_centered_popup_metrics(model.trigger_bounds, geometry, window.viewport_size());
+                    popup_metrics = resolve_centered_popup_metrics(
+                        model.trigger_bounds,
+                        geometry,
+                        window.viewport_size(),
+                        look.items_panel.window_margin,
+                    );
                     if model.initialize_popup_scroll
                         && let Some(scroll) = model.popup_scroll
                     {
@@ -435,7 +439,7 @@ where
             let menu = menu
                 .when(centered, |menu| menu.min_w(model.trigger_bounds.map_or(px(0.0), |bounds| bounds.size.width)));
             let overlay = anchored()
-                .snap_to_window_with_margin(px(8.0))
+                .snap_to_window_with_margin(px(look.items_panel.window_margin))
                 .anchor(popup_metrics.anchor)
                 .position(popup_metrics.position)
                 .offset(popup_metrics.offset)
@@ -470,7 +474,7 @@ pub(crate) fn resolve_selector_popup_metrics(
     });
     let menu_size = estimated_menu_size(look, item_count, trigger_bounds.size.width);
     let offset_y = px(look.menu_offset_y);
-    let viewport_margin = px(8.0);
+    let viewport_margin = px(look.items_panel.window_margin);
     let viewport_top = viewport_margin;
     let viewport_bottom = viewport_size.height - viewport_margin;
     let available_below = (viewport_bottom - (trigger_bounds.bottom() + offset_y)).max(px(0.0));
@@ -543,9 +547,10 @@ fn resolve_centered_popup_metrics(
     trigger: Option<Bounds<Pixels>>,
     geometry: crate::controls::selector_list::SelectorPopupGeometry,
     viewport: Size<Pixels>,
+    window_margin: f32,
 ) -> ResolvedSelectorPlacement {
     let trigger = trigger.unwrap_or_else(|| Bounds::new(point(px(0.0), px(0.0)), gpui::size(px(0.0), px(0.0))));
-    let margin = px(8.0).min((viewport.height * 0.5).max(px(0.0)));
+    let margin = px(window_margin).min((viewport.height * 0.5).max(px(0.0)));
     let available = (viewport.height - margin * 2.0).max(px(0.0));
     let panel_height = geometry.content_height + geometry.inset * 2.0;
     let max_height = panel_height.min(available);
@@ -605,7 +610,7 @@ mod tests {
                 inset: px(5.0),
             };
             let trigger = Bounds::new(point(px(40.0), px(480.0)), size(px(180.0), px(32.0)));
-            let metrics = resolve_centered_popup_metrics(Some(trigger), geometry, size(px(800.0), px(1000.0)));
+            let metrics = resolve_centered_popup_metrics(Some(trigger), geometry, size(px(800.0), px(1000.0)), 8.0);
             assert_eq!(metrics.position.x, trigger.left());
             assert_eq!(
                 metrics.position.y + geometry.inset + geometry.row_center - metrics.initial_scroll,
@@ -626,7 +631,7 @@ mod tests {
                     inset: px(5.0),
                 };
                 let trigger = Bounds::new(point(px(30.0), px(trigger_y)), size(px(150.0), px(32.0)));
-                let metrics = resolve_centered_popup_metrics(Some(trigger), geometry, size(px(320.0), px(400.0)));
+                let metrics = resolve_centered_popup_metrics(Some(trigger), geometry, size(px(320.0), px(400.0)), 8.0);
                 let row = geometry.inset + geometry.row_center - metrics.initial_scroll;
                 assert!(metrics.scrolling);
                 assert_eq!(metrics.position.y, px(8.0));
@@ -647,7 +652,7 @@ mod tests {
             content_height: px(32.0),
             inset: px(5.0),
         };
-        let metrics = resolve_centered_popup_metrics(None, geometry, size(px(20.0), px(10.0)));
+        let metrics = resolve_centered_popup_metrics(None, geometry, size(px(20.0), px(10.0)), 8.0);
         assert_eq!(metrics.max_height, px(0.0));
         assert!(metrics.initial_scroll >= px(0.0));
     }

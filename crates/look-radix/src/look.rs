@@ -111,7 +111,8 @@ struct LookState {
     custom_inputs: RwLock<[Option<CustomColors>; 2]>,
     metrics: MetricTokens,
     mode: AtomicU8,
-    classic_shadow: RwLock<ClassicButtonParams>,
+    classic_shadow: RwLock<Option<ClassicButtonParams>>,
+    button_recipes: RwLock<Arc<crate::button_recipes::Recipes>>,
     tabs_style: RwLock<Option<crate::tabs::TabsStyle>>,
     common_stylesheet: RwLock<gpui_luma::theme::stylesheet::CommonStylesheet>,
     /// Bumped by look setters; polling does not schedule GPUI redraws.
@@ -143,7 +144,8 @@ impl Look {
                 custom_inputs: RwLock::new([None; 2]),
                 metrics,
                 mode: AtomicU8::new(mode_to_u8(mode)),
-                classic_shadow: RwLock::new(ClassicButtonParams::default()),
+                classic_shadow: RwLock::new(None),
+                button_recipes: RwLock::new(Arc::new(crate::button_recipes::embedded().clone())),
                 tabs_style: RwLock::new(None),
                 common_stylesheet: RwLock::new(embedded_common_stylesheet().clone()),
                 revision: RwLock::new(0),
@@ -164,7 +166,7 @@ impl Look {
             *palettes = *self.state.palettes.read().unwrap_or_else(|poisoned| poisoned.into_inner());
         }
         if let Ok(mut classic) = forked.state.classic_shadow.write() {
-            *classic = self.classic_params();
+            *classic = *self.state.classic_shadow.read().unwrap_or_else(|p| p.into_inner());
         }
         if let Ok(mut tabs) = forked.state.tabs_style.write() {
             *tabs = self.tabs_style_override();
@@ -176,6 +178,7 @@ impl Look {
             *self.state.custom_inputs.read().unwrap_or_else(|p| p.into_inner());
         *forked.state.common_stylesheet.write().unwrap_or_else(|poisoned| poisoned.into_inner()) =
             self.common_stylesheet();
+        *forked.state.button_recipes.write().unwrap_or_else(|p| p.into_inner()) = self.button_recipes();
         forked
     }
 
@@ -265,16 +268,55 @@ impl Look {
         self.bump_revision();
     }
 
+    pub(crate) fn button_recipes(&self) -> Arc<crate::button_recipes::Recipes> {
+        self.state.button_recipes.read().unwrap_or_else(|p| p.into_inner()).clone()
+    }
+
+    /// Load sparse look-owned button recipes over the embedded look stylesheet.
+    /// Rules replace the complete ordered list. Programmatic Classic tuning stays
+    /// authoritative over stylesheet tuning.
+    pub fn set_button_recipes(&self, source: &str) -> anyhow::Result<()> {
+        let mut baseline: toml::Value = toml::from_str(include_str!("../assets/style.toml"))?;
+        let authored: toml::Value = toml::from_str(source)?;
+        anyhow::ensure!(
+            authored.as_table().is_some_and(|table| table.keys().all(|key| key == "button_recipes")),
+            "expected only a button_recipes table"
+        );
+        fn merge(base: &mut toml::Value, layer: toml::Value) {
+            match (base, layer) {
+                (toml::Value::Table(base), toml::Value::Table(layer)) => {
+                    for (key, value) in layer {
+                        if let Some(base) = base.get_mut(&key) {
+                            merge(base, value);
+                        } else {
+                            base.insert(key, value);
+                        }
+                    }
+                }
+                (base, layer) => *base = layer,
+            }
+        }
+        merge(&mut baseline, authored);
+        let parsed = crate::button_recipes::parse(&toml::to_string(&baseline)?)?;
+        *self.state.button_recipes.write().unwrap_or_else(|p| p.into_inner()) = Arc::new(parsed);
+        self.bump_revision();
+        Ok(())
+    }
+
     /// Current [`ButtonVariant::Classic`](crate::ButtonVariant::Classic) shadow geometry.
     pub fn classic_params(&self) -> ClassicButtonParams {
-        *self.state.classic_shadow.read().unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.state
+            .classic_shadow
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(|| self.button_recipes().classic)
     }
 
     /// Retunes the Classic bubble for every button resolved from this look.
     /// Notify affected views after changing it; see [`Look`].
     pub fn set_classic_params(&self, params: ClassicButtonParams) {
         if let Ok(mut current) = self.state.classic_shadow.write() {
-            *current = params;
+            *current = Some(params);
         }
         if let Ok(mut revision) = self.state.revision.write() {
             *revision = revision.wrapping_add(1);

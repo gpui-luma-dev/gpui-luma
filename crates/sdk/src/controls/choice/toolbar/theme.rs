@@ -56,6 +56,7 @@ pub fn default_toolbar_theme() -> Arc<dyn ToolbarTheme> {
 
 impl ToolbarTheme for DefaultToolbarTheme {
     fn resolve(&self, enabled: bool, size: ControlSize, variant: ToolbarVariant) -> ToolbarLook {
+        let palette = self.tokens.stylesheet.recipes.palette("toolbar", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
         let control = metrics.for_size(size);
         let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
@@ -63,11 +64,11 @@ impl ToolbarTheme for DefaultToolbarTheme {
         let (background, border) = match variant {
             ToolbarVariant::Outline => {
                 let background = if enabled {
-                    self.tokens.palette.surface.subtle.background
+                    palette.surface.subtle.background
                 } else {
-                    self.tokens.palette.state.disabled.background
+                    palette.state.disabled.background
                 };
-                (background, self.tokens.palette.border.default)
+                (background, palette.border.default)
             }
             ToolbarVariant::Ghost => (transparent, transparent),
         };
@@ -77,7 +78,7 @@ impl ToolbarTheme for DefaultToolbarTheme {
             separator_width: metrics.border_width.default,
             background,
             border,
-            separator: self.tokens.palette.border.default,
+            separator: palette.border.default,
             radius: metrics.radius.md,
             padding_x: metrics.spacing.s2,
             padding_y: metrics.spacing.s1,

@@ -30,19 +30,37 @@ fn action_button&lt;M: &#x27;static&gt;(cx: &amp;mut Context&lt;M&gt;) -&gt; Ent
         .with_template_modifier(|root, _| root.min_w(px(160.0)))
         .spawn(cx)
 }</code></pre></div><p class="small">This customizes the fallback template’s geometry. It is a starting seam, not a complete visual system.</p></section><section id="baseline"><h2>Inherit the SDK baseline</h2>
-<p>SDK-only applications and custom Looks can use <code>CommonStylesheet::resolve_layers</code> to inherit shared tokens and migrated control geometry. Configure only your differences, then capture a theme snapshot:</p>
+<p>SDK-only applications and custom Looks can use <code>CommonStylesheet::resolve_layers</code> to inherit shared tokens, control geometry, icons and semantic state recipes. Configure only your differences, then capture a theme snapshot:</p>
 <div class="codebox"><div class="codebar"><span>Rust · SDK theme snapshot</span><button class="copy" aria-label="Copy SDK theme snapshot">Copy</button></div><pre><code class="language-rust">use gpui_luma::{
     color::GamutMapping,
     controls::progress::{DefaultProgressTheme, ProgressTheme},
     theme::{ControlSize, ThemeMode, stylesheet::CommonStylesheet},
 };
-let sheet = CommonStylesheet::resolve_layers(&amp;[
-    "[common.progress.sizes.md]\ntrack_height = 9",
-])?;
-let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde)?;
-let theme = DefaultProgressTheme::new(tokens);
-assert_eq!(theme.resolve(true, ControlSize::Md).track_height, 9.0);</code></pre></div>
-<p>Pass the theme to the existing SDK themed template. Existing snapshots keep their styling; rebuild themes after editing configuration. Missing values inherit, while zero remains an explicit override. Palette, metrics, typography and elevation are configured under <code>common.tokens</code>. Control-specific recipe migration is ongoing; see the <a href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/docs/shared-stylesheet.md">stylesheet contract</a> for current coverage.</p></section><section id="grow"><h2>Grow it when needed</h2><p>For a worked example of creating a template and adding behavior functions where needed, see <a href="control-specialization.html">How to create a control specialization</a>.</p><p>Add shared palette and metric configuration. Supply theme resolution or your own templates, then expose convenient builders. Keep focus, activation, and events in the SDK.</p><p><a class="source-link" href="architecture.html#template">Template replacement example</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-shadcn/src/controls/button_builder.rs">A complete Look adapter</a></p></section><footer data-site-footer></footer></main>
+
+fn configured_progress_theme() -&gt; Result&lt;DefaultProgressTheme, Box&lt;dyn std::error::Error&gt;&gt; {
+    let sheet = CommonStylesheet::resolve_layers(&amp;[
+        &quot;[common.progress.sizes.md]\ntrack_height = 9&quot;,
+    ])?;
+    let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde)?;
+    let theme = DefaultProgressTheme::new(tokens);
+    assert_eq!(theme.resolve(true, ControlSize::Md).track_height, 9.0);
+    Ok(theme)
+}</code></pre></div>
+<p>Pass the theme to the existing SDK themed template. Existing snapshots keep their styling; rebuild themes after editing configuration. Missing values inherit, while zero remains an explicit override. Palette, metrics, typography and elevation are configured under <code>common.tokens</code>. The complete control/helper inventory records which layout and interaction constants remain in Rust. See the <a href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/docs/shared-stylesheet.md">stylesheet contract</a> for current coverage.</p><h3>Change recipes without copying colors</h3>
+<p>Semantic recipe slots reference the shared palette. Missing fields inherit; zero, false and empty arrays remain explicit overrides.</p>
+<div class="codebox"><div class="codebar"><span>TOML · custom look differences</span><button class="copy" aria-label="Copy custom look differences">Copy</button></div><pre><code class="language-toml">[common.recipes.button]
+"state.hover.background" = "state.selected.background"
+
+[common.icons]
+clear = "svg:icons/clear.svg"
+
+[common.row_limits.combobox]
+max = 10
+
+[common.switch.sizes.sm]
+track_width_scale = "math(32 / 28)"</code></pre></div>
+<p>Palette/shadow colors use <code>hsla(h, s%, l%, a)</code>. Math uses floating-point division and is validated after evaluation. Explicit consumer icons, geometry and row limits override captured defaults. SDK themes capture snapshots; rebuild them after changing configuration. Motion keeps its existing independent snapshot policy.</p>
+</section><section id="grow"><h2>Grow it when needed</h2><p>For a worked example of creating a template and adding behavior functions where needed, see <a href="control-specialization.html">How to create a control specialization</a>.</p><p>Add shared palette and metric configuration. Supply theme resolution or your own templates, then expose convenient builders. Keep focus, activation, and events in the SDK.</p><p><a class="source-link" href="architecture.html#template">Template replacement example</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-shadcn/src/controls/button_builder.rs">A complete Look adapter</a></p></section><footer data-site-footer></footer></main>
 <nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#start">Start small</a><a href="#baseline">Inherit the SDK baseline</a><a href="#grow">Grow it when needed</a></nav>
 </div>
 </body>

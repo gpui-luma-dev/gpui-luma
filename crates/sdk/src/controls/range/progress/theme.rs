@@ -45,7 +45,7 @@ impl ProgressTheme for DefaultProgressTheme {
             .stylesheet
             .progress
             .resolve_geometry(size.stylesheet_key(), crate::theme::stylesheet::ProgressGeometry::default());
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("progress", &self.tokens.palette);
 
         let track_color = if enabled {
             palette.surface.subtle.background

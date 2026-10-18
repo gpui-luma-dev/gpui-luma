@@ -72,12 +72,24 @@ where
         _window: &mut Window,
         _cx: &mut App,
     ) -> AnyElement {
-        div().px_3().py_1().child(label).into_any_element()
+        {
+            let scale = self.resolve_scale(_size, 1.0);
+            div()
+                .px(px(scale.preview_padding_x))
+                .py(px(scale.preview_padding_y))
+                .child(label)
+                .into_any_element()
+        }
+    }
+
+    /// Resolve all row, preview and insertion chrome through the theme scale.
+    fn resolve_scale(&self, size: crate::theme::ControlSize, scale_factor: f32) -> super::TreeViewScale {
+        super::TreeViewScale::compute(size, &crate::theme::MetricTokens::default(), scale_factor)
     }
 
     /// Color used by the SDK's keyed drop markers and preview outline.
     fn drop_color(&self, _size: crate::theme::ControlSize) -> gpui::Hsla {
-        gpui::rgb(0x64748b).into()
+        crate::theme::ThemeTokens::default().palette.app.muted_foreground
     }
 }
 
@@ -181,6 +193,9 @@ where
     ) -> AnyElement {
         self.base.render_drag_preview(label, size, window, cx)
     }
+    fn resolve_scale(&self, size: crate::theme::ControlSize, scale_factor: f32) -> super::TreeViewScale {
+        self.base.resolve_scale(size, scale_factor)
+    }
     fn drop_color(&self, size: crate::theme::ControlSize) -> gpui::Hsla {
         self.base.drop_color(size)
     }
@@ -240,9 +255,12 @@ where
             .text_color(palette.foreground)
             .font_family(palette.font_family)
             .text_size(px(palette.typography.size))
-            .shadow_sm()
+            .shadow(self.theme.drag_preview_shadow())
             .child(label)
             .into_any_element()
+    }
+    fn resolve_scale(&self, size: crate::theme::ControlSize, scale_factor: f32) -> super::TreeViewScale {
+        self.theme.resolve_scale(size, scale_factor)
     }
     fn drop_color(&self, size: crate::theme::ControlSize) -> gpui::Hsla {
         self.theme.resolve_row(Default::default(), true, size).chevron_color

@@ -34,6 +34,7 @@ EXAMPLES = {
     "look-shadcn.html": 0,
     "architecture.html": 0,
     "looks.html": 0,
+    "create-look.html": [0, 1],
     "accordion.html": [0, 1],
     "autocomplete.html": 0,
     "context-menu.html": 0,

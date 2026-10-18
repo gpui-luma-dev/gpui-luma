@@ -437,3 +437,37 @@ fn group_shell_factory_and_final_geometry_preserve_explicit_zero() {
         (shell.padding_x, shell.padding_y, shell.radius, 0.0)
     );
 }
+
+#[test]
+fn shared_helper_chrome_and_drag_elevation_use_selected_snapshots() {
+    use crate::controls::{
+        textarea::{DefaultTextAreaTheme, TextAreaTheme},
+        tooltip::TooltipLook,
+        tree_view::{DefaultTreeViewTheme, TreeViewTheme},
+    };
+    let sheet = CommonStylesheet::resolve_layers(&["[common.shared.geometry]
+compact_textfield_height=31
+composition_underline_width=0
+textarea_resize_icon_size=17
+label_baseline_md=0
+[common.tokens.elevation.light.drag_preview]
+layers=[]
+[common.tooltip.geometry]
+window_margin=0"])
+    .unwrap();
+    let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde).unwrap();
+    let scale = StandardBoxScale::compute(ControlSize::Md, &tokens.metrics, 1.0);
+    let field =
+        DefaultTextFieldTheme::new(tokens.clone()).resolve_look(Default::default(), true, ControlSize::Md, &scale);
+    assert_eq!(field.helper_geometry.compact_textfield_height.value_px, 31.0);
+    assert_eq!(field.helper_geometry.composition_underline_width.value_px, 0.0);
+    let area =
+        DefaultTextAreaTheme::new(tokens.clone()).resolve_look(Default::default(), true, ControlSize::Md, &scale);
+    assert_eq!(area.helper_geometry.textarea_resize_icon_size.value_px, 17.0);
+    assert_eq!(
+        CheckboxScale::compute_with_stylesheet(ControlSize::Md, &tokens.metrics, 2.0, &sheet).label_baseline_shift,
+        0.0
+    );
+    assert_eq!(TooltipLook::from_tokens(&tokens, "md").placement.margin, 0.0);
+    assert!(DefaultTreeViewTheme::new(tokens).drag_preview_shadow().is_empty());
+}

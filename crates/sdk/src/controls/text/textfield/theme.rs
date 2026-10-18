@@ -22,6 +22,8 @@ pub struct TextFieldPalette {
 
 #[derive(Clone, Debug)]
 pub struct TextFieldLook {
+    /// Helper chrome resolved through the selected common stylesheet.
+    pub helper_geometry: crate::theme::stylesheet::ResolvedSharedGeometry,
     /// Painted caret width and extra height in pixels.
     pub caret_width: f32,
     pub caret_height_extra: f32,
@@ -84,7 +86,7 @@ impl DefaultTextFieldTheme {
 
 impl TextFieldTheme for DefaultTextFieldTheme {
     fn resolve(&self, state: TextFieldState, enabled: bool) -> TextFieldPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("textfield", &self.tokens.palette);
         let typography = &self.tokens.typography;
 
         let (background, foreground, border, placeholder, icon, selection_background, selection_foreground, caret) =
@@ -148,6 +150,7 @@ impl TextFieldTheme for DefaultTextFieldTheme {
         let mut palette = self.resolve(state, enabled);
         apply_control_size_typography(&mut palette.typography, &self.tokens.typography, size);
         let mut look = compose_textfield_look(&palette, scale, self.metrics().border_width.default);
+        look.helper_geometry = self.tokens.stylesheet.shared_geometry();
         crate::theme::stylesheet::apply_common_geometry!(
             self.tokens.stylesheet.textfield, size.stylesheet_key(), TextFieldGeometry, look,
             [min_height => min_height, padding_x => padding_x, padding_y => padding_y, gap => gap, icon_size => icon_size, font_size => typography.size, line_height => typography.line_height, caret_width => caret_width, caret_height_extra => caret_height_extra, disabled_opacity => disabled_opacity]
@@ -180,6 +183,7 @@ pub fn compose_textfield_look(
     border_width: f32,
 ) -> TextFieldLook {
     TextFieldLook {
+        helper_geometry: crate::theme::stylesheet::CommonStylesheet::sdk_default().shared_geometry(),
         caret_width: crate::theme::stylesheet::CommonStylesheet::sdk_default()
             .textfield
             .geometry

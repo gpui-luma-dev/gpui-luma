@@ -8,6 +8,8 @@ use std::collections::HashMap;
 use crate::theme::provenance::ResolvedMetric;
 use serde::Deserialize;
 
+mod recipes;
+pub use recipes::*;
 mod icons;
 pub use icons::*;
 mod geometry;
@@ -63,6 +65,11 @@ macro_rules! common_stylesheet {
     };
 }
 common_stylesheet! {
+    shell: ShellStylesheet,
+    shared: SharedStylesheet,
+    row_limits: RowLimitsStylesheet,
+    recipes: PaletteRecipes,
+    font_features: FontFeaturesStylesheet,
     icons: IconsStylesheet,
     tree_view: TreeViewStylesheet,
     accordion: AccordionStylesheet,
@@ -592,6 +599,16 @@ impl CommonStylesheet {
         toml::from_str::<Document>(source)
             .map(|document| document.common)
             .map_err(|err| anyhow::anyhow!("parse common style.toml: {err}"))
+    }
+}
+
+impl CommonStylesheet {
+    /// Shared helper dimensions resolved from this layer over the embedded asset.
+    pub fn shared_geometry(&self) -> ResolvedSharedGeometry {
+        self.shared
+            .clone()
+            .with_baseline(&Self::sdk_default().shared)
+            .resolve_geometry("", SharedGeometry::default())
     }
 }
 

@@ -56,7 +56,7 @@ impl CheckboxScale {
             indicator_size,
             height: snap_to_pixel(metrics.control_height(size), scale_factor),
             gap: snap_to_pixel(geometry.gap.unwrap_or_else(|| metrics.gap(size)), scale_factor),
-            label_baseline_shift: label_baseline_shift(size),
+            label_baseline_shift: label_baseline_shift(size, stylesheet),
             indicator_radius: snap_to_pixel(geometry.indicator_radius.unwrap_or_default(), scale_factor),
             glyph_size: snap_to_pixel(
                 geometry.glyph_size.unwrap_or_else(|| (indicator_size - glyph_inset * 2.0).max(0.0)),
@@ -110,7 +110,7 @@ impl DefaultCheckboxTheme {
 
 impl CheckboxTheme for DefaultCheckboxTheme {
     fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> CheckboxPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("checkbox", &self.tokens.palette);
         let typography = &self.tokens.typography;
         let layer = state.layer();
         let selected = palette.state.selected;

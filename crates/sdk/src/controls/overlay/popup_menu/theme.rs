@@ -140,7 +140,7 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
         metrics: PopupMenuTriggerMetrics,
         state: InteractionState,
     ) -> PopupMenuPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("popup_menu", &self.tokens.palette);
         let typography = &self.tokens.typography;
         let layer = state.layer();
 

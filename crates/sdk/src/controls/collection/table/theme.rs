@@ -56,6 +56,7 @@ pub struct TableRowPalette {
 
 #[derive(Clone, Copy, Debug)]
 pub struct TableRowLook {
+    pub column_emphasis_weight: gpui::FontWeight,
     /// Inter-row divider thickness in pixels.
     pub row_divider_width: f32,
     /// Horizontal text-column inset in pixels.
@@ -143,7 +144,7 @@ impl DefaultTableTheme {
 
 impl TableTheme for DefaultTableTheme {
     fn resolve_drag(&self, size: ControlSize) -> TableDragLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("table", &self.tokens.palette);
         TableDragLook {
             geometry: self
                 .tokens
@@ -160,7 +161,7 @@ impl TableTheme for DefaultTableTheme {
     }
 
     fn resolve_look(&self, enabled: bool, _focused: bool, size: ControlSize) -> TableLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("table", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
 
         let key = size.stylesheet_key();
@@ -203,7 +204,7 @@ impl TableTheme for DefaultTableTheme {
     }
 
     fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> TableRowPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("table", &self.tokens.palette);
         let typography = &self.tokens.typography;
 
         let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
@@ -249,7 +250,10 @@ impl TableTheme for DefaultTableTheme {
         size: ControlSize,
         scale: &ListRowScale,
     ) -> TableRowLook {
-        TableRowLook::from_palette(&self.resolve_row(selected, state, size), scale, &self.tokens.stylesheet, size)
+        let mut look =
+            TableRowLook::from_palette(&self.resolve_row(selected, state, size), scale, &self.tokens.stylesheet, size);
+        look.column_emphasis_weight = self.tokens.typography.text.title.weight;
+        look
     }
 
     fn metrics(&self) -> MetricTokens {
@@ -269,6 +273,7 @@ impl TableRowLook {
         let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().table.authored_geometry(key);
         let recipe = stylesheet.table.authored_geometry(key).with_fallback(&baseline);
         Self {
+            column_emphasis_weight: stylesheet.tokens.typography.text.title.weight,
             column_padding_x: recipe.column_padding_x.unwrap_or_default(),
             column_muted_opacity: recipe.column_muted_opacity.unwrap_or_default(),
             row_divider_width: recipe.row_divider_width.unwrap_or_default(),
@@ -281,7 +286,7 @@ impl TableRowLook {
             padding_x: scale.padding_x,
             padding_y: scale.padding_y,
             min_height: scale.min_height,
-            label_baseline_shift: scale.label_baseline_shift,
+            label_baseline_shift: crate::theme::scales::label_baseline_shift(size, stylesheet),
         }
     }
 }

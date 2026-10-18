@@ -73,7 +73,7 @@ impl DefaultPagerTheme {
 
 impl PagerTheme for DefaultPagerTheme {
     fn resolve(&self, enabled: bool, style: PagerStyle) -> PagerLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("pager", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
         let typography = self.tokens.typography.text.caption;
         let compact = matches!(style, PagerStyle::Minimal);

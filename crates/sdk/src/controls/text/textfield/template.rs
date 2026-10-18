@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, Bounds, Div, DragMoveEvent, FontWeight, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Stateful,
-    TextAlign, Window, canvas, div, fill, font, point, px, prelude::*, size, svg,
+    AnyElement, App, Bounds, Div, DragMoveEvent, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Stateful, TextAlign,
+    Window, canvas, div, fill, font, point, px, prelude::*, size, svg,
 };
 
 use super::{TextFieldDrag, TextFieldLook, TextFieldRenderModel, TextFieldState};
@@ -243,7 +243,9 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                                 value.as_ref(),
                                 0,
                                 selection,
-                                marked_range.as_ref(),
+                                marked_range.as_ref().map(|range| {
+                                    (range, canvas_look.helper_geometry.composition_underline_width.value_px)
+                                }),
                                 {
                                     let mut font = font(canvas_look.font_family.clone());
                                     font.weight = canvas_look.typography.weight;
@@ -403,7 +405,6 @@ fn render_prefix_icon(icon: &ControlIcon, color: gpui::Hsla, size: f32) -> AnyEl
             .flex()
             .items_center()
             .justify_center()
-            .font_weight(FontWeight::NORMAL)
             .text_size(px(size))
             .line_height(px(size))
             .text_color(color)

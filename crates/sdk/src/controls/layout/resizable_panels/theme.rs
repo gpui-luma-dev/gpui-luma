@@ -49,7 +49,7 @@ impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
     }
 
     fn resolve(&self, state: InteractionState) -> ResizablePanelsLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("resizable_panels", &self.tokens.palette);
         let disabled = state.layer() == InteractionLayer::Disabled;
         let geometry = self.tokens.stylesheet.resizable_panels.resolve_geometry("md", Default::default());
 

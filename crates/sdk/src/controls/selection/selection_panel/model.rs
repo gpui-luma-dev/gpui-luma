@@ -149,6 +149,8 @@ where
     pub(crate) scrolling: bool,
     pub(crate) scrollbar_visibility: ScrollbarVisibility,
     pub(crate) scrollbar_auto_hide_activate: ScrollbarAutoHideActivate,
+    pub(crate) min_visible_rows_explicit: bool,
+    pub(crate) max_visible_rows_explicit: bool,
     pub(crate) min_visible_rows: usize,
     pub(crate) max_visible_rows: usize,
     pub(crate) size: ControlSize,
@@ -345,6 +347,13 @@ where
 
     /// Capture default selection glyphs; explicit icons retain precedence.
     pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        let (minimum, maximum) = stylesheet.row_limits.resolve("selection_panel");
+        if !self.model.min_visible_rows_explicit {
+            self.model.min_visible_rows = minimum;
+        }
+        if !self.model.max_visible_rows_explicit {
+            self.model.max_visible_rows = maximum;
+        }
         if !self.model.icons_explicit {
             self.model.icons = SelectionStatusIcons::from_stylesheet(stylesheet);
         }
@@ -375,6 +384,7 @@ where
     }
 
     pub fn min_visible_rows(mut self, min_visible_rows: usize) -> Self {
+        self.model.min_visible_rows_explicit = true;
         self.model.min_visible_rows = min_visible_rows.max(1);
         if self.model.max_visible_rows < self.model.min_visible_rows {
             self.model.max_visible_rows = self.model.min_visible_rows;
@@ -383,6 +393,7 @@ where
     }
 
     pub fn max_visible_rows(mut self, max_visible_rows: usize) -> Self {
+        self.model.max_visible_rows_explicit = true;
         self.model.max_visible_rows = max_visible_rows.max(1);
         if self.model.min_visible_rows > self.model.max_visible_rows {
             self.model.min_visible_rows = self.model.max_visible_rows;
@@ -391,6 +402,8 @@ where
     }
 
     pub fn visible_row_limits(mut self, min_visible_rows: usize, max_visible_rows: usize) -> Self {
+        self.model.min_visible_rows_explicit = true;
+        self.model.max_visible_rows_explicit = true;
         self = self.min_visible_rows(min_visible_rows);
         self.max_visible_rows(max_visible_rows)
     }
@@ -492,8 +505,16 @@ where
         scrolling: true,
         scrollbar_visibility: ScrollbarVisibility::default(),
         scrollbar_auto_hide_activate: ScrollbarAutoHideActivate::default(),
-        min_visible_rows: 1,
-        max_visible_rows: 7,
+        min_visible_rows_explicit: false,
+        max_visible_rows_explicit: false,
+        min_visible_rows: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .row_limits
+            .resolve("selection_panel")
+            .0,
+        max_visible_rows: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+            .row_limits
+            .resolve("selection_panel")
+            .1,
         size: ControlSize::Md,
         item_template: None,
         template: default_selection_panel_template(),

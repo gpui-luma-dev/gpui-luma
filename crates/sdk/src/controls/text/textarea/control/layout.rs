@@ -27,6 +27,7 @@ pub(super) struct TextAreaLayoutKey {
 // Decoration is cached independently from wrapping and hit-test geometry.
 #[derive(Clone, PartialEq)]
 pub(super) struct TextAreaDecorationKey {
+    pub composition_underline_width: f32,
     pub(super) line_index: usize,
     pub(super) selection: Option<(usize, usize)>,
     pub(super) marked_range: Option<Range<usize>>,

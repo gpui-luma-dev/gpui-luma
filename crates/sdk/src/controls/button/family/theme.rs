@@ -108,7 +108,7 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
 }
 
 fn native_button_palette(tokens: &ThemeTokens, role: ButtonFamilyRole, state: InteractionState) -> ButtonFamilyPalette {
-    let palette = &tokens.palette;
+    let palette = tokens.stylesheet.recipes.palette("button", &tokens.palette);
     let typography = &tokens.typography;
     let layer = state.layer();
 

@@ -7,6 +7,7 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens
 
 #[derive(Clone, Debug)]
 pub struct SliderLook {
+    pub thumb_border_width: f32,
     /// Captured radial layout and disabled-track presentation.
     pub decoration: crate::theme::stylesheet::SliderDecoration,
     pub track_background: Hsla,
@@ -44,7 +45,7 @@ impl DefaultSliderTheme {
 
 impl SliderTheme for DefaultSliderTheme {
     fn resolve(&self, size: ControlSize, thumb_size: Option<SliderThumbSize>, state: InteractionState) -> SliderLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("slider", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
         let elevation = &self.tokens.elevation;
         let selected = palette.state.selected;
@@ -57,6 +58,7 @@ impl SliderTheme for DefaultSliderTheme {
 
         let selected_thumb = thumb_size.unwrap_or(size.into());
         let mut look = SliderLook {
+            thumb_border_width: self.tokens.metrics.border_width.default,
             decoration: self.tokens.stylesheet.slider.decoration(size.stylesheet_key()),
             track_background: if state.disabled {
                 palette.state.disabled.background

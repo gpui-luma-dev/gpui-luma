@@ -30,6 +30,15 @@ pub fn default_slider_template() -> Arc<dyn SliderTemplate> {
 }
 
 impl SliderTemplate for ThemedSliderTemplate {
+    fn resolve_look(
+        &self,
+        size: crate::theme::ControlSize,
+        thumb_size: Option<super::super::SliderThumbSize>,
+        state: crate::theme::InteractionState,
+    ) -> super::super::SliderLook {
+        self.theme.resolve(size, thumb_size, state)
+    }
+
     fn render(
         &self,
         model: &SliderRenderModel<'_>,

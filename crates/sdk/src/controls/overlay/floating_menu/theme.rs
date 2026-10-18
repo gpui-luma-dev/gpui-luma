@@ -6,6 +6,8 @@ use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct FloatingMenuLook {
+    /// Shared popup edge margin in logical pixels.
+    pub window_margin: f32,
     /// Positive completion/status adornments.
     pub positive: Hsla,
     /// Popup border thickness in pixels.
@@ -82,7 +84,7 @@ impl FloatingMenuTheme for DefaultFloatingMenuTheme {
 }
 
 pub(crate) fn default_floating_menu_look(tokens: &ThemeTokens, size: ControlSize) -> FloatingMenuLook {
-    let palette = &tokens.palette;
+    let palette = tokens.stylesheet.recipes.palette("floating_menu", &tokens.palette);
     let metrics = &tokens.metrics;
     let typography = &tokens.typography;
     let elevation = &tokens.elevation;
@@ -92,7 +94,14 @@ pub(crate) fn default_floating_menu_look(tokens: &ThemeTokens, size: ControlSize
     let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().floating_menu.authored_geometry(key);
     let recipe = tokens.stylesheet.floating_menu.authored_geometry(key).with_fallback(&baseline);
     let mut look = FloatingMenuLook {
-        positive: tokens.palette.data.positive,
+        window_margin: tokens
+            .stylesheet
+            .with_sdk_defaults()
+            .popover
+            .authored_geometry("panel")
+            .window_margin
+            .unwrap_or_default(),
+        positive: tokens.stylesheet.recipes.palette("floating_menu", &tokens.palette).data.positive,
         border_width: recipe.border_width.unwrap_or(metrics.border_width.default),
         background: palette.surface.floating.background,
         foreground: palette.surface.floating.foreground,

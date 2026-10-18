@@ -97,7 +97,7 @@ impl TabsTheme for DefaultTabsTheme {
         crate::infra::drag_drop::DragDropLook::from_tokens(&self.tokens, size)
     }
     fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsListLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("tabs", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
 
         TabsListLook {
@@ -111,7 +111,7 @@ impl TabsTheme for DefaultTabsTheme {
     }
 
     fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsItemLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("tabs", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let layer = state.layer();

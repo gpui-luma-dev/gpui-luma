@@ -4,9 +4,8 @@ use std::{
 };
 
 use gpui::{
-    Anchor, AnyElement, App, Bounds, ClickEvent, Div, FocusHandle, FontFeatures, FontWeight, MouseButton,
-    MouseDownEvent, MouseUpEvent, Pixels, SharedString, Stateful, Window, anchored, deferred, div, point, prelude::*,
-    px,
+    Anchor, AnyElement, App, Bounds, ClickEvent, Div, FocusHandle, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
+    SharedString, Stateful, Window, anchored, deferred, div, point, prelude::*, px,
 };
 use lucide_svg_static::Icon as LucideIcon;
 
@@ -21,7 +20,6 @@ use super::{SidebarTheme, default_sidebar_theme};
 
 const CHILD_DEPTH_INDENT_MULTIPLIER: f32 = 1.0;
 const SCROLL_REGION_MIN_HEIGHT: f32 = 0.0;
-const ICON_FONT_WEIGHT: FontWeight = FontWeight::NORMAL;
 
 /// Shared callback retained across redraws; custom handlers use `Rc::new`.
 pub type SidebarPanelBoundsHandler = Rc<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
@@ -316,17 +314,18 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
     }
 }
 
-fn sidebar_title_style() -> LumaTextStyle {
-    LumaTypography::default().text.label
+fn sidebar_title_style(typography: &LumaTypography) -> LumaTextStyle {
+    typography.text.label
 }
 
-fn sidebar_subtitle_style() -> LumaTextStyle {
-    LumaTypography::default().text.scale.sm
+fn sidebar_subtitle_style(typography: &LumaTypography) -> LumaTextStyle {
+    typography.text.scale.sm
 }
 
 fn render_title(title: Option<SharedString>, subtitle: Option<SharedString>, theme: &Arc<dyn SidebarTheme>) -> Div {
-    let title_style = sidebar_title_style();
-    let subtitle_style = sidebar_subtitle_style();
+    let typography = theme.typography();
+    let title_style = sidebar_title_style(&typography);
+    let subtitle_style = sidebar_subtitle_style(&typography);
     let mut header = div()
         .flex()
         .flex_col()
@@ -590,7 +589,7 @@ fn render_section_row(label: SharedString, theme: &Arc<dyn SidebarTheme>) -> Div
         .text_size(px(look.typography.size))
         .line_height(px(look.typography.line_height))
         .font_weight(look.typography.weight)
-        .font_features(FontFeatures(Arc::new(vec![("smcp".into(), 1)])))
+        .font_features(theme.section_font_features())
         .text_color(look.label_color)
         .child(label)
 }
@@ -887,7 +886,6 @@ fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElem
         .flex()
         .items_center()
         .justify_center()
-        .font_weight(ICON_FONT_WEIGHT)
         .text_size(px(size))
         .line_height(px(size))
         .text_color(color)

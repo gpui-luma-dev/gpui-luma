@@ -1,8 +1,5 @@
 use super::model::{PanelLayoutState, PanelSize, ResizeHandleMetrics, ResizablePanelSpec};
 
-/// Minimum hit-target width/height for drag interaction (legacy floor; presets define their own).
-pub const MIN_HANDLE_LANE_PX: f32 = 12.0;
-
 /// Main-axis visual lane from preset metrics.
 pub fn handle_layout_main_axis_px(metrics: &ResizeHandleMetrics) -> f32 {
     metrics.lane_px.max(1.0)

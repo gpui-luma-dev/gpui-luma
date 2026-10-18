@@ -58,7 +58,7 @@ impl SwitchScale {
             ),
             track_radius: metrics.radius.pill,
             gap: snap_to_pixel(metrics.gap(size), scale_factor),
-            label_baseline_shift: label_baseline_shift(size),
+            label_baseline_shift: label_baseline_shift(size, stylesheet),
         };
         let geometry = stylesheet.switch.resolve_geometry(key, fallback, scale_factor);
         Self {
@@ -114,7 +114,7 @@ impl DefaultSwitchTheme {
 
 impl SwitchTheme for DefaultSwitchTheme {
     fn resolve(&self, on: bool, state: InteractionState, size: ControlSize) -> SwitchPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("switch", &self.tokens.palette);
         let typography = &self.tokens.typography;
         let elevation = &self.tokens.elevation;
         let selected = palette.state.selected;

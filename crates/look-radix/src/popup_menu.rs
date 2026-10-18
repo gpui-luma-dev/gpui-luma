@@ -150,6 +150,13 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
         gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default().floating_menu.authored_geometry("2");
     let recipe = look.common_stylesheet().floating_menu.authored_geometry("2").with_fallback(&base_recipe);
     let mut resolved = FloatingMenuLook {
+        window_margin: look
+            .common_stylesheet()
+            .with_sdk_defaults()
+            .popover
+            .authored_geometry("panel")
+            .window_margin
+            .unwrap_or_default(),
         border_width: recipe.border_width.unwrap_or(metrics.border_width.default),
         positive: gpui_luma::color::gpui_bridge::to_hsla(
             look.common_stylesheet().tokens.source(look.mode()).palette.data.positive,

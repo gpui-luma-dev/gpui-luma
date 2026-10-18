@@ -44,12 +44,13 @@ impl AutocompleteTheme for DefaultAutocompleteTheme {
 }
 
 pub(crate) fn default_autocomplete_look(tokens: &ThemeTokens, size: ControlSize) -> AutocompleteLook {
+    let palette = tokens.stylesheet.recipes.palette("autocomplete", &tokens.palette);
     let mut look = AutocompleteLook {
-        status_color: tokens.palette.state.selected.background,
+        status_color: palette.state.selected.background,
         status_typography: tokens.typography.text.scale.sm,
-        muted_text_color: tokens.palette.surface.floating.foreground,
-        clear_icon_color: tokens.palette.surface.floating.foreground,
-        clear_icon_hover_color: tokens.palette.form.input.foreground,
+        muted_text_color: palette.surface.floating.foreground,
+        clear_icon_color: palette.surface.floating.foreground,
+        clear_icon_hover_color: palette.form.input.foreground,
         menu: default_floating_menu_look(tokens, size),
     };
     let geometry = tokens.stylesheet.autocomplete.resolve_geometry(

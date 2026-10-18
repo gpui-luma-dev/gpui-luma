@@ -213,9 +213,9 @@ fn render_vertical_stepper(
         .h_full()
         .w_full()
         .min_w(px(if side_labels {
-            badge_size + 120.0
+            badge_size + look.geometry.side_label_width.value_px
         } else {
-            badge_size + 48.0
+            badge_size + look.geometry.label_width.value_px
         }))
         .flex()
         .flex_col()
@@ -464,9 +464,12 @@ fn render_badge(
             StepState::Complete => {
                 render_checkmark(foreground, badge_size * look.geometry.glyph_scale.value_px, &icons.completed)
             }
-            StepState::InProgress | StepState::Incomplete => {
-                render_step_number(step_index + 1, foreground, badge_size * look.geometry.number_scale.value_px)
-            }
+            StepState::InProgress | StepState::Incomplete => render_step_number(
+                step_index + 1,
+                foreground,
+                badge_size * look.geometry.number_scale.value_px,
+                look.number_weight,
+            ),
         })
         .into_any_element()
 }
@@ -482,9 +485,9 @@ fn render_checkmark(color: gpui::Hsla, size: f32, icon: &crate::infra::icon::Ico
         .into_any_element()
 }
 
-fn render_step_number(step_number: usize, color: gpui::Hsla, size: f32) -> AnyElement {
+fn render_step_number(step_number: usize, color: gpui::Hsla, size: f32, weight: FontWeight) -> AnyElement {
     div()
-        .font_weight(FontWeight::MEDIUM)
+        .font_weight(weight)
         .text_color(color)
         .text_size(px(size))
         .child(step_number.to_string())

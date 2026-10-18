@@ -10,9 +10,6 @@ use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
 use crate::stylesheet::{StylesheetConfig, resolve_color_ref, resolve_stepper_metrics, ResolvedFields};
 use crate::controls::progress::resolve_progress_colors_with_stylesheet;
 
-const DEFAULT_STEP_BADGE_SIZE: f32 = 32.0;
-const DEFAULT_TRACK_THICKNESS: f32 = 2.0;
-
 #[derive(Clone, Debug)]
 pub struct StepperColorTable {
     pub complete_bg: ResolvedColor,
@@ -114,9 +111,15 @@ pub fn stepper_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -
         .metrics_for_size(size)
         .map(resolve_stepper_metrics)
         .map(|metrics| (metrics.step_badge_size, metrics.track_thickness))
-        .unwrap_or((DEFAULT_STEP_BADGE_SIZE, DEFAULT_TRACK_THICKNESS));
+        .unwrap_or_else(|| {
+            let base = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default()
+                .stepper
+                .resolve_geometry(size.stylesheet_key(), Default::default());
+            (base.step_badge_size.value_px, base.track_thickness.value_px)
+        });
 
     let mut look = StepperLook {
+        number_weight: mode.typography.text.label.weight,
         geometry: mode.stylesheet().common.stepper.resolve_geometry(size.stylesheet_key(), Default::default()),
         complete_bg: colors.complete_bg.hsla(),
         complete_fg: colors.complete_fg.hsla(),

@@ -1,8 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{
-    AnyElement, App, ClickEvent, Div, FontWeight, MouseDownEvent, MouseUpEvent, Stateful, Window, div, px, prelude::*,
-};
+use gpui::{AnyElement, App, ClickEvent, Div, MouseDownEvent, MouseUpEvent, Stateful, Window, div, px, prelude::*};
 use lucide_svg_static::Icon as LucideIcon;
 
 use super::{AccordionRenderModel, AccordionTheme, default_accordion_theme};
@@ -373,7 +371,6 @@ fn render_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
         .flex()
         .items_center()
         .justify_center()
-        .font_weight(FontWeight::NORMAL)
         .text_size(px(size))
         .line_height(px(size))
         .text_color(color)

@@ -45,6 +45,8 @@ pub struct SearchSelectorModel {
     pub(crate) full_width: bool,
     pub(crate) clean_on_escape: bool,
     pub(crate) scrolling: bool,
+    pub(crate) min_visible_rows_explicit: bool,
+    pub(crate) max_visible_rows_explicit: bool,
     pub(crate) min_visible_rows: usize,
     pub(crate) max_visible_rows: usize,
     pub(crate) fill_popup_viewport: bool,
@@ -194,8 +196,16 @@ impl SearchSelectorBuilder {
                 full_width: true,
                 clean_on_escape: true,
                 scrolling: true,
-                min_visible_rows: 1,
-                max_visible_rows: 7,
+                min_visible_rows_explicit: false,
+                max_visible_rows_explicit: false,
+                min_visible_rows: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .row_limits
+                    .resolve("search_selector")
+                    .0,
+                max_visible_rows: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .row_limits
+                    .resolve("search_selector")
+                    .1,
                 fill_popup_viewport: false,
                 textfield_template: default_textfield_template(),
                 selector_theme: default_selector_theme(),
@@ -215,6 +225,13 @@ impl SearchSelectorBuilder {
     /// Capture shared affordance geometry; per-size values resolve at render time.
     /// Text-field/popup providers and consumer template modifiers retain their own precedence.
     pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        let (minimum, maximum) = stylesheet.row_limits.resolve("search_selector");
+        if !self.model.min_visible_rows_explicit {
+            self.model.min_visible_rows = minimum;
+        }
+        if !self.model.max_visible_rows_explicit {
+            self.model.max_visible_rows = maximum;
+        }
         self.model.icons = stylesheet.with_sdk_defaults().icons;
         self.model.stylesheet = stylesheet.with_sdk_defaults().search_selector;
         self
@@ -289,6 +306,7 @@ impl SearchSelectorBuilder {
     }
 
     pub fn min_visible_rows(mut self, min_visible_rows: usize) -> Self {
+        self.model.min_visible_rows_explicit = true;
         self.model.min_visible_rows = min_visible_rows.max(1);
         if self.model.max_visible_rows < self.model.min_visible_rows {
             self.model.max_visible_rows = self.model.min_visible_rows;
@@ -297,6 +315,7 @@ impl SearchSelectorBuilder {
     }
 
     pub fn max_visible_rows(mut self, max_visible_rows: usize) -> Self {
+        self.model.max_visible_rows_explicit = true;
         self.model.max_visible_rows = max_visible_rows.max(1);
         if self.model.min_visible_rows > self.model.max_visible_rows {
             self.model.min_visible_rows = self.model.max_visible_rows;

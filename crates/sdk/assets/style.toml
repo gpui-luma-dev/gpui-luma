@@ -705,6 +705,10 @@ rail_hit_width = 6.0
 popover_offset = 8.0
 
 [common.tree_view.geometry]
+drag_marker_width = 1
+drag_insert_width = 2
+drag_opacity = 0.12
+scrollbar_width = 12
 # Whole disabled-row opacity and compact drag-preview padding (pixels).
 disabled_opacity = 0.4
 preview_padding_x = 12.0
@@ -857,6 +861,8 @@ trailing_icon_size = 14.0
 
 # Stepper decoration: lengths in pixels; glyph/number scales multiply badge size.
 [common.stepper.geometry]
+side_label_width = 120
+label_width = 48
 content_gap = 16.0
 label_gap = 6.0
 side_label_gap = 10.0
@@ -880,6 +886,8 @@ caret_height_extra = 2.0
 disabled_opacity = 0.6
 
 [common.scrollbar.geometry]
+# Initial visible/content fraction before viewport measurement.
+thumb_fraction = 0.25
 disabled_opacity = 0.56
 
 # SplitView separator hit target and visual cues, in pixels.
@@ -894,6 +902,11 @@ cue_hovered_width = 8.0
 
 # Lucide catalog names; use "svg:path/to/icon.svg" for an external SVG.
 [common.icons]
+window_minimize = "minus"
+window_restore = "copy"
+window_maximize = "square"
+window_close = "x"
+
 clear = "x"
 search = "search"
 disclosure_expanded = "chevron-down"
@@ -923,3 +936,393 @@ shimmer_mid_offset = 0.2
 shimmer_mid_width = 0.6
 shimmer_core_offset = 0.35
 shimmer_core_width = 0.3
+
+# Semantic recipe slots for button; values reference shared palette tokens.
+[common.recipes.button]
+"app.foreground" = "app.foreground"
+"app.muted_foreground" = "app.muted_foreground"
+"border.default" = "border.default"
+"focus.ring" = "focus.ring"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for checkbox; values reference shared palette tokens.
+[common.recipes.checkbox]
+"app.foreground" = "app.foreground"
+"focus.ring" = "focus.ring"
+"form.input.background" = "form.input.background"
+"form.input.border" = "form.input.border"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+
+# Semantic recipe slots for control_group; values reference shared palette tokens.
+[common.recipes.control_group]
+"app.muted_foreground" = "app.muted_foreground"
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for radio_button; values reference shared palette tokens.
+[common.recipes.radio_button]
+"app.foreground" = "app.foreground"
+"focus.ring" = "focus.ring"
+"form.input.background" = "form.input.background"
+"form.input.border" = "form.input.border"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+
+# Semantic recipe slots for switch; values reference shared palette tokens.
+[common.recipes.switch]
+"app.background" = "app.background"
+"app.foreground" = "app.foreground"
+"border.default" = "border.default"
+"focus.ring" = "focus.ring"
+"form.input.background" = "form.input.background"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+
+# Semantic recipe slots for table; values reference shared palette tokens.
+[common.recipes.table]
+"app.foreground" = "app.foreground"
+"app.muted_foreground" = "app.muted_foreground"
+"data.accent_1" = "data.accent_1"
+"focus.ring" = "focus.ring"
+"form.input.background" = "form.input.background"
+"form.input.border" = "form.input.border"
+"form.input.invalid_border" = "form.input.invalid_border"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+"surface.floating.background" = "surface.floating.background"
+"surface.floating.foreground" = "surface.floating.foreground"
+"surface.subtle.background" = "surface.subtle.background"
+"surface.subtle.foreground" = "surface.subtle.foreground"
+
+# Semantic recipe slots for tree_view; values reference shared palette tokens.
+[common.recipes.tree_view]
+"app.foreground" = "app.foreground"
+"navigation.hover_background" = "navigation.hover_background"
+"navigation.muted_foreground" = "navigation.muted_foreground"
+"navigation.selected_background" = "navigation.selected_background"
+"navigation.selected_foreground" = "navigation.selected_foreground"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+
+# Semantic recipe slots for dock_splitter; values reference shared palette tokens.
+[common.recipes.dock_splitter]
+"border.default" = "border.default"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+
+# Semantic recipe slots for resizable_panels; values reference shared palette tokens.
+[common.recipes.resizable_panels]
+"border.default" = "border.default"
+"border.strong" = "border.strong"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+
+# Semantic recipe slots for scrollbar; values reference shared palette tokens.
+[common.recipes.scrollbar]
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for split_view; values reference shared palette tokens.
+[common.recipes.split_view]
+"border.default" = "border.default"
+"border.strong" = "border.strong"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+
+# Semantic recipe slots for accordion; values reference shared palette tokens.
+[common.recipes.accordion]
+"app.foreground" = "app.foreground"
+"navigation.border" = "navigation.border"
+"navigation.hover_background" = "navigation.hover_background"
+"navigation.muted_foreground" = "navigation.muted_foreground"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+
+# Semantic recipe slots for pager; values reference shared palette tokens.
+[common.recipes.pager]
+"app.foreground" = "app.foreground"
+"app.muted_foreground" = "app.muted_foreground"
+"form.input.border" = "form.input.border"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+"surface.panel.background" = "surface.panel.background"
+
+# Semantic recipe slots for sidebar; values reference shared palette tokens.
+[common.recipes.sidebar]
+"focus.ring" = "focus.ring"
+"navigation.foreground" = "navigation.foreground"
+"navigation.hover_background" = "navigation.hover_background"
+"navigation.muted_foreground" = "navigation.muted_foreground"
+"navigation.selected_background" = "navigation.selected_background"
+"navigation.selected_foreground" = "navigation.selected_foreground"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+
+# Semantic recipe slots for stepper; values reference shared palette tokens.
+[common.recipes.stepper]
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+"surface.subtle.background" = "surface.subtle.background"
+"surface.subtle.foreground" = "surface.subtle.foreground"
+
+# Semantic recipe slots for tabs; values reference shared palette tokens.
+[common.recipes.tabs]
+"app.foreground" = "app.foreground"
+"focus.ring" = "focus.ring"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+"state.selected.background" = "state.selected.background"
+
+# Semantic recipe slots for context_menu; values reference shared palette tokens.
+[common.recipes.context_menu]
+"app.background" = "app.background"
+"app.foreground" = "app.foreground"
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+
+# Semantic recipe slots for floating_menu; values reference shared palette tokens.
+[common.recipes.floating_menu]
+"data.positive" = "data.positive"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.hover.foreground" = "state.hover.foreground"
+"surface.floating.background" = "surface.floating.background"
+"surface.floating.border" = "surface.floating.border"
+"surface.floating.foreground" = "surface.floating.foreground"
+
+# Semantic recipe slots for overlay_window; values reference shared palette tokens.
+[common.recipes.overlay_window]
+"surface.floating.background" = "surface.floating.background"
+"surface.floating.border" = "surface.floating.border"
+"surface.floating.foreground" = "surface.floating.foreground"
+
+# Semantic recipe slots for popup_menu; values reference shared palette tokens.
+[common.recipes.popup_menu]
+"app.background" = "app.background"
+"app.foreground" = "app.foreground"
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for progress; values reference shared palette tokens.
+[common.recipes.progress]
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for slider; values reference shared palette tokens.
+[common.recipes.slider]
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.pressed.background" = "state.pressed.background"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+"surface.panel.background" = "surface.panel.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+# Semantic recipe slots for selector; values reference shared palette tokens.
+[common.recipes.selector]
+"app.background" = "app.background"
+"app.foreground" = "app.foreground"
+"app.muted_foreground" = "app.muted_foreground"
+"border.default" = "border.default"
+"focus.ring" = "focus.ring"
+"form.input.invalid_border" = "form.input.invalid_border"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.hover.background" = "state.hover.background"
+"state.pressed.background" = "state.pressed.background"
+
+# Semantic recipe slots for textarea; values reference shared palette tokens.
+[common.recipes.textarea]
+"form.input.background" = "form.input.background"
+"form.input.border" = "form.input.border"
+"form.input.foreground" = "form.input.foreground"
+"form.input.invalid_border" = "form.input.invalid_border"
+"form.input.placeholder" = "form.input.placeholder"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+
+# Semantic recipe slots for textfield; values reference shared palette tokens.
+[common.recipes.textfield]
+"form.input.background" = "form.input.background"
+"form.input.border" = "form.input.border"
+"form.input.foreground" = "form.input.foreground"
+"form.input.invalid_border" = "form.input.invalid_border"
+"form.input.placeholder" = "form.input.placeholder"
+"state.disabled.background" = "state.disabled.background"
+"state.disabled.foreground" = "state.disabled.foreground"
+"state.selected.background" = "state.selected.background"
+"state.selected.foreground" = "state.selected.foreground"
+
+# Helper chrome shared by raw SDK controls and look templates.
+[common.shared.geometry]
+popup_viewport_height = 220
+popup_row_height = 28
+menu_row_height = 27
+menu_row_gap = 4
+compact_textfield_height = 22
+compact_textfield_padding_y = 2
+textarea_resize_icon_size = 10
+textarea_resize_inset = 3
+textarea_resize_hit_size = 12
+textarea_scrollbar_width = 12
+textarea_scrollbar_inset = 2
+scrollbar_width = 12
+composition_underline_width = 1
+label_baseline_sm = 0.5
+label_baseline_md = 1
+label_baseline_lg = 1.5
+drag_offset = 12
+drag_preview_width = 220
+drag_padding_x = 12
+drag_padding_y = 8
+drag_border_width = 1
+drag_marker_width = 2
+split_sidebar_width = 280
+split_sidebar_min_width = 220
+split_sidebar_max_width = 420
+selection_scrollbar_width = 16
+textarea_resize_opacity = 0.75
+
+wide_middle_gap = 24
+wide_side_min_width = 240
+wide_side_preferred_width = 280
+wide_middle_min_width = 435
+wide_middle_max_width = 435
+form_field_gap = 4
+page_size_trigger_width = 64
+popup_icon_size = 16
+
+[common.tokens.palette.light.shell]
+background = "hsla(0, 0%, 11%, 1)"
+foreground = "hsla(0, 0%, 100%, 0.85)"
+border = "hsla(0, 0%, 100%, 0.1)"
+hover_background = "hsla(0, 0%, 100%, 0.12)"
+active_background = "hsla(0, 0%, 100%, 0.2)"
+close_hover_background = "hsla(0, 78%, 56%, 1)"
+close_active_background = "hsla(0, 78%, 50%, 1)"
+close_foreground = "hsla(0, 0%, 100%, 1)"
+
+[common.tokens.palette.dark.shell]
+background = "hsla(0, 0%, 11%, 1)"
+foreground = "hsla(0, 0%, 100%, 0.85)"
+border = "hsla(0, 0%, 100%, 0.1)"
+hover_background = "hsla(0, 0%, 100%, 0.12)"
+active_background = "hsla(0, 0%, 100%, 0.2)"
+close_hover_background = "hsla(0, 78%, 56%, 1)"
+close_active_background = "hsla(0, 78%, 50%, 1)"
+close_foreground = "hsla(0, 0%, 100%, 1)"
+
+[common.shell.geometry]
+fullscreen_left_padding = 12
+height = 34
+macos_left_padding = 80
+left_padding = 12
+traffic_light_inset = 9
+icon_size = 16
+border_width = 1
+
+[common.tokens.elevation.light.drag_preview]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0, offset_y = 1, blur = 3, spread = 0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0, offset_y = 1, blur = 2, spread = -1, inset = false },
+]
+
+[common.tokens.elevation.dark.drag_preview]
+layers = [
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0, offset_y = 1, blur = 3, spread = 0, inset = false },
+  { color = "hsla(0, 0%, 0%, 0.1)", offset_x = 0, offset_y = 1, blur = 2, spread = -1, inset = false },
+]
+
+[common.row_limits.autocomplete]
+min = 7
+max = 14
+
+[common.row_limits.combobox]
+min = 1
+max = 7
+
+[common.row_limits.search_selector]
+min = 1
+max = 7
+
+[common.row_limits.selection_panel]
+min = 1
+max = 7
+
+[common.row_limits.pager]
+min = 5
+max = 7
+
+[common.recipes.tooltip]
+"surface.floating.background" = "surface.floating.background"
+"surface.floating.foreground" = "surface.floating.foreground"
+
+[common.recipes.autocomplete]
+"form.input.foreground" = "form.input.foreground"
+"state.selected.background" = "state.selected.background"
+"surface.floating.foreground" = "surface.floating.foreground"
+
+[common.recipes.toolbar]
+"border.default" = "border.default"
+"state.disabled.background" = "state.disabled.background"
+"surface.subtle.background" = "surface.subtle.background"
+
+[common.recipes.shell]
+"shell.background" = "shell.background"
+"shell.foreground" = "shell.foreground"
+"shell.border" = "shell.border"
+"shell.hover_background" = "shell.hover_background"
+"shell.active_background" = "shell.active_background"
+"shell.close_hover_background" = "shell.close_hover_background"
+"shell.close_active_background" = "shell.close_active_background"
+"shell.close_foreground" = "shell.close_foreground"
+
+[common.recipes.drag_drop]
+"surface.floating.background" = "surface.floating.background"
+"surface.floating.foreground" = "surface.floating.foreground"
+"focus.ring" = "focus.ring"
+"form.input.invalid_border" = "form.input.invalid_border"
+
+[common.font_features]
+sidebar_section = [["smcp", 1]]

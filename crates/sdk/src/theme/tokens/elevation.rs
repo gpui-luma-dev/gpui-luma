@@ -8,6 +8,7 @@ use std::{ops::Deref, sync::Arc};
 #[serde(deny_unknown_fields)]
 pub struct LumaElevation<C = ColorValue> {
     pub none: LumaShadow<C>,
+    pub drag_preview: LumaShadow<C>,
     pub control: LumaShadow<C>,
     pub thumb: LumaShadow<C>,
     pub menu: LumaShadow<C>,
@@ -81,6 +82,7 @@ impl LumaElevation<ColorValue> {
         };
         let preview = LumaElevation {
             none: resolve(&self.none, "none", &mut cache)?,
+            drag_preview: resolve(&self.drag_preview, "drag_preview", &mut cache)?,
             control: resolve(&self.control, "control", &mut cache)?,
             thumb: resolve(&self.thumb, "thumb", &mut cache)?,
             menu: resolve(&self.menu, "menu", &mut cache)?,

@@ -177,15 +177,21 @@ impl<T: Clone + Send + Sync + 'static> TreeViewControl<T> {
             .child(body)
             .when(reserve_gutter, |root| {
                 root.when_some(self.scrollbar.clone(), |root, scrollbar| {
-                    root.child(div().w(px(12.0)).h_full().flex_shrink_0().when(show_scrollbar, |gutter| {
-                        let chrome = div().size_full().child(scrollbar);
-                        #[cfg(any(test, feature = "test-support"))]
-                        let chrome = {
-                            let chrome_id = self.model.id.clone();
-                            chrome.debug_selector(move || format!("{chrome_id}-scrollbar-chrome"))
-                        };
-                        gutter.child(chrome)
-                    }))
+                    root.child(
+                        div()
+                            .w(px(self.model.template.resolve_scale(self.model.size, 1.0).scrollbar_width))
+                            .h_full()
+                            .flex_shrink_0()
+                            .when(show_scrollbar, |gutter| {
+                                let chrome = div().size_full().child(scrollbar);
+                                #[cfg(any(test, feature = "test-support"))]
+                                let chrome = {
+                                    let chrome_id = self.model.id.clone();
+                                    chrome.debug_selector(move || format!("{chrome_id}-scrollbar-chrome"))
+                                };
+                                gutter.child(chrome)
+                            }),
+                    )
                 })
             })
             .into_any_element()

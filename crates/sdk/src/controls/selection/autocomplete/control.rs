@@ -497,8 +497,8 @@ impl Render for AutocompleteControl {
             let menu_id = SharedString::from("autocomplete-menu");
             let row_height = px(look.item_height);
             let content_top_padding = px(look.padding);
-            let min_visible_rows = 7.0;
-            let max_visible_rows = 14.0;
+            let min_visible_rows = self.model.row_limits.0.max(1) as f32;
+            let max_visible_rows = (self.model.row_limits.1 as f32).max(min_visible_rows);
             let visible_rows = (menu_items.len() as f32).clamp(min_visible_rows, max_visible_rows);
             let viewport_height = px((look.padding * 2.0) + (look.item_height * visible_rows));
 

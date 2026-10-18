@@ -160,9 +160,18 @@ impl SplitViewBuilder {
             model: SplitViewModel {
                 motion: Default::default(),
                 id: id.into(),
-                sidebar_width: px(280.0),
-                sidebar_min_width: px(220.0),
-                sidebar_max_width: px(420.0),
+                sidebar_width: px(crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .shared_geometry()
+                    .split_sidebar_width
+                    .value_px),
+                sidebar_min_width: px(crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .shared_geometry()
+                    .split_sidebar_min_width
+                    .value_px),
+                sidebar_max_width: px(crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .shared_geometry()
+                    .split_sidebar_max_width
+                    .value_px),
                 sidebar_collapsed_width: px(0.0),
                 collapsed: false,
                 motion_enabled: true,

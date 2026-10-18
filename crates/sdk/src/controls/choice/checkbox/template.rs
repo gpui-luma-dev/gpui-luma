@@ -1,4 +1,4 @@
-use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
+use gpui::{AnyElement, App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
 use crate::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole};
 use crate::infra::shadow_layout::should_paint_shadow;
@@ -219,7 +219,6 @@ fn render_checkmark(progress: f32, size: f32, color: gpui::Hsla, icon: &crate::i
         .flex()
         .items_center()
         .justify_center()
-        .font_weight(FontWeight::NORMAL)
         .text_size(px(size))
         .line_height(px(size))
         .text_color(color)

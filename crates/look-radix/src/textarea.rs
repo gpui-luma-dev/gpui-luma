@@ -83,6 +83,7 @@ impl TextAreaTheme for TextAreaThemeAdapter {
         scale: &StandardBoxScale,
     ) -> TextAreaLook {
         let mut look = compose_textarea_look(&self.resolve(state, enabled), scale, self.metrics().border_width.default);
+        look.helper_geometry = self.look.common_stylesheet().shared_geometry();
         let geometry = self.look.common_stylesheet().textarea.resolve_geometry(
             crate::look::sdk_size_key(size),
             gpui_luma::theme::stylesheet::TextAreaGeometry {

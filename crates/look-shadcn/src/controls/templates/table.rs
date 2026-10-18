@@ -51,12 +51,14 @@ impl TableTheme for ShadcnTableTheme {
         size: ControlSize,
         scale: &gpui_luma::theme::ListRowScale,
     ) -> gpui_luma::controls::table::TableRowLook {
-        gpui_luma::controls::table::TableRowLook::from_palette(
+        let mut look = gpui_luma::controls::table::TableRowLook::from_palette(
             &self.resolve_row(selected, state, size),
             scale,
             &self.theme.mode_tokens().stylesheet().common,
             size,
-        )
+        );
+        look.column_emphasis_weight = self.theme.mode_tokens().typography.text.title.weight;
+        look
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {

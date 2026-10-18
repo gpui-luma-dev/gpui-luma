@@ -12,9 +12,6 @@ use super::{
     theme::ResizablePanelsLook,
 };
 
-/// Back-compat alias for [`super::math::MIN_HANDLE_LANE_PX`].
-pub const MIN_HIDDEN_HANDLE_HIT_TARGET_PX: f32 = super::math::MIN_HANDLE_LANE_PX;
-
 pub type ResizablePanelsTemplateModifier =
     Box<dyn Fn(Stateful<Div>, &ResizablePanelsRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
 

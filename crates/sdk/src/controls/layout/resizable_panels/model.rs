@@ -138,9 +138,9 @@ impl ResizeHandleSize {
 
     /// Maps a pixel lane width to the nearest preset.
     pub fn from_lane_px(lane_px: f32) -> Self {
-        if lane_px >= 16.0 {
+        if lane_px >= (Self::Md.metrics().lane_px + Self::Lg.metrics().lane_px) / 2.0 {
             Self::Lg
-        } else if lane_px >= 10.0 {
+        } else if lane_px >= (Self::Sm.metrics().lane_px + Self::Md.metrics().lane_px) / 2.0 {
             Self::Md
         } else {
             Self::Sm

@@ -135,13 +135,17 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
         let look = self.theme.resolve(model.state, model.orientation, model.size, model.style);
         let percentage = model.percentage.clamp(0.0, 1.0);
         let thumb_fraction = model.thumb_fraction.clamp(0.05, 1.0);
-        let thickness = if look.thickness.is_finite() && look.thickness > 0.0 {
+        let thickness = if look.thickness.is_finite() && look.thickness >= 0.0 {
             look.thickness
         } else {
-            12.0
+            crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                .scrollbar
+                .authored_geometry(model.size.stylesheet_key())
+                .thickness
+                .unwrap_or_default()
         };
-        let track_thickness = clamped_thickness(look.track_thickness, 1.0, thickness);
-        let thumb_thickness = clamped_thickness(look.thumb_thickness, track_thickness, thickness);
+        let track_thickness = clamped_thickness(look.track_thickness, 0.0, thickness);
+        let thumb_thickness = clamped_thickness(look.thumb_thickness, 0.0, thickness);
         let track_cross_offset = (thickness - track_thickness) * 0.5;
         let thumb_cross_offset = (thickness - thumb_thickness) * 0.5;
 

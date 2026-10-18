@@ -6,6 +6,7 @@ use crate::theme::{ControlSize, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct StepperLook {
+    pub number_weight: gpui::FontWeight,
     /// Resolved decoration and layout defaults shared with templates.
     pub geometry: crate::theme::stylesheet::ResolvedStepperGeometry,
     pub complete_bg: Hsla,
@@ -49,7 +50,7 @@ impl StepperTheme for DefaultStepperTheme {
             .stylesheet
             .stepper
             .resolve_geometry(size.stylesheet_key(), crate::theme::stylesheet::StepperGeometry::default());
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("stepper", &self.tokens.palette);
 
         let track_color = if enabled {
             palette.surface.subtle.background
@@ -78,6 +79,7 @@ impl StepperTheme for DefaultStepperTheme {
             };
 
         StepperLook {
+            number_weight: self.tokens.typography.text.label.weight,
             complete_bg,
             complete_fg,
             in_progress_bg,

@@ -49,6 +49,8 @@ pub struct ComboBoxModel {
     pub(crate) show_down_arrow: bool,
     pub(crate) show_clear_button: bool,
     pub(crate) scrolling: bool,
+    pub(crate) min_visible_rows_explicit: bool,
+    pub(crate) max_visible_rows_explicit: bool,
     pub(crate) min_visible_rows: usize,
     pub(crate) max_visible_rows: usize,
     pub(crate) textfield_template: Arc<dyn TextFieldTemplate>,
@@ -194,8 +196,16 @@ impl ComboBoxBuilder {
                 show_down_arrow: true,
                 show_clear_button: true,
                 scrolling: true,
-                min_visible_rows: 1,
-                max_visible_rows: 7,
+                min_visible_rows_explicit: false,
+                max_visible_rows_explicit: false,
+                min_visible_rows: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .row_limits
+                    .resolve("combobox")
+                    .0,
+                max_visible_rows: crate::theme::stylesheet::CommonStylesheet::sdk_default()
+                    .row_limits
+                    .resolve("combobox")
+                    .1,
                 textfield_template: default_textfield_template(),
                 scrollbar_template: default_scrollbar_template(),
                 template: default_combobox_template(),
@@ -211,6 +221,13 @@ impl ComboBoxBuilder {
     /// Capture shared affordance geometry; per-size values resolve at render time.
     /// Text-field/popup providers and consumer template modifiers retain their own precedence.
     pub fn stylesheet(mut self, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> Self {
+        let (minimum, maximum) = stylesheet.row_limits.resolve("combobox");
+        if !self.model.min_visible_rows_explicit {
+            self.model.min_visible_rows = minimum;
+        }
+        if !self.model.max_visible_rows_explicit {
+            self.model.max_visible_rows = maximum;
+        }
         self.model.icons = stylesheet.with_sdk_defaults().icons;
         self.model.stylesheet = stylesheet.with_sdk_defaults().combobox;
         self
@@ -290,6 +307,7 @@ impl ComboBoxBuilder {
     }
 
     pub fn min_visible_rows(mut self, min_visible_rows: usize) -> Self {
+        self.model.min_visible_rows_explicit = true;
         self.model.min_visible_rows = min_visible_rows.max(1);
         if self.model.max_visible_rows < self.model.min_visible_rows {
             self.model.max_visible_rows = self.model.min_visible_rows;
@@ -298,6 +316,7 @@ impl ComboBoxBuilder {
     }
 
     pub fn max_visible_rows(mut self, max_visible_rows: usize) -> Self {
+        self.model.max_visible_rows_explicit = true;
         self.model.max_visible_rows = max_visible_rows.max(1);
         if self.model.min_visible_rows > self.model.max_visible_rows {
             self.model.min_visible_rows = self.model.max_visible_rows;

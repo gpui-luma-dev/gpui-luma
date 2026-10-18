@@ -51,7 +51,7 @@ impl DefaultContextMenuTheme {
 
 impl ContextMenuTheme for DefaultContextMenuTheme {
     fn resolve(&self, state: InteractionState) -> ContextMenuLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("context_menu", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let size = ControlSize::Md;

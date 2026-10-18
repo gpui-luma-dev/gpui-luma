@@ -11,6 +11,15 @@ struct ShadcnTreeViewTheme {
 }
 
 impl TreeViewTheme for ShadcnTreeViewTheme {
+    fn drag_preview_shadow(&self) -> Vec<gpui::BoxShadow> {
+        self.theme
+            .stylesheet()
+            .common
+            .theme_tokens(self.theme.mode(), gpui_luma::color::GamutMapping::CssLocalMinde)
+            .map(|tokens| tokens.elevation.drag_preview.to_box_shadows())
+            .unwrap_or_default()
+    }
+
     fn icon(&self, role: gpui_luma::theme::stylesheet::IconRole) -> gpui_luma::infra::icon::IconSource {
         self.theme.mode_tokens().stylesheet().common.icons.resolve(role)
     }

@@ -528,7 +528,7 @@ impl SidebarControl {
                     edge: edge.unwrap_or(DropEdge::Before),
                     item_extent: px(0.),
                     following_gap: px(0.),
-                    marker_width: px(2.),
+                    marker_width: px(look.geometry.drag_marker_width.value_px),
                 };
                 let target = match edge {
                     Some(edge) => {
@@ -546,7 +546,7 @@ impl SidebarControl {
                     }
                     None => div()
                         .id("sidebar-into")
-                        .border_1()
+                        .border(px(look.geometry.drag_border_width.value_px))
                         .absolute()
                         .top(gpui::relative(0.25))
                         .h(gpui::relative(0.5))

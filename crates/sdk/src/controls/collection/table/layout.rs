@@ -32,12 +32,21 @@ pub fn body_rows_height(visible_rows: usize, row_height: f32, divider_width: f32
 /// (see [`body_rows_height`]). Prefer [`rows_for_viewport_height_border_box`] when
 /// dividers are `border_t` on the row (inside `.h(...)`).
 ///
-/// Returns `None` when height is not yet known (zero / non-finite).
+/// Returns `None` for unknown heights or invalid divider geometry.
 pub fn rows_for_viewport_height(viewport_height: f32, row_height: f32, divider_width: f32) -> Option<usize> {
-    if viewport_height <= 0.0 || !viewport_height.is_finite() || row_height <= 0.0 || !row_height.is_finite() {
+    if viewport_height <= 0.0
+        || !viewport_height.is_finite()
+        || row_height <= 0.0
+        || !row_height.is_finite()
+        || !divider_width.is_finite()
+        || divider_width < 0.0
+    {
         return None;
     }
     let stride = row_height + divider_width;
+    if !stride.is_finite() || !(viewport_height + divider_width).is_finite() {
+        return None;
+    }
     let rows = ((viewport_height + divider_width) / stride).floor() as usize;
     Some(rows.max(1))
 }
@@ -54,7 +63,7 @@ pub fn rows_for_viewport_height_border_box(viewport_height: f32, row_height: f32
 /// Per-row height that makes `row_count` rows fill `viewport_height` exactly.
 ///
 /// Assumes row dividers are border-box (painted inside each row's height), matching
-/// fill-height list rows that use `.h(height).border_t_1()`.
+/// fill-height list rows that paint the resolved divider inside `.h(height)`.
 pub fn distributed_row_height(viewport_height: f32, row_count: usize) -> Option<f32> {
     if row_count == 0 || viewport_height <= 0.0 || !viewport_height.is_finite() {
         return None;
@@ -178,6 +187,7 @@ mod tests {
 
     fn sample_row_look() -> TableRowLook {
         TableRowLook {
+            column_emphasis_weight: gpui::FontWeight::SEMIBOLD,
             row_divider_width: 1.0,
             column_padding_x: 12.0,
             column_muted_opacity: 0.65,
@@ -289,6 +299,10 @@ mod tests {
     #[test]
     fn rows_for_viewport_height_accounts_for_dividers() {
         assert_eq!(rows_for_viewport_height(0.0, 36.0, 1.0), None);
+        for divider in [-1.0, f32::NAN, f32::INFINITY] {
+            assert_eq!(rows_for_viewport_height(184.0, 36.0, divider), None);
+        }
+        assert_eq!(rows_for_viewport_height(f32::MAX, 36.0, f32::MAX), None);
         // 5 rows at 36px + 4 dividers = 184
         assert_eq!(rows_for_viewport_height(184.0, 36.0, 1.0), Some(5));
         assert_eq!(rows_for_viewport_height(183.0, 36.0, 1.0), Some(4));

@@ -321,7 +321,16 @@ where
             + Sync
             + 'static,
     {
-        self.with_menu_row_item_content_sized(theme, ControlSize::Sm, 27.0, 4.0, content)
+        {
+            let geometry = crate::theme::stylesheet::CommonStylesheet::sdk_default().shared_geometry();
+            self.with_menu_row_item_content_sized(
+                theme,
+                ControlSize::Sm,
+                geometry.menu_row_height.value_px,
+                geometry.menu_row_gap.value_px,
+                content,
+            )
+        }
     }
 
     pub fn with_menu_row_item_content_sized<F>(

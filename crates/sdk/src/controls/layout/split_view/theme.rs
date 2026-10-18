@@ -35,7 +35,7 @@ impl DefaultSplitViewTheme {
 
 impl SplitViewTheme for DefaultSplitViewTheme {
     fn resolve(&self, _hovered: bool, enabled: bool) -> SplitViewLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("split_view", &self.tokens.palette);
         let separator = if enabled {
             palette.border.default
         } else {

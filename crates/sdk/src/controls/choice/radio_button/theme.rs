@@ -54,7 +54,7 @@ impl RadioScale {
             indicator_size,
             height: snap_to_pixel(metrics.control_height(size), scale_factor),
             gap: snap_to_pixel(geometry.gap.unwrap_or_else(|| metrics.gap(size)), scale_factor),
-            label_baseline_shift: label_baseline_shift(size),
+            label_baseline_shift: label_baseline_shift(size, stylesheet),
             dot_size: snap_to_pixel(
                 geometry
                     .dot_size
@@ -109,7 +109,7 @@ impl DefaultRadioButtonTheme {
 
 impl RadioButtonTheme for DefaultRadioButtonTheme {
     fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> RadioButtonPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("radio_button", &self.tokens.palette);
         let typography = &self.tokens.typography;
         let layer = state.layer();
         let selected = palette.state.selected;

@@ -124,6 +124,14 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
         .authored_geometry(crate::tables::metrics::helpers::control_size_key(size))
         .with_fallback(&base_recipe);
     let mut look = FloatingMenuLook {
+        window_margin: mode
+            .stylesheet()
+            .common
+            .with_sdk_defaults()
+            .popover
+            .authored_geometry("panel")
+            .window_margin
+            .unwrap_or_default(),
         positive: mode.data_positive,
         border_width: mode.metrics.border_width.default,
         background: colors.background.hsla(),

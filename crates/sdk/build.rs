@@ -49,6 +49,17 @@ fn main() {
     let output = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo output directory"));
     fs::write(output.join("metrics.rs"), metric(&sheet["common"]["tokens"]["metrics"], "MetricTokens"))
         .expect("write compiled metric tokens");
+    let shell = &sheet["common"]["shell"]["geometry"];
+    let number = |key: &str| {
+        shell[key]
+            .as_float()
+            .or_else(|| shell[key].as_integer().map(|n| n as f64))
+            .expect("shell dimension")
+    };
+    fs::write(output.join("shell.rs"), format!(
+        "pub const TITLE_BAR_HEIGHT: Pixels = px({:?});\n#[cfg(target_os = \"macos\")]\npub const TITLE_BAR_LEFT_PADDING: Pixels = px({:?});\n#[cfg(not(target_os = \"macos\"))]\npub const TITLE_BAR_LEFT_PADDING: Pixels = px({:?});",
+        number("height") as f32, number("macos_left_padding") as f32, number("left_padding") as f32
+    )).expect("write compiled shell dimensions");
     for mode in ["light", "dark"] {
         fs::write(
             output.join(format!("palette_{mode}.rs")),
@@ -163,6 +174,7 @@ fn palette(value: &toml::Value, kind: &str) -> String {
             } else {
                 let nested = match field.as_str() {
                     "app" => "AppPalette",
+                    "shell" => "ShellPalette",
                     "surface" => "SurfacePalette",
                     "panel" | "floating" => "SurfaceWithBorderPalette",
                     "subtle" => "SurfaceTonePalette",

@@ -7,6 +7,10 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyl
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TreeViewScale {
+    pub drag_marker_width: f32,
+    pub drag_insert_width: f32,
+    pub drag_opacity: f32,
+    pub scrollbar_width: f32,
     /// Disabled-row opacity and drag-preview padding in pixels.
     pub disabled_opacity: f32,
     pub preview_padding_x: f32,
@@ -42,6 +46,10 @@ impl TreeViewScale {
             .authored_geometry(size.stylesheet_key());
         let geometry = stylesheet.tree_view.authored_geometry(size.stylesheet_key()).with_fallback(&baseline);
         Self {
+            drag_marker_width: geometry.drag_marker_width.unwrap_or_default(),
+            drag_insert_width: geometry.drag_insert_width.unwrap_or_default(),
+            drag_opacity: geometry.drag_opacity.unwrap_or_default(),
+            scrollbar_width: geometry.scrollbar_width.unwrap_or_default(),
             disabled_opacity: geometry.disabled_opacity.unwrap_or_default(),
             preview_padding_x: geometry.preview_padding_x.unwrap_or_default(),
             preview_padding_y: geometry.preview_padding_y.unwrap_or_default(),
@@ -80,6 +88,11 @@ pub struct TreeViewPalette {
 }
 
 pub trait TreeViewTheme: Send + Sync {
+    /// Elevation for the detached drag preview, independent of row chrome.
+    fn drag_preview_shadow(&self) -> Vec<gpui::BoxShadow> {
+        ThemeTokens::default().elevation.drag_preview.to_box_shadows()
+    }
+
     /// Resolve default file/folder glyphs; node-supplied icons take precedence.
     fn icon(&self, role: crate::theme::stylesheet::IconRole) -> crate::infra::icon::IconSource {
         crate::theme::stylesheet::CommonStylesheet::sdk_default().icons.resolve(role)
@@ -115,11 +128,15 @@ impl DefaultTreeViewTheme {
 }
 
 impl TreeViewTheme for DefaultTreeViewTheme {
+    fn drag_preview_shadow(&self) -> Vec<gpui::BoxShadow> {
+        self.tokens.elevation.drag_preview.to_box_shadows()
+    }
+
     fn icon(&self, role: crate::theme::stylesheet::IconRole) -> crate::infra::icon::IconSource {
         self.tokens.stylesheet.icons.resolve(role)
     }
     fn resolve_row(&self, state: InteractionState, selected: bool, size: ControlSize) -> TreeViewPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("tree_view", &self.tokens.palette);
         let typography = &self.tokens.typography;
         let layer = state.layer();
 

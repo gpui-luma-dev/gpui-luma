@@ -24,6 +24,14 @@ pub fn tree_view_frame(look: &Look) -> Div {
 }
 
 impl TreeViewTheme for RadixTreeViewTheme {
+    fn drag_preview_shadow(&self) -> Vec<gpui::BoxShadow> {
+        self.look
+            .common_stylesheet()
+            .theme_tokens(self.look.mode(), gpui_luma::color::GamutMapping::CssLocalMinde)
+            .map(|tokens| tokens.elevation.drag_preview.to_box_shadows())
+            .unwrap_or_default()
+    }
+
     fn icon(&self, role: gpui_luma::theme::stylesheet::IconRole) -> gpui_luma::infra::icon::IconSource {
         self.look.common_stylesheet().icons.resolve(role)
     }

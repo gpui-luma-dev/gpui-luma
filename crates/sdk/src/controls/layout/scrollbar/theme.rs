@@ -64,7 +64,7 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
             .stylesheet
             .scrollbar
             .resolve_geometry(size.stylesheet_key(), crate::theme::stylesheet::ScrollbarGeometry::default());
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("scrollbar", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
         let thumb_background = match state.layer() {
             InteractionLayer::Disabled => palette.state.disabled.foreground,

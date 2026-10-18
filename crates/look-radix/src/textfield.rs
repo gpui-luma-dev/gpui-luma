@@ -105,6 +105,7 @@ impl TextFieldTheme for TextFieldThemeAdapter {
         let mut palette = self.resolve(state, enabled);
         palette.typography = typography_for_size(size);
         let mut look = compose_textfield_look(&palette, scale, self.metrics().border_width.default);
+        look.helper_geometry = self.look.common_stylesheet().shared_geometry();
         let geometry = self.look.common_stylesheet().textfield.resolve_geometry(
             crate::look::sdk_size_key(size),
             gpui_luma::theme::stylesheet::TextFieldGeometry {

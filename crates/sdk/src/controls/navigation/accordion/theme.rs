@@ -137,7 +137,7 @@ impl AccordionTheme for DefaultAccordionTheme {
         crate::infra::drag_drop::DragDropLook::from_tokens(&self.tokens, size)
     }
     fn resolve_trigger(&self, state: InteractionState, size: ControlSize) -> AccordionPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("accordion", &self.tokens.palette);
         let typography = &self.tokens.typography;
         let layer = state.layer();
 
@@ -168,7 +168,7 @@ impl AccordionTheme for DefaultAccordionTheme {
     }
 
     fn resolve_content(&self, _expanded: bool) -> AccordionContentPalette {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("accordion", &self.tokens.palette);
 
         AccordionContentPalette { background: None, foreground: palette.app.foreground }
     }

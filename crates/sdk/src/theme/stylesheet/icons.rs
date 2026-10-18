@@ -23,6 +23,11 @@ impl<'de> Deserialize<'de> for StylesheetIcon {
 
 #[derive(Clone, Copy, Debug)]
 pub enum IconRole {
+    WindowMinimize,
+    WindowRestore,
+    WindowMaximize,
+    WindowClose,
+
     Clear,
     Search,
     DisclosureExpanded,
@@ -47,6 +52,11 @@ pub enum IconRole {
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
 pub struct IconsStylesheet {
+    pub window_minimize: Option<StylesheetIcon>,
+    pub window_restore: Option<StylesheetIcon>,
+    pub window_maximize: Option<StylesheetIcon>,
+    pub window_close: Option<StylesheetIcon>,
+
     pub clear: Option<StylesheetIcon>,
     pub search: Option<StylesheetIcon>,
     pub disclosure_expanded: Option<StylesheetIcon>,
@@ -69,6 +79,10 @@ pub struct IconsStylesheet {
 }
 impl IconsStylesheet {
     pub(super) fn with_baseline(mut self, baseline: &Self) -> Self {
+        self.window_minimize = self.window_minimize.or_else(|| baseline.window_minimize.clone());
+        self.window_restore = self.window_restore.or_else(|| baseline.window_restore.clone());
+        self.window_maximize = self.window_maximize.or_else(|| baseline.window_maximize.clone());
+        self.window_close = self.window_close.or_else(|| baseline.window_close.clone());
         self.clear = self.clear.or_else(|| baseline.clear.clone());
         self.search = self.search.or_else(|| baseline.search.clone());
         self.disclosure_expanded = self.disclosure_expanded.or_else(|| baseline.disclosure_expanded.clone());
@@ -94,6 +108,11 @@ impl IconsStylesheet {
     pub fn resolve(&self, role: IconRole) -> IconSource {
         let baseline = &super::CommonStylesheet::sdk_default().icons;
         let icon = match role {
+            IconRole::WindowMinimize => self.window_minimize.as_ref().or(baseline.window_minimize.as_ref()),
+            IconRole::WindowRestore => self.window_restore.as_ref().or(baseline.window_restore.as_ref()),
+            IconRole::WindowMaximize => self.window_maximize.as_ref().or(baseline.window_maximize.as_ref()),
+            IconRole::WindowClose => self.window_close.as_ref().or(baseline.window_close.as_ref()),
+
             IconRole::Clear => self.clear.as_ref().or(baseline.clear.as_ref()),
             IconRole::Search => self.search.as_ref().or(baseline.search.as_ref()),
             IconRole::DisclosureExpanded => self.disclosure_expanded.as_ref().or(baseline.disclosure_expanded.as_ref()),

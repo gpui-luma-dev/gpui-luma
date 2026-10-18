@@ -70,6 +70,16 @@ impl From<SliderTemplateHandlers> for (SliderBoundsHandler, SliderInteractionHan
 }
 
 pub trait SliderTemplate: Send + Sync {
+    /// Resolve the same geometry for pointer hit testing and painted chrome.
+    fn resolve_look(
+        &self,
+        size: crate::theme::ControlSize,
+        thumb_size: Option<super::SliderThumbSize>,
+        state: crate::theme::InteractionState,
+    ) -> super::SliderLook {
+        super::theme::default_slider_theme().resolve(size, thumb_size, state)
+    }
+
     fn render(
         &self,
         model: &SliderRenderModel<'_>,
@@ -111,6 +121,15 @@ where
 }
 
 impl SliderTemplate for ModifiedSliderTemplate {
+    fn resolve_look(
+        &self,
+        size: crate::theme::ControlSize,
+        thumb_size: Option<super::SliderThumbSize>,
+        state: crate::theme::InteractionState,
+    ) -> super::SliderLook {
+        self.base.resolve_look(size, thumb_size, state)
+    }
+
     fn render(
         &self,
         model: &SliderRenderModel<'_>,
@@ -175,7 +194,7 @@ pub(crate) fn render_slider_thumb_at(
             div()
                 .size(px(look.thumb_size))
                 .bg(thumb_fill)
-                .border_1()
+                .border(px(look.thumb_border_width))
                 .border_color(look.thumb_border)
                 .rounded(px(thumb_radius))
                 .shadow(look.thumb_shadow.clone()),
@@ -210,7 +229,7 @@ pub(crate) fn render_linear_thumb(
             div()
                 .size(px(look.thumb_size))
                 .bg(thumb_fill)
-                .border_1()
+                .border(px(look.thumb_border_width))
                 .border_color(look.thumb_border)
                 .rounded(px(thumb_radius))
                 .shadow(look.thumb_shadow.clone()),

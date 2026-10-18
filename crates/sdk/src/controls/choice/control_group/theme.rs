@@ -107,7 +107,7 @@ impl DefaultControlGroupTheme {
 
 impl ControlGroupTheme for DefaultControlGroupTheme {
     fn resolve_list(&self, enabled: bool) -> ControlGroupListLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("control_group", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
 
         let geometry = self.tokens.stylesheet.control_group.resolve_geometry(
@@ -153,7 +153,13 @@ impl ControlGroupTheme for DefaultControlGroupTheme {
         ControlGroupItemPalette {
             foreground: look.foreground,
             background: look.background,
-            muted_foreground: self.tokens.palette.app.muted_foreground,
+            muted_foreground: self
+                .tokens
+                .stylesheet
+                .recipes
+                .palette("control_group", &self.tokens.palette)
+                .app
+                .muted_foreground,
             typography: look.typography,
             font_family: look.font_family.clone(),
         }

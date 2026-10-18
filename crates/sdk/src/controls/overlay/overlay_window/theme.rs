@@ -52,7 +52,7 @@ impl DefaultOverlayWindowTheme {
 
 impl OverlayWindowTheme for DefaultOverlayWindowTheme {
     fn resolve(&self, size: ControlSize, mode: OverlayWindowMode) -> OverlayWindowLook {
-        let palette = &self.tokens.palette;
+        let palette = self.tokens.stylesheet.recipes.palette("overlay_window", &self.tokens.palette);
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let elevation = &self.tokens.elevation;
