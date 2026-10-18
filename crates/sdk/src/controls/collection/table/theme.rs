@@ -46,6 +46,8 @@ pub struct TableRowPalette {
 
 #[derive(Clone, Copy, Debug)]
 pub struct TableRowLook {
+    /// Whole-row opacity applied only when disabled.
+    pub disabled_opacity: f32,
     pub background: Hsla,
     pub label_color: Hsla,
     pub divider: Hsla,
@@ -97,7 +99,12 @@ pub trait TableTheme: Send + Sync {
         size: ControlSize,
         scale: &ListRowScale,
     ) -> TableRowLook {
-        compose_table_row_look(&self.resolve_row(selected, state, size), scale)
+        TableRowLook::from_palette(
+            &self.resolve_row(selected, state, size),
+            scale,
+            crate::theme::stylesheet::CommonStylesheet::sdk_default(),
+            size,
+        )
     }
 }
 
@@ -220,18 +227,7 @@ impl TableTheme for DefaultTableTheme {
         size: ControlSize,
         scale: &ListRowScale,
     ) -> TableRowLook {
-        let mut look = compose_table_row_look(&self.resolve_row(selected, state, size), scale);
-        let key = size.stylesheet_key();
-        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().table.authored_geometry(key);
-        look.radius = self
-            .tokens
-            .stylesheet
-            .table
-            .authored_geometry(key)
-            .row_radius
-            .or(baseline.row_radius)
-            .unwrap_or_default();
-        look
+        TableRowLook::from_palette(&self.resolve_row(selected, state, size), scale, &self.tokens.stylesheet, size)
     }
 
     fn metrics(&self) -> MetricTokens {
@@ -239,20 +235,28 @@ impl TableTheme for DefaultTableTheme {
     }
 }
 
-pub(crate) fn compose_table_row_look(palette: &TableRowPalette, scale: &ListRowScale) -> TableRowLook {
-    TableRowLook {
-        background: palette.background,
-        label_color: palette.label_color,
-        divider: palette.divider,
-        label_typography: palette.label_typography,
-        radius: crate::theme::stylesheet::CommonStylesheet::sdk_default()
-            .table
-            .geometry
-            .row_radius
-            .unwrap_or_default(),
-        padding_x: scale.padding_x,
-        padding_y: scale.padding_y,
-        min_height: scale.min_height,
-        label_baseline_shift: scale.label_baseline_shift,
+impl TableRowLook {
+    /// Combines row colors and metrics with shared, size-specific row styling.
+    pub fn from_palette(
+        palette: &TableRowPalette,
+        scale: &ListRowScale,
+        stylesheet: &crate::theme::stylesheet::CommonStylesheet,
+        size: ControlSize,
+    ) -> Self {
+        let key = size.stylesheet_key();
+        let baseline = crate::theme::stylesheet::CommonStylesheet::sdk_default().table.authored_geometry(key);
+        let recipe = stylesheet.table.authored_geometry(key).with_fallback(&baseline);
+        Self {
+            disabled_opacity: recipe.row_disabled_opacity.unwrap_or_default(),
+            background: palette.background,
+            label_color: palette.label_color,
+            divider: palette.divider,
+            label_typography: palette.label_typography,
+            radius: recipe.row_radius.unwrap_or_default(),
+            padding_x: scale.padding_x,
+            padding_y: scale.padding_y,
+            min_height: scale.min_height,
+            label_baseline_shift: scale.label_baseline_shift,
+        }
     }
 }

@@ -179,6 +179,7 @@ mod tests {
 
     fn sample_row_look() -> TableRowLook {
         TableRowLook {
+            disabled_opacity: 0.56,
             background: gpui::transparent_black(),
             label_color: gpui::black(),
             divider: gpui::black(),

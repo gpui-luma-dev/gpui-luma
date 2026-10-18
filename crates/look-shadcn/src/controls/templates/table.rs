@@ -44,6 +44,21 @@ impl TableTheme for ShadcnTableTheme {
         table_row_palette(tokens.as_ref(), selected, state, size)
     }
 
+    fn resolve_row_look(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: ControlSize,
+        scale: &gpui_luma::theme::ListRowScale,
+    ) -> gpui_luma::controls::table::TableRowLook {
+        gpui_luma::controls::table::TableRowLook::from_palette(
+            &self.resolve_row(selected, state, size),
+            scale,
+            &self.theme.mode_tokens().stylesheet().common,
+            size,
+        )
+    }
+
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }

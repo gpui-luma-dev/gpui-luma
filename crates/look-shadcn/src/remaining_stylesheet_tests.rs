@@ -628,3 +628,32 @@ drag_width=310
         assert_eq!(theme.resolve_drag(ControlSize::Lg).geometry.drag_width.value_px, 310.0);
     }
 }
+
+#[test]
+fn table_row_chrome_uses_selected_stylesheet_and_size() {
+    use gpui_luma::controls::table::{DefaultTableTheme, TableTheme};
+    use gpui_luma::theme::ListRowScale;
+    let mut config = crate::embedded_stylesheet().clone();
+    config.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[r#"
+[common.table.geometry]
+row_disabled_opacity=0
+row_radius=7
+[common.table.sizes.lg]
+row_disabled_opacity=0.3
+row_radius=11
+"#])
+    .unwrap();
+    let tokens = config.common.theme_tokens(ThemeMode::Light, gpui_luma::color::GamutMapping::CssLocalMinde).unwrap();
+    let sdk = DefaultTableTheme::new(tokens);
+    let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, config).unwrap();
+    let themed = look.table_theme();
+    for theme in [&sdk as &dyn TableTheme, themed.as_ref()] {
+        for (size, opacity, radius) in [(ControlSize::Md, 0.0, 7.0), (ControlSize::Lg, 0.3, 11.0)] {
+            let scale = ListRowScale::compute(size, &theme.metrics(), 1.0);
+            let row =
+                theme.resolve_row_look(false, InteractionState { disabled: true, ..Default::default() }, size, &scale);
+            assert_eq!((row.disabled_opacity, row.radius), (opacity, radius));
+            assert_eq!(row.min_height, scale.min_height);
+        }
+    }
+}

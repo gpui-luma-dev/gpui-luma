@@ -445,7 +445,7 @@ geometry_family!(
         drag_border_width,
         drag_marker_width
     ],
-    unit[row_hover_opacity]
+    unit[row_hover_opacity, row_disabled_opacity]
 );
 
 geometry_family!(

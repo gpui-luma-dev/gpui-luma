@@ -617,3 +617,5 @@ Resizable panel frame and split stroke widths use `common.resizable_panels.geome
 Table shell chrome uses `common.table.geometry.border_width`, `header_divider_width` (pixels), and `header_padding_bottom_scale` (header bottom padding / resolved vertical padding). The default ratio is `math(3 / 4)`. Fixed shell height includes the resolved outer strokes and header separator, matching the painted header.
 
 Table drag feedback uses `common.table.geometry.drag_offset`, `drag_width`, `drag_padding_x`, `drag_padding_y`, `drag_border_width`, and `drag_marker_width` (pixels). The offset applies to both pointer axes; size overrides apply to the final table size. `TableDragLook.geometry` carries resolved metrics into the preview and drop targets. Edge-scroll thresholds and speed remain interaction behavior.
+
+Table disabled rows use `common.table.geometry.row_disabled_opacity` (unit interval, applied to the whole row). SDK and Shadcn row factories share `TableRowLook::from_palette`, resolving this setting and `row_radius` against the final control size while retaining the supplied row metrics.

@@ -43,7 +43,7 @@ pub(crate) fn render_table_row(
     if enabled {
         row = row.cursor_pointer();
     } else {
-        row = row.opacity(0.56);
+        row = row.opacity(look.disabled_opacity);
     }
 
     row

@@ -671,6 +671,8 @@ padding_x = 0.0
 padding_y_scale = "math(1 / 2)"
 row_radius = 0.0
 row_hover_opacity = 0.4
+# Whole-row opacity when the row is disabled (0 transparent, 1 opaque).
+row_disabled_opacity = 0.56
 
 # Popup separation scales with the trigger's gap unless menu_offset_y is explicit.
 [common.selector.geometry]

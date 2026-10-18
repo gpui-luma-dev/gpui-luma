@@ -267,7 +267,7 @@ crates/sdk/src/controls/collection/table/paging.rs,141,table,0.0,review owner / 
 crates/sdk/src/controls/collection/table/paging.rs,149,table,8.0,review owner / derived calculation,needs classification,.child(div().flex_none().flex().items_center().gap(px(8.0)).when(
 crates/sdk/src/controls/collection/table/row.rs,21,table,0.0,review owner / derived calculation,needs classification,row = row.flex().items_center().child(div().flex_1().min_w(px(0.0)).h_full().child(content));
 crates/sdk/src/controls/collection/table/row.rs,36,table,0.0,review owner / derived calculation,needs classification,row = body.child(div().flex_1().min_w(px(0.0)).mt(px(look.label_baseline_shift)).child(content));
-crates/sdk/src/controls/collection/table/row.rs,46,table,0.56,review owner / derived calculation,needs classification,row = row.opacity(0.56);
+crates/sdk/src/controls/collection/table/row.rs,46,table,0.56,common.table.geometry.row_disabled_opacity,migrated,row = row.opacity(0.56);
 crates/sdk/src/controls/collection/table/template.rs,8,table,1.0,common.table.geometry.SHELL_BORDER_WIDTH,needs classification,pub(crate) const SHELL_BORDER_WIDTH: f32 = 1.0;
 crates/sdk/src/controls/collection/table/template.rs,56,table,0.0,review owner / derived calculation,needs classification,let mut column = div().w_full().flex_1().min_h(px(0.0)).flex().flex_col();
 crates/sdk/src/controls/collection/table/template.rs,64,table,0.75,common.table.geometry.header_padding_bottom_scale,migrated,.pb(px(list.padding_y * 0.75))
