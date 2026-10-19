@@ -1,16 +1,18 @@
 //! Focused host examples for viewport actions, annotations, log scales and legends.
+use gpui_luma::controls::button;
+use gpui_luma::prelude::HasPresenter;
 use gpui::{App, Context, Entity, Render, Window, IntoElement, div, px, prelude::*};
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::{
     vstack, hstack,
     controls::button::{Button},
 };
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::*;
 use crate::theme::{self, TypographyExt};
 pub(crate) struct Features {
     data: Dataset,
-    look: Look,
+    look: AppTheme,
     viewport: Viewport,
     buttons: Vec<Entity<Button<()>>>,
     hidden: Vec<usize>,
@@ -18,7 +20,7 @@ pub(crate) struct Features {
     entrance: f32,
 }
 impl Features {
-    pub(crate) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
+    pub(crate) fn spawn(look: &AppTheme, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
         let data = Dataset::new()
             .with_series(Series::new(
                 "a",
@@ -48,8 +50,13 @@ impl Features {
             .into_iter()
             .enumerate()
             {
-                let button =
-                    theme::motion::spawn_plot_action(id, label, &look, cx).on_click(cx, move |this: &mut Self, cx| {
+                let button = button::Button::new(id)
+                    .template(std::sync::Arc::new(button::DefaultButtonTemplate::new(std::sync::Arc::new(
+                        look.clone(),
+                    ))))
+                    .label(label)
+                    .spawn(cx)
+                    .on_click(cx, move |this: &mut Self, cx| {
                         let change = match index {
                             0 => this.viewport.zoom_at(1.5, 0.5, 0.5),
                             1 => this.viewport.zoom_at(1.0 / 1.5, 0.5, 0.5),
@@ -84,10 +91,10 @@ impl Render for Features {
         let chrome = theme::chrome(&self.look);
         let typography = theme::typography();
         let host = cx.weak_entity();
-        let items = [("Desktop", 0x93c5fd), ("Mobile", 0x2b7fff)].map(|(name, color)| LegendItem {
-            label: name.into(),
-            swatch: SwatchPresentation::Fill(gpui::rgb(color).into()),
-        });
+        let items = ["Desktop", "Mobile"]
+            .into_iter()
+            .zip(theme::palette::blue(self.look.mode()))
+            .map(|(name, color)| LegendItem { label: name.into(), swatch: SwatchPresentation::Fill(color.into()) });
         let legend = LegendView::new(items, LegendPresentation::new(chrome.body_text), ChartMetrics::default())
             .interaction(LegendInteraction::default().hidden(self.hidden.clone()).on_activate(move |event, cx| {
                 let _ = host.update(cx, |this, cx| {
@@ -102,7 +109,7 @@ impl Render for Features {
         let host = cx.weak_entity();
         let mut chart = CartesianChartBuilder::new(self.data.clone())
             .id("viewport-annotation-chart")
-            .style(theme::RadixCartesianStyle::new(&self.look).blue().series("b", 1))
+            .style(theme::SdkCartesianStyle::new(&self.look).blue().series("b", 1))
             .viewport(&self.viewport)
             .legend(LegendPresentation { visible: false, text_color: chrome.body_text })
             .draw_progress(self.entrance)
@@ -137,7 +144,7 @@ impl Render for Features {
         }
         let logarithmic = CartesianChartBuilder::new(self.data.clone())
             .id("log-scale-chart")
-            .style(theme::RadixCartesianStyle::new(&self.look).blue())
+            .style(theme::SdkCartesianStyle::new(&self.look).blue())
             .x_scale(NumericScale::new().domain(0.0..=100.0))
             .y_scale(NumericScale::new().logarithmic(10.0).domain(1.0..=100.0))
             .line(LineLayer::new("a"))
@@ -174,7 +181,7 @@ mod tests {
                 self.feature.clone()
             }
         }
-        let (host, cx) = cx.add_window_view(|_, cx| Host { feature: Features::spawn(&Look::built_in(), cx).unwrap() });
+        let (host, cx) = cx.add_window_view(|_, cx| Host { feature: Features::spawn(&AppTheme::new(), cx).unwrap() });
         let feature = host.read_with(cx, |host, _| host.feature.clone());
         feature.update(cx, |f, cx| {
             f.buttons[0].update(cx, |_, cx| cx.emit(ButtonEvent::Click));

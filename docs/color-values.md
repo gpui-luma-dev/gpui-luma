@@ -25,7 +25,9 @@ separate API; neither persistence path performs gamut mapping.
 
 Stylesheet palette and shadow defaults use readable `"hsla(h, s%, l%, a)"`
 strings; their shared build/runtime loader converts these into source colors.
-See [stylesheet authoring](shared-stylesheet.md) for an example.
+The bundled SDK UI palette is monochrome; authored look/application colors and
+wide-gamut source persistence remain supported. Chart palettes can be maintained
+independently of UI tokens. See [stylesheet authoring](shared-stylesheet.md).
 
 ## Preview bridge
 

@@ -1,3 +1,5 @@
+use gpui_luma::controls::button;
+use gpui_luma::prelude::HasPresenter;
 use gpui_luma::motion::{Transition, Easing};
 use std::time::Duration;
 
@@ -8,20 +10,20 @@ use gpui_luma::{
     motion::VisualTransition,
     hstack, vstack,
 };
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{AreaLayer, CartesianChartBuilder, Dataset, DatasetError, Interpolation, NumericScale, Sample, Series};
 use crate::theme::{self, TypographyExt};
 
 pub(crate) struct AreaExample {
     entrance: f32,
     data: Dataset,
-    look: Look,
+    look: AppTheme,
     replay: Entity<Button<()>>,
     motion: VisualTransition,
 }
 
 impl AreaExample {
-    pub(crate) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
+    pub(crate) fn spawn(look: &AppTheme, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
         let data = Dataset::new().with_series(Series::new(
             "inflow",
             "Reservoir inflow",
@@ -41,11 +43,15 @@ impl AreaExample {
         ))?;
         let look = look.clone();
         Ok(cx.new(move |cx: &mut Context<Self>| {
-            let replay = theme::spawn_replay("area-replay", &look, cx).on_click(cx, |this, cx| {
-                this.motion.snap_to(0.0);
-                this.motion.set_target(1.0);
-                cx.notify();
-            });
+            let replay = button::Button::new("area-replay")
+                .template(std::sync::Arc::new(button::DefaultButtonTemplate::new(std::sync::Arc::new(look.clone()))))
+                .label("Replay")
+                .spawn(cx)
+                .on_click(cx, |this, cx| {
+                    this.motion.snap_to(0.0);
+                    this.motion.set_target(1.0);
+                    cx.notify();
+                });
             Self {
                 entrance: 1.0,
                 data,
@@ -79,9 +85,9 @@ impl Render for AreaExample {
     }
 }
 
-fn chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
+fn chart(data: Dataset, look: &AppTheme) -> CartesianChartBuilder {
     CartesianChartBuilder::new(data)
-        .style(theme::RadixCartesianStyle::new(look))
+        .style(theme::SdkCartesianStyle::new(look))
         .x_scale(NumericScale::new().tick_count(7))
         .y_scale(NumericScale::new().tick_count(6))
         .area(AreaLayer::new("inflow").interpolation(Interpolation::Monotone))
@@ -97,7 +103,7 @@ pub(crate) struct AreaGallery {
     points: Entity<super::points::PointExamples>,
 }
 impl AreaGallery {
-    pub(crate) fn spawn(look: &Look, cx: &mut App) -> Result<Self, DatasetError> {
+    pub(crate) fn spawn(look: &AppTheme, cx: &mut App) -> Result<Self, DatasetError> {
         Ok(Self {
             gradient: AreaExample::spawn(look, cx)?,
             visitors: super::visitors::VisitorsExample::spawn(look, true, cx)?,

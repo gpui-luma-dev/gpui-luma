@@ -160,135 +160,137 @@ gap = 10.0
 radius = 8.0
 icon_size = 18.0
 
+# Vanilla UI colors are neutral in both modes, including focus and status.
+# Applications own independent data-visualization palettes.
 [common.tokens.palette.light.app]
-background = "hsla(210, 40%, 98.04%, 1)"
-foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
-muted_foreground = "hsla(215.38, 16.32%, 46.86%, 1)"
+background = "hsla(0, 0%, 98.04%, 1)"
+foreground = "hsla(0, 0%, 11.18%, 1)"
+muted_foreground = "hsla(0, 0%, 46.86%, 1)"
 
 [common.tokens.palette.light.surface.panel]
 background = "hsla(0, 0%, 100%, 1)"
-foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
-border = "hsla(212.73, 26.83%, 83.92%, 1)"
+foreground = "hsla(0, 0%, 11.18%, 1)"
+border = "hsla(0, 0%, 83.92%, 1)"
 
 [common.tokens.palette.light.surface.floating]
 background = "hsla(0, 0%, 100%, 1)"
-foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
-border = "hsla(212.73, 26.83%, 83.92%, 1)"
+foreground = "hsla(0, 0%, 11.18%, 1)"
+border = "hsla(0, 0%, 83.92%, 1)"
 
 [common.tokens.palette.light.surface.subtle]
-background = "hsla(210, 40%, 96.08%, 1)"
-foreground = "hsla(215.29, 25%, 26.67%, 1)"
+background = "hsla(0, 0%, 96.08%, 1)"
+foreground = "hsla(0, 0%, 26.67%, 1)"
 
 [common.tokens.palette.light.state.hover]
-background = "hsla(214.29, 31.82%, 91.37%, 1)"
-foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+background = "hsla(0, 0%, 91.37%, 1)"
+foreground = "hsla(0, 0%, 11.18%, 1)"
 
 [common.tokens.palette.light.state.pressed]
-background = "hsla(212.73, 26.83%, 83.92%, 1)"
+background = "hsla(0, 0%, 83.92%, 1)"
 
 [common.tokens.palette.light.state.selected]
-background = "hsla(221.21, 83.19%, 53.33%, 1)"
+background = "hsla(0, 0%, 12%, 1)"
 foreground = "hsla(0, 0%, 100%, 1)"
 
 [common.tokens.palette.light.state.disabled]
-background = "hsla(210, 40%, 96.08%, 1)"
-foreground = "hsla(215, 20.22%, 65.1%, 1)"
+background = "hsla(0, 0%, 96.08%, 1)"
+foreground = "hsla(0, 0%, 65.1%, 1)"
 
 [common.tokens.palette.light.form.input]
 background = "hsla(0, 0%, 100%, 1)"
-foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
-border = "hsla(215, 20.22%, 65.1%, 1)"
-invalid_border = "hsla(333.33, 71.43%, 50.59%, 1)"
-placeholder = "hsla(215, 20.22%, 65.1%, 1)"
+foreground = "hsla(0, 0%, 11.18%, 1)"
+border = "hsla(0, 0%, 65.1%, 1)"
+invalid_border = "hsla(0, 0%, 20%, 1)"
+placeholder = "hsla(0, 0%, 65.1%, 1)"
 
 [common.tokens.palette.light.focus]
-ring = "hsla(37.69, 92.13%, 50.2%, 1)"
+ring = "hsla(0, 0%, 20%, 1)"
 
 [common.tokens.palette.light.border]
-default = "hsla(212.73, 26.83%, 83.92%, 1)"
-strong = "hsla(215.38, 16.32%, 46.86%, 1)"
+default = "hsla(0, 0%, 83.92%, 1)"
+strong = "hsla(0, 0%, 46.86%, 1)"
 
 [common.tokens.palette.light.navigation]
 background = "hsla(0, 0%, 100%, 1)"
-foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
-muted_foreground = "hsla(215.38, 16.32%, 46.86%, 1)"
-hover_background = "hsla(210, 40%, 96.08%, 1)"
-selected_background = "hsla(221.21, 83.19%, 53.33%, 1)"
+foreground = "hsla(0, 0%, 11.18%, 1)"
+muted_foreground = "hsla(0, 0%, 46.86%, 1)"
+hover_background = "hsla(0, 0%, 96.08%, 1)"
+selected_background = "hsla(0, 0%, 12%, 1)"
 selected_foreground = "hsla(0, 0%, 100%, 1)"
-border = "hsla(212.73, 26.83%, 83.92%, 1)"
+border = "hsla(0, 0%, 83.92%, 1)"
 
 [common.tokens.palette.light.data]
-positive = "hsla(136.8, 65%, 48%, 1)"
-accent_1 = "hsla(221.21, 83.19%, 53.33%, 1)"
-accent_2 = "hsla(175.34, 77.44%, 26.08%, 1)"
-accent_3 = "hsla(17.47, 88.35%, 40.39%, 1)"
-accent_4 = "hsla(262.12, 83.26%, 57.84%, 1)"
-accent_5 = "hsla(345.35, 82.69%, 40.78%, 1)"
+positive = "hsla(0, 0%, 30%, 1)"
+accent_1 = "hsla(0, 0%, 20%, 1)"
+accent_2 = "hsla(0, 0%, 35%, 1)"
+accent_3 = "hsla(0, 0%, 45%, 1)"
+accent_4 = "hsla(0, 0%, 55%, 1)"
+accent_5 = "hsla(0, 0%, 65%, 1)"
 
 [common.tokens.palette.dark.app]
-background = "hsla(222.86, 48.84%, 8.43%, 1)"
-foreground = "hsla(210, 40%, 98.04%, 1)"
-muted_foreground = "hsla(215, 20.22%, 65.1%, 1)"
+background = "hsla(0, 0%, 8.43%, 1)"
+foreground = "hsla(0, 0%, 98.04%, 1)"
+muted_foreground = "hsla(0, 0%, 65.1%, 1)"
 
 [common.tokens.palette.dark.surface.panel]
-background = "hsla(220.91, 39.29%, 10.98%, 1)"
-foreground = "hsla(210, 40%, 98.04%, 1)"
-border = "hsla(215.29, 25%, 26.67%, 1)"
+background = "hsla(0, 0%, 10.98%, 1)"
+foreground = "hsla(0, 0%, 98.04%, 1)"
+border = "hsla(0, 0%, 26.67%, 1)"
 
 [common.tokens.palette.dark.surface.floating]
-background = "hsla(220.91, 39.29%, 10.98%, 1)"
-foreground = "hsla(210, 40%, 98.04%, 1)"
-border = "hsla(215.29, 25%, 26.67%, 1)"
+background = "hsla(0, 0%, 10.98%, 1)"
+foreground = "hsla(0, 0%, 98.04%, 1)"
+border = "hsla(0, 0%, 26.67%, 1)"
 
 [common.tokens.palette.dark.surface.subtle]
-background = "hsla(217.24, 32.58%, 17.45%, 1)"
-foreground = "hsla(212.73, 26.83%, 83.92%, 1)"
+background = "hsla(0, 0%, 17.45%, 1)"
+foreground = "hsla(0, 0%, 83.92%, 1)"
 
 [common.tokens.palette.dark.state.hover]
-background = "hsla(215.29, 25%, 26.67%, 1)"
-foreground = "hsla(210, 40%, 98.04%, 1)"
+background = "hsla(0, 0%, 26.67%, 1)"
+foreground = "hsla(0, 0%, 98.04%, 1)"
 
 [common.tokens.palette.dark.state.pressed]
-background = "hsla(215.29, 19.32%, 34.51%, 1)"
+background = "hsla(0, 0%, 34.51%, 1)"
 
 [common.tokens.palette.dark.state.selected]
-background = "hsla(213.12, 93.9%, 67.84%, 1)"
-foreground = "hsla(204, 80.25%, 15.88%, 1)"
+background = "hsla(0, 0%, 90%, 1)"
+foreground = "hsla(0, 0%, 10%, 1)"
 
 [common.tokens.palette.dark.state.disabled]
-background = "hsla(217.24, 32.58%, 17.45%, 1)"
-foreground = "hsla(215.38, 16.32%, 46.86%, 1)"
+background = "hsla(0, 0%, 17.45%, 1)"
+foreground = "hsla(0, 0%, 46.86%, 1)"
 
 [common.tokens.palette.dark.form.input]
-background = "hsla(222.22, 47.37%, 11.18%, 1)"
-foreground = "hsla(210, 40%, 98.04%, 1)"
-border = "hsla(215.29, 19.32%, 34.51%, 1)"
-invalid_border = "hsla(328.62, 85.53%, 70.2%, 1)"
-placeholder = "hsla(215.38, 16.32%, 46.86%, 1)"
+background = "hsla(0, 0%, 11.18%, 1)"
+foreground = "hsla(0, 0%, 98.04%, 1)"
+border = "hsla(0, 0%, 34.51%, 1)"
+invalid_border = "hsla(0, 0%, 85%, 1)"
+placeholder = "hsla(0, 0%, 46.86%, 1)"
 
 [common.tokens.palette.dark.focus]
-ring = "hsla(43.26, 96.41%, 56.27%, 1)"
+ring = "hsla(0, 0%, 85%, 1)"
 
 [common.tokens.palette.dark.border]
-default = "hsla(215.29, 25%, 26.67%, 1)"
-strong = "hsla(215, 20.22%, 65.1%, 1)"
+default = "hsla(0, 0%, 26.67%, 1)"
+strong = "hsla(0, 0%, 65.1%, 1)"
 
 [common.tokens.palette.dark.navigation]
-background = "hsla(220.91, 39.29%, 10.98%, 1)"
-foreground = "hsla(210, 40%, 98.04%, 1)"
-muted_foreground = "hsla(215, 20.22%, 65.1%, 1)"
-hover_background = "hsla(217.24, 32.58%, 17.45%, 1)"
-selected_background = "hsla(213.12, 93.9%, 67.84%, 1)"
-selected_foreground = "hsla(204, 80.25%, 15.88%, 1)"
-border = "hsla(215.29, 25%, 26.67%, 1)"
+background = "hsla(0, 0%, 10.98%, 1)"
+foreground = "hsla(0, 0%, 98.04%, 1)"
+muted_foreground = "hsla(0, 0%, 65.1%, 1)"
+hover_background = "hsla(0, 0%, 17.45%, 1)"
+selected_background = "hsla(0, 0%, 90%, 1)"
+selected_foreground = "hsla(0, 0%, 10%, 1)"
+border = "hsla(0, 0%, 26.67%, 1)"
 
 [common.tokens.palette.dark.data]
-positive = "hsla(136.8, 65%, 48%, 1)"
-accent_1 = "hsla(213.12, 93.9%, 67.84%, 1)"
-accent_2 = "hsla(172.46, 66.01%, 50.39%, 1)"
-accent_3 = "hsla(27.02, 95.98%, 60.98%, 1)"
-accent_4 = "hsla(255.14, 91.74%, 76.27%, 1)"
-accent_5 = "hsla(351.3, 94.52%, 71.37%, 1)"
+positive = "hsla(0, 0%, 75%, 1)"
+accent_1 = "hsla(0, 0%, 90%, 1)"
+accent_2 = "hsla(0, 0%, 75%, 1)"
+accent_3 = "hsla(0, 0%, 65%, 1)"
+accent_4 = "hsla(0, 0%, 55%, 1)"
+accent_5 = "hsla(0, 0%, 45%, 1)"
 
 [common.tokens.typography.font.sans]
 family = "System UI"
@@ -1233,24 +1235,25 @@ form_field_gap = 4
 page_size_trigger_width = 64
 popup_icon_size = 16
 
+# The title bar keeps the dark shell appearance in both application modes.
 [common.tokens.palette.light.shell]
 background = "hsla(0, 0%, 11%, 1)"
-foreground = "hsla(0, 0%, 100%, 0.85)"
+foreground = "hsla(0, 0%, 100%, 1)"
 border = "hsla(0, 0%, 100%, 0.1)"
 hover_background = "hsla(0, 0%, 100%, 0.12)"
 active_background = "hsla(0, 0%, 100%, 0.2)"
-close_hover_background = "hsla(0, 78%, 56%, 1)"
-close_active_background = "hsla(0, 78%, 50%, 1)"
+close_hover_background = "hsla(0, 0%, 30%, 1)"
+close_active_background = "hsla(0, 0%, 40%, 1)"
 close_foreground = "hsla(0, 0%, 100%, 1)"
 
 [common.tokens.palette.dark.shell]
 background = "hsla(0, 0%, 11%, 1)"
-foreground = "hsla(0, 0%, 100%, 0.85)"
+foreground = "hsla(0, 0%, 100%, 1)"
 border = "hsla(0, 0%, 100%, 0.1)"
 hover_background = "hsla(0, 0%, 100%, 0.12)"
 active_background = "hsla(0, 0%, 100%, 0.2)"
-close_hover_background = "hsla(0, 78%, 56%, 1)"
-close_active_background = "hsla(0, 78%, 50%, 1)"
+close_hover_background = "hsla(0, 0%, 30%, 1)"
+close_active_background = "hsla(0, 0%, 40%, 1)"
 close_foreground = "hsla(0, 0%, 100%, 1)"
 
 [common.shell.geometry]

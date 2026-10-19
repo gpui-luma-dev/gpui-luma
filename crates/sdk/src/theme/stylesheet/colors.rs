@@ -63,6 +63,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn packaged_palette_is_monochrome_including_shell_and_data_roles() {
+        fn check(value: &toml::Value, path: &str) {
+            match value {
+                toml::Value::String(source) => {
+                    let [red, green, blue, _] = parse(source).unwrap();
+                    assert!((red - green).abs() < 1e-6 && (green - blue).abs() < 1e-6, "chromatic default: {path}");
+                }
+                toml::Value::Table(table) => {
+                    for (key, value) in table {
+                        check(value, &format!("{path}.{key}"));
+                    }
+                }
+                _ => panic!("unexpected palette value at {path}"),
+            }
+        }
+        let document: toml::Value = toml::from_str(include_str!("../../../assets/style.toml")).unwrap();
+        check(&document["common"]["tokens"]["palette"], "palette");
+    }
+
+    #[test]
+    fn title_bar_keeps_dark_shell_in_both_modes() {
+        let document: toml::Value = toml::from_str(include_str!("../../../assets/style.toml")).unwrap();
+        let palette = &document["common"]["tokens"]["palette"];
+        assert_eq!(palette["light"]["shell"], palette["dark"]["shell"]);
+        let [background, _, _, _] = parse(palette["dark"]["shell"]["background"].as_str().unwrap()).unwrap();
+        let [foreground, _, _, _] = parse(palette["dark"]["shell"]["foreground"].as_str().unwrap()).unwrap();
+        assert!(background < 0.15);
+        assert_eq!(foreground, 1.0);
+    }
+
+    #[test]
     fn readable_hsla_preserves_rgb8_and_alpha() {
         let rgba = parse("hsla(222.22, 47.37%, 11.18%, 0.2)").unwrap();
         assert_eq!(rgba[..3].iter().map(|n| (n * 255.0).round() as u8).collect::<Vec<_>>(), [15, 23, 42]);

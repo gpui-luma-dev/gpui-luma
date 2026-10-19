@@ -1,9 +1,9 @@
 use gpui::px;
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{PiePresentation, TextPresentation, LegendPresentation, EmptyStatePresentation};
 use crate::theme;
 
-pub(crate) fn style(look: &Look) -> PiePresentation {
+pub(crate) fn style(look: &AppTheme) -> PiePresentation {
     let chrome = theme::chrome(look);
     let typography = theme::typography();
     let mut text = TextPresentation::new(chrome.body_text);
@@ -16,6 +16,7 @@ pub(crate) fn style(look: &Look) -> PiePresentation {
     let mut caption = text.clone();
     caption.color = chrome.muted_text;
     let mut style = PiePresentation {
+        palette: super::palette::BLUE_SCALE.map(Into::into).to_vec(),
         label_text: text,
         center_title: title,
         center_caption: caption,
@@ -27,29 +28,12 @@ pub(crate) fn style(look: &Look) -> PiePresentation {
     style
 }
 
-pub(crate) fn month_selector<M: 'static>(
-    look: &Look,
-    cx: &mut gpui::Context<M>,
-) -> gpui::Entity<gpui_luma::controls::selector::Selector> {
-    use gpui_luma::controls::selector::SelectorItem;
-    gpui_luma_look_radix::Selector::new("pie-month-selector")
-        .look(look)
-        .items(
-            ["January", "February", "March", "April", "May", "June"]
-                .into_iter()
-                .enumerate()
-                .map(|(index, label)| SelectorItem::new(index.to_string()).label(label)),
-        )
-        .selected_id("0")
-        .spawn(cx)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn pie_text_resolves_the_current_theme_mode() {
-        let look = Look::built_in();
+        let look = AppTheme::new();
         look.set_mode(gpui_luma::theme::ThemeMode::Light);
         let light = style(&look);
         look.set_mode(gpui_luma::theme::ThemeMode::Dark);

@@ -341,6 +341,7 @@ impl RenderOnce for TitleBar {
                 .border_b(px(self.stylesheet.shell.geometry.border_width.unwrap_or_default()))
                 .border_color(border_color)
                 .bg(background_color)
+                .text_color(text_color)
                 .on_mouse_down_out(window.listener_for(&state, |state, _, _, _| {
                     state.drag_start_position = None;
                 }))
