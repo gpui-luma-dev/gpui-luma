@@ -73,6 +73,16 @@ impl EventLogView {
         cx.notify();
     }
 
+    pub fn set_scrollbar_template(
+        &mut self,
+        template: Arc<dyn gpui_luma::controls::scrollbar::ScrollbarTemplate>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.scrollbar_template = template.clone();
+        self.scroll.scrollbar().update(cx, |scrollbar, cx| scrollbar.set_template(template, cx));
+        cx.notify();
+    }
+
     pub fn set_theme(&mut self, theme: Arc<dyn EventLogTheme>, cx: &mut Context<Self>) {
         self.model.theme = Arc::clone(&theme);
         self.template = default_event_log_template(theme);
@@ -82,6 +92,10 @@ impl EventLogView {
     pub fn set_font_family(&mut self, font_family: impl Into<String>, cx: &mut Context<Self>) {
         self.model.font_family = Some(font_family.into());
         cx.notify();
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
     }
 
     fn resolved_look(&self, scale: &StandardBoxScale, focused: bool) -> EventLogLook {
@@ -222,5 +236,5 @@ impl Render for EventLogView {
     }
 }
 
-#[cfg(all(test, feature = "test-support"))]
+#[cfg(test)]
 mod tests;

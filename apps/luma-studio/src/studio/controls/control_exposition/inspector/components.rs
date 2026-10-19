@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, IntoElement, RenderOnce, Window, div, prelude::*, px, relative};
+use gpui::{AnyElement, IntoElement, RenderOnce, Window, div, prelude::*, px};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::control_exposition::template::controls_mono_font;
@@ -60,37 +60,19 @@ impl RenderOnce for InspectorRow {
         let caption = &self.look.mode_tokens().typography.text.caption;
         let mono_font = controls_mono_font();
 
-        div()
-            .min_h(px(34.0))
-            .min_w(px(0.0))
-            .flex()
-            .flex_wrap()
-            .items_start()
-            .gap(px(4.0))
-            .when(self.show_separator, |row| row.border_t_1().border_color(chrome.border))
-            .px(px(9.0))
-            .py(px(6.0))
-            .child(div().w(relative(0.28)).min_w(px(180.0)).flex_shrink_0().mr(px(6.0)).child(self.label))
-            .child(
-                div()
-                    .w(px(self.value_width))
-                    .flex_shrink_0()
-                    .mr(px(6.0))
-                    .font_family(mono_font.clone())
-                    .text_size(px(caption.size))
-                    .line_height(px(caption.line_height))
-                    .text_color(chrome.muted_text)
-                    .child(self.value),
-            )
-            .child(
-                div()
-                    .flex_none()
-                    .whitespace_nowrap()
-                    .font_family(mono_font)
-                    .text_size(px(caption.size))
-                    .line_height(px(caption.line_height))
-                    .text_color(chrome.muted_text)
-                    .child(self.source),
-            )
+        luma_control_support::inspector::render_inspector_row(
+            luma_control_support::inspector::InspectorRowStyle {
+                border: chrome.border,
+                muted_text: chrome.muted_text,
+                caption: *caption,
+                mono_font: mono_font.to_string(),
+                wrap_source: false,
+            },
+            self.label,
+            self.value,
+            self.source,
+            self.value_width,
+            self.show_separator,
+        )
     }
 }

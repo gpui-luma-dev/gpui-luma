@@ -11,6 +11,7 @@ test-support = ["gpui-luma/test-support"]
 
 [dependencies]
 anyhow = { workspace = true }
+luma-control-support = { path = "../control-support" }
 gpui = { workspace = true }
 gpui-luma.workspace = true
 gpui-luma-color.workspace = true

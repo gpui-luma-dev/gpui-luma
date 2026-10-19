@@ -5,8 +5,8 @@ use gpui_luma::controls::textarea::TextAreaState;
 use gpui_luma::theme::{ControlSize, StandardBoxScale};
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
-use super::model::EventLogViewBuilder;
-use super::theme::{EventLogTheme, compose_event_log_look};
+use luma_control_support::event_log::EventLogViewBuilder;
+use luma_control_support::event_log::{EventLogTheme, compose_event_log_look};
 
 struct ShadcnEventLogTheme {
     look: Arc<ShadcnLook>,
@@ -17,7 +17,12 @@ impl EventLogTheme for ShadcnEventLogTheme {
         self.look.mode_tokens().metrics
     }
 
-    fn resolve_look(&self, rows: usize, scale: &StandardBoxScale, focused: bool) -> super::theme::EventLogLook {
+    fn resolve_look(
+        &self,
+        rows: usize,
+        scale: &StandardBoxScale,
+        focused: bool,
+    ) -> luma_control_support::event_log::EventLogLook {
         let textarea = self.look.textarea_theme().resolve_look(
             TextAreaState { focused, focus_visible: focused, ..Default::default() },
             true,

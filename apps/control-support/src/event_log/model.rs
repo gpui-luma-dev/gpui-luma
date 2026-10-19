@@ -32,7 +32,7 @@ pub struct EventLogViewBuilder {
 }
 
 impl EventLogViewBuilder {
-    pub(crate) fn with_parts(
+    pub fn with_parts(
         id: impl Into<SharedString>,
         theme: Arc<dyn EventLogTheme>,
         scrollbar_template: Arc<dyn ScrollbarTemplate>,

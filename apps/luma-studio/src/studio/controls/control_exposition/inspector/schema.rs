@@ -89,19 +89,7 @@ pub struct InspectColorRow {
     pub detail: Option<String>,
 }
 
-#[derive(Clone, Debug)]
-pub struct InspectPropertyRow {
-    pub label: String,
-    pub value: String,
-    pub source: String,
-    pub detail: Option<String>,
-}
-
-impl InspectPropertyRow {
-    pub fn new(label: impl Into<String>, value: impl Into<String>, source: impl Into<String>) -> Self {
-        Self { label: label.into(), value: value.into(), source: source.into(), detail: None }
-    }
-}
+pub use luma_control_support::inspector::InspectPropertyRow;
 
 #[derive(Clone, Debug)]
 pub struct InspectLayoutSection {

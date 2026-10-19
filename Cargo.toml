@@ -7,6 +7,8 @@ members = [
   "crates/look-radix",
   "crates/plot",
   "apps/common",
+  "apps/control-support",
+  "apps/sdk-controls",
   "apps/luma-studio",
   "apps/radix-studio",
   "apps/luma-plot-viz",

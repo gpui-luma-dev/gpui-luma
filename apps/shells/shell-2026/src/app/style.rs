@@ -12,8 +12,6 @@ pub(super) const INITIAL_SIDEBAR_WIDTH: Pixels = px(260.0);
 pub(super) const MIN_SIDEBAR_WIDTH: Pixels = px(200.0);
 pub(super) const MAX_SIDEBAR_WIDTH: Pixels = px(480.0);
 pub(super) const MIN_WORKSPACE_WIDTH: Pixels = px(380.0);
-pub(super) const CANVAS_TOP_INSET: Pixels = px(2.0);
-pub(super) const CANVAS_EDGE_INSET: Pixels = px(3.0);
 
 pub(super) fn shell_background(look: &ShadcnLook) -> Hsla {
     match look.mode() {

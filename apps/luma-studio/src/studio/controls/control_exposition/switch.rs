@@ -228,12 +228,4 @@ fn bind_switch_events(
     });
 }
 
-fn format_switch_event(event: &SwitchEvent) -> String {
-    match event {
-        SwitchEvent::Change { on } => format!("SwitchEvent::Change {{ on: {on} }}"),
-        SwitchEvent::FocusChanged { focused } => format!("SwitchEvent::FocusChanged {{ focused: {focused} }}"),
-        SwitchEvent::EnabledChanged { enabled } => format!("SwitchEvent::EnabledChanged {{ enabled: {enabled} }}"),
-        SwitchEvent::HoverChanged { hovered } => format!("SwitchEvent::HoverChanged {{ hovered: {hovered} }}"),
-        _ => "SwitchEvent::(unknown)".to_string(),
-    }
-}
+use luma_control_support::format_switch_event;

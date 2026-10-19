@@ -23,6 +23,8 @@ pub trait EventLogTheme: Send + Sync {
     fn resolve_look(&self, rows: usize, scale: &StandardBoxScale, focused: bool) -> EventLogLook;
 }
 
+// Retain the extracted Studio adapter interface.
+#[allow(clippy::too_many_arguments)]
 pub fn compose_event_log_look(
     background: Hsla,
     foreground: Hsla,

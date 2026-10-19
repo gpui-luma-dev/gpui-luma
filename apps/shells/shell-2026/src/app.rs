@@ -91,32 +91,23 @@ impl Render for Shell2026App {
                     .child(self.rail.clone()),
             )
             .child(
-                div()
-                    .flex_1()
-                    .min_w_0()
-                    .mt(CANVAS_TOP_INSET)
-                    .mr(CANVAS_EDGE_INSET)
-                    .mb(CANVAS_EDGE_INSET)
-                    .relative()
-                    .rounded(CANVAS_RADIUS)
-                    .overflow_hidden()
-                    .border(CANVAS_BORDER)
-                    .border_color(canvas_border_color(&self.look))
-                    // Paint the canvas here: GPUI cannot clip child fills to rounded corners.
-                    .bg(chrome.content_background)
-                    .child(
-                        div()
-                            .debug_selector(|| "shell-2026-sidebar-fill".into())
-                            .absolute()
-                            .top_0()
-                            .bottom_0()
-                            .left_0()
-                            .w(self.sidebar_width)
-                            .rounded_tl(CANVAS_RADIUS - CANVAS_BORDER)
-                            .rounded_bl(CANVAS_RADIUS - CANVAS_BORDER)
-                            .bg(self.look.token_color("sidebar").unwrap_or(chrome.panel_background)),
-                    )
-                    .child(div().relative().size_full().child(self.panels.clone())),
+                luma_control_support::shell::workspace_canvas(
+                    chrome.content_background,
+                    canvas_border_color(&self.look),
+                )
+                .child(
+                    div()
+                        .debug_selector(|| "shell-2026-sidebar-fill".into())
+                        .absolute()
+                        .top_0()
+                        .bottom_0()
+                        .left_0()
+                        .w(self.sidebar_width)
+                        .rounded_tl(CANVAS_RADIUS - CANVAS_BORDER)
+                        .rounded_bl(CANVAS_RADIUS - CANVAS_BORDER)
+                        .bg(self.look.token_color("sidebar").unwrap_or(chrome.panel_background)),
+                )
+                .child(div().relative().size_full().child(self.panels.clone())),
             );
         render_app_root(
             &self.focus_scope,
