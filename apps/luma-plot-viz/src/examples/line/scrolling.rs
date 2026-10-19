@@ -1,3 +1,4 @@
+use gpui_luma::controls::scrollbar;
 mod input;
 
 use gpui_luma::controls::scrollbar::ScrollbarEventExt;
@@ -9,7 +10,7 @@ use gpui_luma::{
     },
     vstack,
 };
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{Dataset, Decimation, NumericScale};
 
 use super::{dense, diagnostics::Diagnostics};
@@ -20,7 +21,7 @@ const WINDOW_SECONDS: f64 = 120.0;
 pub(super) struct ScrollingPlot {
     entrance: f32,
     data: Dataset,
-    look: Look,
+    look: AppTheme,
     start: f64,
     content: (f64, f64),
     plot_layout: Option<(f32, f32)>,
@@ -31,11 +32,19 @@ pub(super) struct ScrollingPlot {
 }
 
 impl ScrollingPlot {
-    pub(super) fn spawn(data: Dataset, look: &Look, cx: &mut App) -> Entity<Self> {
+    pub(super) fn spawn(data: Dataset, look: &AppTheme, cx: &mut App) -> Entity<Self> {
         let look = look.clone();
         cx.new(move |cx: &mut Context<Self>| {
             let content = time_domain(&data).unwrap_or((0.0, WINDOW_SECONDS));
-            let scrollbar = theme::spawn_time_scrollbar(&look, content, WINDOW_SECONDS, cx);
+            let scrollbar = scrollbar::Scrollbar::new("plot-viz-time-scrollbar")
+                .horizontal()
+                .step(0.1)
+                .page_step(WINDOW_SECONDS * 0.8)
+                .viewport(content.0, content.1, content.0, content.0 + WINDOW_SECONDS)
+                .template(std::sync::Arc::new(scrollbar::ThemedScrollbarTemplate::new(std::sync::Arc::new(
+                    look.clone(),
+                ))))
+                .spawn(cx);
             scrollbar.clone().on_event(cx, |this, event: &ScrollbarEvent, cx| {
                 if let ScrollbarEvent::Change { value } = event {
                     this.start = f64::from(*value);

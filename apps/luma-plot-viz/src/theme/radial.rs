@@ -1,7 +1,7 @@
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::RadialPresentation;
 use crate::theme;
-pub(crate) fn style(look: &Look) -> RadialPresentation {
+pub(crate) fn style(look: &AppTheme) -> RadialPresentation {
     let pie = theme::pie::style(look);
     RadialPresentation {
         label_text: pie.label_text,

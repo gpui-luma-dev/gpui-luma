@@ -1,3 +1,7 @@
+use gpui_luma::controls::button;
+use gpui_luma::controls::selector;
+use gpui_luma::controls::selector_list;
+use gpui_luma::prelude::HasPresenter;
 use gpui_luma::motion::{Transition, Easing};
 use gpui_luma::controls::selector::SelectorEventExt;
 use std::time::Duration;
@@ -11,7 +15,7 @@ use gpui_luma::{
     },
     motion::VisualTransition,
 };
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{Dataset, DatasetError, Series, Sample, PieChartBuilder, PieRingPresentation, PieSliceEvent};
 use crate::theme::{self, TypographyExt};
 
@@ -24,7 +28,7 @@ fn data() -> Result<Dataset, DatasetError> {
         .with_series(Series::new("desktop", "Desktop", samples(DESKTOP)))?
         .with_series(Series::new("mobile", "Mobile", samples([80.0, 200.0, 120.0, 190.0, 130.0, 140.0])))
 }
-fn chart(data: Dataset, look: &Look) -> PieChartBuilder {
+fn chart(data: Dataset, look: &AppTheme) -> PieChartBuilder {
     let live = look.clone();
     let tooltip_look = look.clone();
     PieChartBuilder::new(data, "desktop")
@@ -34,7 +38,7 @@ fn chart(data: Dataset, look: &Look) -> PieChartBuilder {
         .slice_tooltip(move |slice| {
             gpui_luma::controls::tooltip::Tooltip::new(format!("{} · {}", slice.label, slice.series))
                 .shortcut(format!("{} visitors · {:.1}%", slice.sample.y, slice.fraction * 100.0))
-                .theme(gpui_luma_look_radix::tooltip_theme(&tooltip_look))
+                .theme(std::sync::Arc::new(tooltip_look.clone()))
                 .delay(Duration::from_millis(250))
         })
         .tooltip_motion(Duration::from_millis(250))
@@ -43,20 +47,24 @@ pub(super) struct Stacked {
     selection: Option<gpui_luma_plot::PieSlice>,
     entrance: f32,
     data: Dataset,
-    look: Look,
+    look: AppTheme,
     replay: Entity<Button<()>>,
     motion: VisualTransition,
 }
 impl Stacked {
-    pub(super) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
+    pub(super) fn spawn(look: &AppTheme, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
         let data = data()?;
         let look = look.clone();
         Ok(cx.new(move |cx: &mut Context<Self>| {
-            let replay = theme::spawn_replay("stacked-pie-replay", &look, cx).on_click(cx, |this, cx| {
-                this.motion.snap_to(0.0);
-                this.motion.set_target(1.0);
-                cx.notify();
-            });
+            let replay = button::Button::new("stacked-pie-replay")
+                .template(std::sync::Arc::new(button::DefaultButtonTemplate::new(std::sync::Arc::new(look.clone()))))
+                .label("Replay")
+                .spawn(cx)
+                .on_click(cx, |this, cx| {
+                    this.motion.snap_to(0.0);
+                    this.motion.set_target(1.0);
+                    cx.notify();
+                });
             Self {
                 selection: None,
                 entrance: 1.0,
@@ -131,16 +139,28 @@ impl Render for Stacked {
 pub(super) struct Interactive {
     entrance: f32,
     data: Dataset,
-    look: Look,
+    look: AppTheme,
     selected: usize,
     selector: Entity<Selector>,
 }
 impl Interactive {
-    pub(super) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
+    pub(super) fn spawn(look: &AppTheme, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
         let data = data()?;
         let look = look.clone();
         Ok(cx.new(move |cx: &mut Context<Self>| {
-            let selector = theme::pie::month_selector(&look, cx);
+            let selector = selector::Selector::new("pie-month-selector")
+                .items(
+                    MONTHS
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, label)| selector::SelectorItem::new(i.to_string()).label(label)),
+                )
+                .selected_id("0")
+                .template(std::sync::Arc::new(selector::ThemedSelectorTemplate::new(
+                    std::sync::Arc::new(look.clone()),
+                    selector_list::default_selector_items_template(),
+                )))
+                .spawn(cx);
             selector.clone().on_event(cx, |this, event: &SelectorEvent, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event
                     && let Ok(index) = item_id.parse::<usize>()
@@ -191,7 +211,7 @@ impl Render for Interactive {
             .min_w_0()
     }
 }
-fn header(title: &'static str, look: &Look) -> gpui::Div {
+fn header(title: &'static str, look: &AppTheme) -> gpui::Div {
     let typography = theme::typography();
     let chrome = theme::chrome(look);
     vstack! { gap=4;

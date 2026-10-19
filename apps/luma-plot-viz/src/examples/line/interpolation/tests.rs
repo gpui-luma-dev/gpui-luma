@@ -1,3 +1,4 @@
+use gpui_luma::controls::scrollbar;
 use gpui_luma::controls::control_group::ControlGroupEventExt;
 use gpui_luma::controls::button::ButtonEvent;
 use gpui_luma_plot::CartesianStyleProvider;
@@ -5,7 +6,7 @@ use super::*;
 
 struct SelectorHarness {
     gallery: super::super::LineGallery,
-    look: std::sync::Arc<Look>,
+    look: std::sync::Arc<AppTheme>,
     scroll: gpui_luma::controls::scroll_container::ScrollContainer,
     plot: Entity<InterpolationExample>,
     bounds: std::rc::Rc<std::cell::RefCell<std::collections::HashMap<String, gpui::Bounds<gpui::Pixels>>>>,
@@ -28,12 +29,12 @@ impl Render for SelectorHarness {
 fn selector_clicks_change_interpolation_on_one_unchanged_series(cx: &mut gpui::TestAppContext) {
     use gpui_luma::controls::control_group::ControlGroupEvent;
     let (host, cx) = cx.add_window_view(|_, cx| {
-        let look = theme::default_look();
+        let look = theme::default_theme();
         let gallery = super::super::examples(&look, cx).expect("gallery");
         let plot = gallery.interpolation.clone();
         let scroll = gpui_luma::controls::scroll_container::ScrollContainer::new(
             "selector-test-scroll",
-            gpui_luma::controls::scrollbar::default_scrollbar_template(),
+            scrollbar::default_scrollbar_template(),
             cx,
         );
         let group = plot.read(cx).selector.read(cx).inner_group();
@@ -56,17 +57,15 @@ fn selector_clicks_change_interpolation_on_one_unchanged_series(cx: &mut gpui::T
         assert_eq!(plot.data.series().len(), 1);
         assert_eq!(plot.data.series()[0].samples().len(), 11);
     });
-    let dark_axis = host.read_with(cx, |host, _| {
-        theme::RadixCartesianStyle::new(&host.look).resolve().axes[0].presentation.stroke.color
-    });
+    let dark_axis = host
+        .read_with(cx, |host, _| theme::SdkCartesianStyle::new(&host.look).resolve().axes[0].presentation.stroke.color);
     host.update(cx, |host, cx| {
         host.look.set_mode(gpui_luma::theme::ThemeMode::Light);
         cx.refresh_windows();
     });
     cx.run_until_parked();
-    let light_axis = host.read_with(cx, |host, _| {
-        theme::RadixCartesianStyle::new(&host.look).resolve().axes[0].presentation.stroke.color
-    });
+    let light_axis = host
+        .read_with(cx, |host, _| theme::SdkCartesianStyle::new(&host.look).resolve().axes[0].presentation.stroke.color);
     assert_ne!(dark_axis, light_axis);
     plot.read_with(cx, |plot, cx| {
         assert_eq!(plot.look.mode(), gpui_luma::theme::ThemeMode::Light);
@@ -93,7 +92,7 @@ fn selector_clicks_change_interpolation_on_one_unchanged_series(cx: &mut gpui::T
     });
     cx.run_until_parked();
     assert_eq!(
-        host.read_with(cx, |host, _| theme::RadixCartesianStyle::new(&host.look).resolve().axes[0]
+        host.read_with(cx, |host, _| theme::SdkCartesianStyle::new(&host.look).resolve().axes[0]
             .presentation
             .stroke
             .color),
@@ -103,7 +102,7 @@ fn selector_clicks_change_interpolation_on_one_unchanged_series(cx: &mut gpui::T
 
 #[gpui::test]
 fn replay_restarts_sdk_motion_without_changing_observations_or_interpolation(cx: &mut gpui::TestAppContext) {
-    let plot = cx.update(|cx| InterpolationExample::spawn(&theme::default_look(), cx).expect("example"));
+    let plot = cx.update(|cx| InterpolationExample::spawn(&theme::default_theme(), cx).expect("example"));
     let replay = plot.read_with(cx, |plot, _| plot.replay.clone());
     plot.read_with(cx, |plot, _| {
         assert_eq!(plot.motion.progress(), 1.0);

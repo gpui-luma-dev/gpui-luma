@@ -3250,7 +3250,6 @@ version = "0.1.16"
 dependencies = [
  "anyhow",
  "gpui-luma",
- "gpui-luma-look-radix",
  "gpui-luma-plot",
  "gpui-platform-gpui-unofficial",
  "gpui-unofficial",

@@ -5,7 +5,7 @@ mod scrolling;
 
 use gpui::{App, Context, Entity, Render, Window, IntoElement, div, prelude::*, px};
 use gpui_luma::vstack;
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{
     BarAlignment, BarGrouping, BarLayout, BarOrientation, BarLayer, CartesianChartBuilder, CategoryScale, Dataset,
     DatasetError, NumericScale, Sample, Series,
@@ -31,10 +31,10 @@ pub(crate) struct BarExample {
     scrolling: Entity<scrolling::ScrollingBars>,
     data: Dataset,
     label_data: Dataset,
-    look: Look,
+    look: AppTheme,
 }
 impl BarExample {
-    pub(crate) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
+    pub(crate) fn spawn(look: &AppTheme, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
         let data = data()?;
         let label_data = labels::data()?;
         let scrolling = scrolling::ScrollingBars::spawn(look, cx)?;
@@ -53,7 +53,7 @@ impl BarExample {
         let horizontal = orientation.is_horizontal();
         let stacked = layout.grouping_policy() == BarGrouping::Stacked;
         CartesianChartBuilder::new(self.data.clone())
-            .style(theme::RadixCartesianStyle::new(&self.look).blue().series("mobile", 1))
+            .style(theme::SdkCartesianStyle::new(&self.look).blue().series("mobile", 1))
             .x_scale(CategoryScale::new(["Q1", "Q2", "Q3", "Q4"]))
             .y_scale(if stacked {
                 NumericScale::new().domain(-25.0..=100.0).tick_values([-25.0, 0.0, 25.0, 50.0, 75.0, 100.0])

@@ -1,60 +1,46 @@
-mod interpolation;
-pub(crate) mod motion;
 mod mode;
-pub(crate) use interpolation::spawn as spawn_interpolation_selector;
-pub(crate) use motion::spawn_replay;
 mod plot;
-mod scrollbar;
-pub(crate) use scrollbar::spawn_time_scrollbar;
-pub(crate) use mode::{id as mode_id, mode_for_id, spawn as spawn_mode_selector};
-pub(crate) use plot::RadixCartesianStyle;
+pub(crate) use mode::{id as mode_id, mode_for_id};
+pub(crate) use plot::SdkCartesianStyle;
 
 use std::sync::Arc;
 
 use gpui::{Edges, Styled, px};
 use gpui_luma::controls::frame::{FrameBuilder, FrameLook};
-use gpui_luma::theme::{LumaChrome, LumaTextStyle, LumaTypography, ThemeMode};
-use gpui_luma_look_radix::{Accent, Gray, Look, SemanticRole};
+use gpui_luma::theme::{LumaChrome, LumaTextStyle, LumaTypography};
+mod live;
+pub(crate) use live::AppTheme;
 
-pub(crate) fn default_look() -> Arc<Look> {
-    radix_look(ThemeMode::Dark)
+pub(crate) fn default_theme() -> Arc<AppTheme> {
+    Arc::new(AppTheme::new())
 }
 
-fn radix_look(mode: ThemeMode) -> Arc<Look> {
-    let look = Look::built_in();
-    look.set_palettes(Accent::Indigo, Gray::Sand);
-    look.set_mode(mode);
-    Arc::new(look)
-}
-
-pub(crate) fn chrome(look: &Look) -> LumaChrome {
-    let color = |role| look.resolve_role(role).hsla();
+pub(crate) fn chrome(look: &AppTheme) -> LumaChrome {
+    let palette = &look.tokens().palette;
     LumaChrome {
-        app_background: color(SemanticRole::Background),
-        content_background: color(SemanticRole::Background),
-        panel_background: color(SemanticRole::Surface),
-        border: color(SemanticRole::Border),
-        title_text: color(SemanticRole::Foreground),
-        body_text: color(SemanticRole::Foreground),
-        muted_text: color(SemanticRole::MutedForeground),
+        app_background: palette.app.background,
+        content_background: palette.app.background,
+        panel_background: palette.surface.panel.background,
+        border: palette.border.default,
+        title_text: palette.app.foreground,
+        body_text: palette.app.foreground,
+        muted_text: palette.app.muted_foreground,
     }
 }
 
 /// Fixed host surface for the app's scroll viewport.
-pub(crate) fn scroll_surface(look: &Look) -> FrameBuilder {
+pub(crate) fn scroll_surface(look: &AppTheme) -> FrameBuilder {
     let look = look.clone();
-    FrameBuilder::new("plot-viz-scroll-surface").look_provider(move |_| FrameLook {
-        background: look.resolve_role(SemanticRole::Background).hsla(),
-        ..FrameLook::default()
-    })
+    FrameBuilder::new("plot-viz-scroll-surface")
+        .look_provider(move |_| FrameLook { background: look.tokens().palette.app.background, ..FrameLook::default() })
 }
 
 /// General decorated frame; content owns its own rendering and presentation.
-pub(crate) fn panel_frame(look: &Look, id: &'static str) -> FrameBuilder {
+pub(crate) fn panel_frame(look: &AppTheme, id: &'static str) -> FrameBuilder {
     let look = look.clone();
     FrameBuilder::new(id).look_provider(move |_| FrameLook {
-        background: look.resolve_role(SemanticRole::Surface).hsla(),
-        border_color: look.resolve_role(SemanticRole::Border).hsla(),
+        background: look.tokens().palette.surface.panel.background,
+        border_color: look.tokens().palette.border.default,
         border_widths: Edges::all(px(1.0)),
         radius: px(8.0),
         ..FrameLook::default()
@@ -72,8 +58,6 @@ pub(crate) trait TypographyExt: Styled + Sized {
 }
 
 impl<T: Styled> TypographyExt for T {}
-
-pub(crate) mod visitors;
 
 pub(crate) mod points;
 

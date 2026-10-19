@@ -1,3 +1,4 @@
+use gpui_luma::controls::scrollbar;
 use gpui_luma::controls::scrollbar::ScrollbarEventExt;
 use gpui::{App, Context, Entity, FocusHandle, Render, Window, ScrollWheelEvent, MouseButton, div, prelude::*, px};
 use gpui_luma::{
@@ -7,7 +8,7 @@ use gpui_luma::{
         ControlKeyProfile, DecreaseValue, IncreaseValue, DecreaseValueLarge, IncreaseValueLarge, MoveToStart, MoveToEnd,
     },
 };
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{BarLayer, BarLayout, CartesianChartBuilder, Dataset, DatasetError, NumericScale, Sample, Series};
 use crate::theme::{self, TypographyExt};
 
@@ -19,7 +20,7 @@ const MAX: f64 = COUNT as f64 - 0.5;
 pub(super) struct ScrollingBars {
     entrance: f32,
     data: Dataset,
-    look: Look,
+    look: AppTheme,
     start: f64,
     wheel_position: f64,
     layout: Option<(f32, f32)>,
@@ -28,11 +29,19 @@ pub(super) struct ScrollingBars {
     focus: FocusHandle,
 }
 impl ScrollingBars {
-    pub(super) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
+    pub(super) fn spawn(look: &AppTheme, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
         let data = Dataset::new().with_series(Series::new("desktop", "Observations", observations(COUNT, 17)))?;
         let look = look.clone();
         Ok(cx.new(move |cx: &mut Context<Self>| {
-            let scrollbar = theme::spawn_time_scrollbar(&look, (MIN, MAX), SPAN, cx);
+            let scrollbar = scrollbar::Scrollbar::new("plot-viz-time-scrollbar")
+                .horizontal()
+                .step(0.1)
+                .page_step(SPAN * 0.8)
+                .viewport(MIN, MAX, MIN, MIN + SPAN)
+                .template(std::sync::Arc::new(scrollbar::ThemedScrollbarTemplate::new(std::sync::Arc::new(
+                    look.clone(),
+                ))))
+                .spawn(cx);
             scrollbar.clone().on_event(cx, |this, event: &ScrollbarEvent, cx| {
                 if let ScrollbarEvent::Change { value } = event {
                     this.start = f64::from(*value);
@@ -120,7 +129,7 @@ impl Render for ScrollingBars {
         let end = start + SPAN;
         let chart = CartesianChartBuilder::new(self.data.clone())
             .id("large-scrolling-bars-chart")
-            .style(theme::RadixCartesianStyle::new(&self.look).blue())
+            .style(theme::SdkCartesianStyle::new(&self.look).blue())
             .x_scale(NumericScale::new().domain(start..=end).tick_labels(scrolling_ticks(start)))
             .y_scale(NumericScale::new().domain(0.0..=600.0).tick_count(5))
             .bar_layout(BarLayout::new().width(0.8))
@@ -232,7 +241,7 @@ mod state_tests {
     #[gpui::test]
     fn scrollbar_clamps_at_both_ends_without_replacing_large_dataset(cx: &mut gpui::TestAppContext) {
         cx.update(|cx| {
-            let view = ScrollingBars::spawn(&Look::built_in(), cx).unwrap();
+            let view = ScrollingBars::spawn(&AppTheme::new(), cx).unwrap();
             view.update(cx, |this, cx| {
                 let stored = this.data.series()[0].samples().as_ptr();
                 this.set_start(MAX * 2.0, cx);

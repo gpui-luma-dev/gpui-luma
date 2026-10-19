@@ -1,6 +1,6 @@
 use gpui::{App, IntoElement, div, prelude::*, px};
 use gpui_luma::vstack;
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{
     BarLabel, BarLabelPlacement, BarLayer, BarLayout, BarOrientation, CartesianChartBuilder, CategoryScale, Dataset,
     DatasetError, NumericScale, Sample, Series, TextPresentation,
@@ -19,7 +19,7 @@ pub(super) fn data() -> Result<Dataset, DatasetError> {
             .collect::<Vec<_>>(),
     ))
 }
-pub(super) fn card(data: Dataset, look: &Look, progress: f32, cx: &App) -> impl IntoElement {
+pub(super) fn card(data: Dataset, look: &AppTheme, progress: f32, cx: &App) -> impl IntoElement {
     let typography = theme::typography();
     let chrome = theme::chrome(look);
     let mut values = TextPresentation::new(chrome.body_text);
@@ -31,7 +31,7 @@ pub(super) fn card(data: Dataset, look: &Look, progress: f32, cx: &App) -> impl 
     let tooltip_look = look.clone();
     let chart = CartesianChartBuilder::new(data)
         .id("bar-custom-labels-chart")
-        .style(theme::RadixCartesianStyle::new(look).blue())
+        .style(theme::SdkCartesianStyle::new(look).blue())
         .x_scale(CategoryScale::new(MONTHS))
         .y_scale(NumericScale::new().domain(0.0..=330.0).tick_values([0.0, 80.0, 160.0, 240.0, 320.0]))
         .bar_orientation(BarOrientation::Right)

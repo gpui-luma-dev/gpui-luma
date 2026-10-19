@@ -7,7 +7,7 @@ mod interpolation;
 
 use gpui::{App, Entity, IntoElement, Pixels, div, prelude::*, px};
 use gpui_luma::{controls::frame::FrameBuilder, vstack};
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{
     Axis, AxisSide, CartesianChartBuilder, CategoryScale, Dataset, DatasetError, LineLayer, NumericScale, Sample,
     Series,
@@ -21,7 +21,7 @@ pub(crate) struct LineExample {
     frame: FrameBuilder,
     height: Pixels,
     data: Dataset,
-    chart: fn(Dataset, &Look) -> CartesianChartBuilder,
+    chart: fn(Dataset, &AppTheme) -> CartesianChartBuilder,
     diagnostics: Option<Entity<diagnostics::Diagnostics>>,
 }
 
@@ -35,7 +35,7 @@ pub(crate) struct LineGallery {
 }
 
 /// Deterministic datasets that exercise the alpha line-chart API.
-pub(crate) fn examples(look: &Look, cx: &mut App) -> Result<LineGallery, DatasetError> {
+pub(crate) fn examples(look: &AppTheme, cx: &mut App) -> Result<LineGallery, DatasetError> {
     let mut raw = dense::example(look)?;
     let mut decimated = decimated::example(raw.data.clone(), look);
     raw.diagnostics = Some(diagnostics::Diagnostics::spawn(cx));
@@ -51,7 +51,7 @@ pub(crate) fn examples(look: &Look, cx: &mut App) -> Result<LineGallery, Dataset
     })
 }
 
-pub(crate) fn gallery(gallery: &LineGallery, look: &Look, progress: f32, cx: &mut App) -> impl IntoElement {
+pub(crate) fn gallery(gallery: &LineGallery, look: &AppTheme, progress: f32, cx: &mut App) -> impl IntoElement {
     super::motion::display(&gallery.features, progress, cx);
     super::motion::display(&gallery.scrolling, progress, cx);
     super::motion::display(&gallery.interpolation, progress, cx);
@@ -68,7 +68,7 @@ pub(crate) fn gallery(gallery: &LineGallery, look: &Look, progress: f32, cx: &mu
         .child(gallery.features.clone())
 }
 
-fn example_card(example: &LineExample, look: &Look, progress: f32, cx: &App) -> impl IntoElement {
+fn example_card(example: &LineExample, look: &AppTheme, progress: f32, cx: &App) -> impl IntoElement {
     let chrome = theme::chrome(look);
     let typography = theme::typography();
     let mut chart = (example.chart)(example.data.clone(), look);
@@ -97,7 +97,7 @@ fn example_card(example: &LineExample, look: &Look, progress: f32, cx: &App) -> 
     })
 }
 
-fn two_series(look: &Look) -> Result<LineExample, DatasetError> {
+fn two_series(look: &AppTheme) -> Result<LineExample, DatasetError> {
     let data = Dataset::new()
         .with_series(Series::new(
             "temperature",
@@ -158,7 +158,7 @@ fn missing_samples() -> Result<LineExample, DatasetError> {
     })
 }
 
-fn empty_selection(look: &Look) -> Result<LineExample, DatasetError> {
+fn empty_selection(look: &AppTheme) -> Result<LineExample, DatasetError> {
     let data = Dataset::new().with_series(Series::new("forecast", "Forecast", []))?;
     Ok(LineExample {
         title: "No finite samples",
@@ -171,9 +171,9 @@ fn empty_selection(look: &Look) -> Result<LineExample, DatasetError> {
     })
 }
 
-fn two_series_chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
+fn two_series_chart(data: Dataset, look: &AppTheme) -> CartesianChartBuilder {
     CartesianChartBuilder::new(data)
-        .style(theme::RadixCartesianStyle::new(look).series("humidity", 1))
+        .style(theme::SdkCartesianStyle::new(look).series("humidity", 1))
         .style_override(|style| {
             if let Some(line) = style.series.get_mut(&"humidity".into()).and_then(|series| series.line.as_mut()) {
                 line.markers = None;
@@ -185,9 +185,9 @@ fn two_series_chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
         .line(LineLayer::new("humidity"))
 }
 
-fn missing_samples_chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
+fn missing_samples_chart(data: Dataset, look: &AppTheme) -> CartesianChartBuilder {
     CartesianChartBuilder::new(data)
-        .style(theme::RadixCartesianStyle::new(look))
+        .style(theme::SdkCartesianStyle::new(look))
         .x_scale(CategoryScale::new(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]))
         .y_scale(NumericScale::new().tick_values([18.0, 21.0, 24.0, 27.0]))
         .line(LineLayer::new("temperature"))
@@ -200,9 +200,9 @@ fn missing_samples_chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
         })
 }
 
-fn empty_selection_chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
+fn empty_selection_chart(data: Dataset, look: &AppTheme) -> CartesianChartBuilder {
     CartesianChartBuilder::new(data)
-        .style(theme::RadixCartesianStyle::new(look))
+        .style(theme::SdkCartesianStyle::new(look))
         .x_scale(NumericScale::new().tick_count(3))
         .y_scale(NumericScale::new().tick_count(3))
         .line(LineLayer::new("forecast"))

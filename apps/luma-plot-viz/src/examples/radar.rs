@@ -2,7 +2,7 @@ use gpui_luma::motion::{Transition, Easing};
 use std::time::Duration;
 use gpui::{App, Context, Entity, Render, Window, IntoElement, div, prelude::*, px};
 use gpui_luma::{DockPanel, vstack, motion::VisualTransition};
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{Dataset, DatasetError, Series, Sample, RadarChartBuilder, RadarSeriesPresentation};
 use crate::theme::{self, TypographyExt};
 const MONTHS: [&str; 6] = ["January", "February", "March", "April", "May", "June"];
@@ -11,11 +11,11 @@ const MOBILE: [f64; 6] = [80.0, 200.0, 120.0, 190.0, 130.0, 140.0];
 pub(crate) struct RadarGallery {
     selected: String,
     data: Dataset,
-    look: Look,
+    look: AppTheme,
     motion: VisualTransition,
 }
 impl RadarGallery {
-    pub(crate) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
+    pub(crate) fn spawn(look: &AppTheme, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
         let samples = |values: [f64; 6]| {
             values.into_iter().enumerate().map(|(i, y)| Sample::new(i as f64, y)).collect::<Vec<_>>()
         };
@@ -91,7 +91,7 @@ impl Render for RadarGallery {
             }).spoke_tooltip(move |spoke| {
                 gpui_luma::controls::tooltip::Tooltip::new(spoke.category.clone())
                     .shortcut(spoke.points.iter().map(|point| format!("{}: {}",point.label,point.sample.y)).collect::<Vec<_>>().join(" · "))
-                    .theme(gpui_luma_look_radix::tooltip_theme(&tooltip_look))
+                    .theme(std::sync::Arc::new(tooltip_look.clone()))
                     .delay(Duration::from_millis(250))
             }).tooltip_motion(Duration::from_millis(250)).on_spoke_event(move|event,cx|{
                 if let gpui_luma_plot::SelectionEvent::Select{target}=event {
@@ -126,7 +126,7 @@ mod tests {
                     DESKTOP.into_iter().enumerate().map(|(i, y)| Sample::new(i as f64, y)).collect::<Vec<_>>(),
                 ))
                 .unwrap(),
-            look: Look::built_in(),
+            look: AppTheme::new(),
             motion: VisualTransition::with_transition(
                 1.0,
                 Transition::timed(Duration::from_millis(900), Easing::OutCubic),

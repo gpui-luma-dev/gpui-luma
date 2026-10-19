@@ -2,7 +2,7 @@ use gpui_luma::motion::{Transition, Easing};
 use std::time::Duration;
 use gpui::{App, Context, Entity, Render, Window, IntoElement, div, px, prelude::*};
 use gpui_luma::{DockPanel, vstack, motion::VisualTransition};
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{Dataset, DatasetError, Series, Sample, RadialChartBuilder, RadialLayout};
 use crate::theme::{self, TypographyExt};
 pub(crate) struct RadialGallery {
@@ -11,11 +11,11 @@ pub(crate) struct RadialGallery {
     text: Dataset,
     shape: Dataset,
     stacked: Dataset,
-    look: Look,
+    look: AppTheme,
     motion: VisualTransition,
 }
 impl RadialGallery {
-    pub(crate) fn spawn(look: &Look, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
+    pub(crate) fn spawn(look: &AppTheme, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
         let data = Dataset::new().with_series(Series::new(
             "browsers",
             "Visitors",
@@ -71,7 +71,7 @@ impl Render for RadialGallery {
                 if index==4 {style.inner_radius=0.72;style.palette=vec![gpui::rgb(0x2b7fff).into()];}
                 if index==5 {style.inner_radius=0.77;style.rounded=true;}
                 style
-            }).bar_tooltip(move|bar|gpui_luma::controls::tooltip::Tooltip::new(bar.label.clone()).shortcut(format!("{} visitors",bar.sample.y)).theme(gpui_luma_look_radix::tooltip_theme(&tooltip_look)).delay(Duration::from_millis(250))).tooltip_motion(Duration::from_millis(250)).on_bar_event(move|event,cx|{
+            }).bar_tooltip(move|bar|gpui_luma::controls::tooltip::Tooltip::new(bar.label.clone()).shortcut(format!("{} visitors",bar.sample.y)).theme(std::sync::Arc::new(tooltip_look.clone())).delay(Duration::from_millis(250))).tooltip_motion(Duration::from_millis(250)).on_bar_event(move|event,cx|{
                 if let gpui_luma_plot::SelectionEvent::Select{target}=event {
                     let text=format!("Selected {}",target.label);let _=host.update(cx,|this,cx|{this.selected=text;cx.notify();});
                 }
@@ -104,7 +104,7 @@ mod tests {
     #[gpui::test]
     fn radial_gallery_draws_all_cards_and_restarts_on_entry(cx: &mut TestAppContext) {
         let (host, cx) =
-            cx.add_window_view(|_, cx| Harness { gallery: RadialGallery::spawn(&Look::built_in(), cx).unwrap() });
+            cx.add_window_view(|_, cx| Harness { gallery: RadialGallery::spawn(&AppTheme::new(), cx).unwrap() });
         host.update(cx, |host, cx| {
             host.gallery.update(cx, |gallery, cx| {
                 gallery.enter(cx);

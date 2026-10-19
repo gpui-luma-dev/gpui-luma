@@ -1,3 +1,7 @@
+use gpui_luma::controls::button;
+use gpui_luma::controls::selector;
+use gpui_luma::controls::selector_list;
+use gpui_luma::prelude::HasPresenter;
 use gpui_luma::motion::{Transition, Easing};
 mod data;
 
@@ -12,7 +16,7 @@ use gpui_luma::{
     controls::selector::{Selector, SelectorEvent},
     hstack, vstack,
 };
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{
     AreaLayer, LineLayer, AxisSide, CartesianChartBuilder, ChartMetrics, Dataset, DatasetError, Interpolation,
     LegendItem, LegendPresentation, LegendView, SwatchPresentation, NumericScale, CartesianStyleProvider,
@@ -22,7 +26,7 @@ use crate::theme::{self, TypographyExt};
 pub(crate) struct VisitorsExample {
     entrance: f32,
     data: Dataset,
-    look: Look,
+    look: AppTheme,
     area: bool,
     days: usize,
     range: Entity<Selector>,
@@ -32,11 +36,21 @@ pub(crate) struct VisitorsExample {
 }
 
 impl VisitorsExample {
-    pub(crate) fn spawn(look: &Look, area: bool, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
+    pub(crate) fn spawn(look: &AppTheme, area: bool, cx: &mut App) -> Result<Entity<Self>, DatasetError> {
         let data = data::dataset()?;
         let look = look.clone();
         Ok(cx.new(move |cx: &mut Context<Self>| {
-            let range = theme::visitors::spawn_range(&look, cx);
+            let range = selector::Selector::new("visitors-date-range")
+                .items(
+                    [("90", "Last 3 months"), ("30", "Last 30 days"), ("7", "Last 7 days")]
+                        .map(|(id, label)| selector::SelectorItem::new(id).label(label)),
+                )
+                .selected_id("90")
+                .template(std::sync::Arc::new(selector::ThemedSelectorTemplate::new(
+                    std::sync::Arc::new(look.clone()),
+                    selector_list::default_selector_items_template(),
+                )))
+                .spawn(cx);
             range.clone().on_event(cx, |this, event: &SelectorEvent, cx| {
                 if let SelectorEvent::Change { item_id, .. } = event {
                     this.days = match item_id.as_ref() {
@@ -48,10 +62,14 @@ impl VisitorsExample {
                     cx.notify();
                 }
             });
-            let replay = theme::spawn_replay("visitors-replay", &look, cx).on_click(cx, |this, cx| {
-                this.restart_motion();
-                cx.notify();
-            });
+            let replay = button::Button::new("visitors-replay")
+                .template(std::sync::Arc::new(button::DefaultButtonTemplate::new(std::sync::Arc::new(look.clone()))))
+                .label("Replay")
+                .spawn(cx)
+                .on_click(cx, |this, cx| {
+                    this.restart_motion();
+                    cx.notify();
+                });
             Self {
                 entrance: 1.0,
                 data,
@@ -81,11 +99,7 @@ impl Render for VisitorsExample {
         self.motion.schedule_frame(window, cx);
         let typography = theme::typography();
         let chrome = theme::chrome(&self.look);
-        let style = theme::RadixCartesianStyle::new(&self.look)
-            .blue()
-            .series("desktop", 0)
-            .series("mobile", 1)
-            .resolve();
+        let style = theme::SdkCartesianStyle::new(&self.look).blue().series("desktop", 0).series("mobile", 1).resolve();
         let caption = if self.days == 91 {
             "Showing total visitors for the last 3 months".to_owned()
         } else {
@@ -130,9 +144,9 @@ impl Render for VisitorsExample {
     }
 }
 
-fn chart(data: Dataset, look: &Look, days: usize, area: bool) -> CartesianChartBuilder {
+fn chart(data: Dataset, look: &AppTheme, days: usize, area: bool) -> CartesianChartBuilder {
     let mut chart = CartesianChartBuilder::new(data)
-        .style(theme::RadixCartesianStyle::new(look).blue().series("desktop", 0).series("mobile", 1))
+        .style(theme::SdkCartesianStyle::new(look).blue().series("desktop", 0).series("mobile", 1))
         .x_scale(
             NumericScale::new()
                 .domain(data::first_day(days) as f64..=data::LAST_DAY as f64)

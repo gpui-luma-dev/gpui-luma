@@ -1,7 +1,7 @@
 mod interactive;
 use gpui::{App, IntoElement, div, prelude::*, px};
 use gpui_luma::{DockPanel, vstack};
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{Dataset, DatasetError, Sample, Series, PieChartBuilder, PieLabelPlacement};
 use crate::theme::{self, TypographyExt};
 
@@ -13,7 +13,7 @@ pub(crate) struct PieGallery {
     interactive: gpui::Entity<interactive::Interactive>,
 }
 impl PieGallery {
-    pub(crate) fn spawn(look: &Look, cx: &mut App) -> Result<Self, DatasetError> {
+    pub(crate) fn spawn(look: &AppTheme, cx: &mut App) -> Result<Self, DatasetError> {
         let samples: Vec<_> =
             VALUES.into_iter().enumerate().map(|(index, value)| Sample::new(index as f64, value)).collect();
         Ok(Self {
@@ -22,13 +22,13 @@ impl PieGallery {
             interactive: interactive::Interactive::spawn(look, cx)?,
         })
     }
-    fn chart(&self, look: &Look) -> PieChartBuilder {
+    fn chart(&self, look: &AppTheme) -> PieChartBuilder {
         let live_look = look.clone();
         PieChartBuilder::new(self.data.clone(), "browsers")
             .slice_names(NAMES)
             .style(move || theme::pie::style(&live_look))
     }
-    pub(crate) fn render(&self, look: &Look, progress: f32, cx: &mut App) -> impl IntoElement {
+    pub(crate) fn render(&self, look: &AppTheme, progress: f32, cx: &mut App) -> impl IntoElement {
         super::motion::display(&self.stacked, progress, cx);
         super::motion::display(&self.interactive, progress, cx);
         let cards = [
@@ -80,7 +80,7 @@ impl PieGallery {
             .child(self.interactive.clone())
     }
 }
-fn card(id: &'static str, title: &'static str, chart: PieChartBuilder, look: &Look, cx: &App) -> impl IntoElement {
+fn card(id: &'static str, title: &'static str, chart: PieChartBuilder, look: &AppTheme, cx: &App) -> impl IntoElement {
     let typography = theme::typography();
     let chrome = theme::chrome(look);
     theme::panel_frame(look, id).h(px(420.0)).render(cx).child(
@@ -103,7 +103,7 @@ mod tests {
     use gpui::{Context, Render, TestAppContext, Window};
     struct Harness {
         gallery: PieGallery,
-        look: Look,
+        look: AppTheme,
     }
     impl Render for Harness {
         fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -113,7 +113,7 @@ mod tests {
     #[gpui::test]
     fn pie_gallery_draws_all_variants_and_preserves_reference_weights(cx: &mut TestAppContext) {
         let (host, cx) = cx.add_window_view(|_, cx| {
-            let look = Look::built_in();
+            let look = AppTheme::new();
             Harness { gallery: PieGallery::spawn(&look, cx).unwrap(), look }
         });
         cx.update(|window, cx| {

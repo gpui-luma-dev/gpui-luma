@@ -1,3 +1,6 @@
+use gpui_luma::controls::radio_group;
+use gpui_luma::controls::radio_button;
+use gpui_luma::controls::tabs;
 use gpui_luma::motion::{Transition, Easing};
 use gpui_luma::controls::tabs::TabsEventExt;
 use gpui_luma::controls::scrollbar::ScrollbarEventExt;
@@ -7,11 +10,11 @@ use std::sync::Arc;
 use gpui::{Entity, Context, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupEvent, RadioGroupItem};
 use gpui_luma::controls::scroll_container::{ScrollContainer, ScrollbarAutoHideActivate, ScrollbarVisibility};
-use gpui_luma::controls::scrollbar::{ScrollbarEvent, default_scrollbar_template};
+use gpui_luma::controls::scrollbar::{ScrollbarEvent, ThemedScrollbarTemplate};
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::ThemeMode;
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 
 use crate::theme::{self, TypographyExt};
 use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem};
@@ -26,7 +29,7 @@ pub(crate) struct PlotVizApp {
     area: Result<crate::examples::area::AreaGallery, gpui_luma_plot::DatasetError>,
     bars: Result<Entity<crate::examples::bar::BarExample>, gpui_luma_plot::DatasetError>,
     focus_scope: FocusHandle,
-    look: Arc<Look>,
+    look: Arc<AppTheme>,
     mode_selector: RadioGroup<RadioGroupItem>,
     scroll: ScrollContainer,
     examples: Result<crate::examples::line::LineGallery, gpui_luma_plot::DatasetError>,
@@ -35,11 +38,27 @@ pub(crate) struct PlotVizApp {
 
 impl PlotVizApp {
     pub(crate) fn new(cx: &mut Context<Self>) -> Self {
-        let look = theme::default_look();
-        let mode_selector = theme::spawn_mode_selector("theme-mode", &look, cx);
-        let scroll = ScrollContainer::new("plot-viz-scroll", default_scrollbar_template(), cx)
-            .visibility(ScrollbarVisibility::AutoHide)
-            .auto_hide_activate(ScrollbarAutoHideActivate::HoverOrMove);
+        let look = theme::default_theme();
+        let mode_selector = radio_group::horizontal("theme-mode")
+            .single_required()
+            .selection_follows_active(true)
+            .items([
+                radio_group::RadioGroupItem::new("light").label("Light"),
+                radio_group::RadioGroupItem::new("dark").label("Dark"),
+            ])
+            .selected(theme::mode_id(look.mode()))
+            .template(radio_group::radio_group_buttons_template(
+                std::sync::Arc::new(radio_button::ThemedRadioButtonTemplate::new(std::sync::Arc::new((*look).clone()))),
+                radio_group::RadioGroupLayout::Horizontal,
+            ))
+            .spawn(cx);
+        let scroll = ScrollContainer::new(
+            "plot-viz-scroll",
+            Arc::new(ThemedScrollbarTemplate::new(Arc::new((*look).clone()))),
+            cx,
+        )
+        .visibility(ScrollbarVisibility::AutoHide)
+        .auto_hide_activate(ScrollbarAutoHideActivate::HoverOrMove);
         mode_selector.clone().on_event(cx, |this, event: &RadioGroupEvent, cx| {
             if let RadioGroupEvent::Change { value: Some(value) } = event {
                 this.set_mode(theme::mode_for_id(value.as_ref()), cx);
@@ -52,9 +71,8 @@ impl PlotVizApp {
                 scroll_for_event.set_vertical_offset(*value, cx);
             }
         });
-        let tabs = gpui_luma_look_radix::Tabs::new("chart-tabs")
-            .look(&look)
-            .line()
+        let tabs = Tabs::new("chart-tabs")
+            .template(Arc::new(tabs::ThemedTabsTemplate::new(Arc::new((*look).clone()))))
             .items(["Line", "Area", "Bar", "Pie", "Radar", "Radial"].map(|name| TabsItem::new(name).label(name)))
             .active("Line")
             .spawn(cx);
@@ -184,26 +202,18 @@ impl Render for PlotVizApp {
                             .items_center()
                             .gap(px(12.0))
                             .p_6()
-                            .child(div().typography_style(typography.text.scale.two_xl).child("Luma Plot"))
+                            .child(
+                                div()
+                                    .typography_style(typography.text.scale.two_xl)
+                                    .child("Luma Plot Using Native SDK Look"),
+                            )
                             .child(
                                 div()
                                     .typography_style(typography.text.body)
                                     .text_color(chrome.muted_text)
                                     .child("Data, specification, presentation, and view"),
                             )
-                            .child(
-                                div()
-                                    .flex()
-                                    .items_center()
-                                    .gap(px(8.0))
-                                    .child(
-                                        div()
-                                            .typography_style(typography.text.caption)
-                                            .text_color(chrome.muted_text)
-                                            .child("Theme"),
-                                    )
-                                    .child(self.mode_selector.clone()),
-                            )
+                            .child(div().flex().items_center().gap(px(8.0)).child(self.mode_selector.clone()))
                             .child(self.tabs.read(cx).tab_list())
                             .child(gallery)
                             .child(
@@ -222,6 +232,31 @@ impl Render for PlotVizApp {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[gpui::test]
+    fn mode_events_refresh_retained_controls_without_resetting_navigation(cx: &mut gpui::TestAppContext) {
+        let (host, cx) = cx.add_window_view(|_, cx| PlotVizApp::new(cx));
+        let (tabs, mode_selector) = host.read_with(cx, |app, _| (app.tabs.clone(), app.mode_selector.clone()));
+        host.update(cx, |app, cx| {
+            app.tabs.update(cx, |tabs, cx| tabs.set_active("Bar", cx));
+            app.active_tab = "Bar".into();
+        });
+        for (id, expected) in [("light", ThemeMode::Light), ("dark", ThemeMode::Dark)] {
+            host.update(cx, |app, cx| {
+                app.mode_selector.update(cx, |_, cx| cx.emit(RadioGroupEvent::Change { value: Some(id.into()) }));
+            });
+            host.read_with(cx, |app, cx| {
+                assert_eq!(app.look.mode(), expected);
+                assert_eq!(app.tabs, tabs);
+                assert_eq!(app.mode_selector, mode_selector);
+                assert_eq!(app.tabs.read(cx).active_id().map(|id| id.as_ref()), Some("Bar"));
+                assert_eq!(app.mode_selector.read(cx).selected_id(cx).as_deref(), Some(id));
+            });
+            cx.update(|window, cx| {
+                window.draw(cx).clear(cx);
+            });
+        }
+    }
+
     #[gpui::test]
     fn startup_and_each_tab_entry_restart_reveal(cx: &mut gpui::TestAppContext) {
         let (host, cx) = cx.add_window_view(|_, cx| PlotVizApp::new(cx));

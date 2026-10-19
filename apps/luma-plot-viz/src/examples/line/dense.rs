@@ -1,5 +1,5 @@
 use gpui::px;
-use gpui_luma_look_radix::Look;
+use crate::theme::AppTheme;
 use gpui_luma_plot::{CartesianChartBuilder, Dataset, DatasetError, Decimation, LineLayer, NumericScale, Sample, Series};
 
 use super::LineExample;
@@ -8,7 +8,7 @@ use crate::theme;
 const SAMPLES_PER_SERIES: usize = 10_000;
 const SAMPLE_INTERVAL_SECONDS: f64 = 0.1;
 
-pub(super) fn example(look: &Look) -> Result<LineExample, DatasetError> {
+pub(super) fn example(look: &AppTheme) -> Result<LineExample, DatasetError> {
     Ok(LineExample {
         title: "Dense time series · 20,000 samples",
         description: "Two signals sampled at 10 Hz over nearly 17 minutes: slow trends, fine variation, isolated spikes, a step, and missing intervals. Full resolution, without point markers.",
@@ -53,13 +53,13 @@ fn data() -> Result<Dataset, DatasetError> {
         .with_series(Series::new("signal-b", "Signal B", b))
 }
 
-fn chart(data: Dataset, look: &Look) -> CartesianChartBuilder {
+fn chart(data: Dataset, look: &AppTheme) -> CartesianChartBuilder {
     chart_with_decimation(data, look, Decimation::None)
 }
 
-pub(super) fn chart_with_decimation(data: Dataset, look: &Look, decimation: Decimation) -> CartesianChartBuilder {
+pub(super) fn chart_with_decimation(data: Dataset, look: &AppTheme, decimation: Decimation) -> CartesianChartBuilder {
     CartesianChartBuilder::new(data)
-        .style(theme::RadixCartesianStyle::new(look).series("signal-a", 0).series("signal-b", 1))
+        .style(theme::SdkCartesianStyle::new(look).series("signal-a", 0).series("signal-b", 1))
         .x_scale(NumericScale::new().tick_count(6))
         .y_scale(NumericScale::new().tick_count(5))
         .line(LineLayer::new("signal-a").decimation(decimation))
