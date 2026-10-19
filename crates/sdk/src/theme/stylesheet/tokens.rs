@@ -212,16 +212,16 @@ mod tests {
         ])
         .unwrap();
         let geometry = sheet.progress.resolve_geometry("md", Default::default());
-        assert_eq!(geometry.track_height.value_px, 0.0);
-        assert!(matches!(geometry.track_height.source,
+        assert_eq!(geometry.track_height, 0.0);
+        assert!(matches!(sheet.progress.inspect_geometry("md", Default::default()).track_height.source,
             crate::theme::provenance::MetricSource::Authored { key }
                 if key == "common.progress.geometry.track_height"));
-        assert_eq!(geometry.size.value_px, 64.0);
+        assert_eq!(geometry.size, 64.0);
         let sheet = CommonStylesheet::resolve_layers(&[
             "[common.progress.geometry]\ntrack_height = 0\n[common.progress.sizes.md]\ntrack_height = 7",
         ])
         .unwrap();
-        assert_eq!(sheet.progress.resolve_geometry("md", Default::default()).track_height.value_px, 7.0);
+        assert_eq!(sheet.progress.resolve_geometry("md", Default::default()).track_height, 7.0);
     }
 
     #[test]

@@ -7,7 +7,7 @@ use crate::theme::ThemeTokens;
 #[derive(Clone, Debug)]
 pub struct SplitViewLook {
     /// Resolved separator hit target and decoration in pixels.
-    pub geometry: crate::theme::stylesheet::ResolvedSplitViewGeometry,
+    pub geometry: crate::theme::stylesheet::SplitViewGeometry,
     pub separator: Hsla,
     pub separator_hover: Hsla,
 }

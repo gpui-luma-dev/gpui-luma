@@ -45,7 +45,7 @@ pub struct AutocompleteRenderModel {
     /// Captured shared default glyph choices.
     pub icons: crate::theme::stylesheet::IconsStylesheet,
     /// Captured and size-resolved affordance geometry.
-    pub geometry: crate::theme::stylesheet::ResolvedAutocompleteGeometry,
+    pub geometry: crate::theme::stylesheet::AutocompleteGeometry,
     pub id: SharedString,
     pub textfield: AnyElement,
     pub query_is_empty: bool,
@@ -170,7 +170,7 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
             .flex()
             .items_center()
             .justify_between()
-            .gap(px(model.geometry.status_gap.value_px))
+            .gap(px(model.geometry.status_gap))
             .child(
                 div()
                     .text_size(px(status_style.size))
@@ -193,7 +193,7 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
             .w_full()
             .flex()
             .flex_col()
-            .gap(px(model.geometry.gap.value_px))
+            .gap(px(model.geometry.gap))
             .when(has_status_text, |root| root.child(status_row))
             .on_key_down(key_down)
             .on_scroll_wheel(scroll_wheel)
@@ -213,9 +213,9 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
                                 .id("prototype-autocomplete-clear")
                                 .absolute()
                                 .top(px(0.0))
-                                .right(px(model.geometry.clear_inset.value_px))
+                                .right(px(model.geometry.clear_inset))
                                 .h_full()
-                                .w(px(model.geometry.clear_width.value_px))
+                                .w(px(model.geometry.clear_width))
                                 .flex()
                                 .items_center()
                                 .justify_center()
@@ -226,7 +226,7 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
                                 .child(crate::infra::icon::render_icon_source(
                                     &model.icons.resolve(crate::theme::stylesheet::IconRole::Clear),
                                     model.muted_text_color,
-                                    model.geometry.clear_icon_size.value_px,
+                                    model.geometry.clear_icon_size,
                                 )),
                         )
                     }),

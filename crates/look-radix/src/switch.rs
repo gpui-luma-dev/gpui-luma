@@ -103,8 +103,7 @@ fn switch_scale_from_stylesheet(
 ) -> SwitchScale {
     let mut fallback = SwitchScale::compute(size.control_size(), metrics, 1.0);
     fallback.label_baseline_shift = 0.0;
-    let geometry = stylesheet.switch.resolve_geometry(size.as_str(), fallback, 1.0);
-    let mut scale = geometry.apply_to(fallback);
+    let mut scale = stylesheet.switch.resolve_geometry(size.as_str(), fallback, 1.0);
     scale.track_radius = (size.radius_base() * radius.factor()).max(radius_thumb(radius)).min(scale.track_height / 2.0);
     scale
 }
@@ -112,7 +111,7 @@ fn switch_scale_from_stylesheet(
 /// Shared authored dimensions and provenance used by the Radix switch adapter.
 pub fn switch_geometry(look: &Look, size: SwitchSize) -> gpui_luma::theme::stylesheet::ResolvedSwitchGeometry {
     let fallback = SwitchScale::compute(size.control_size(), &look.metrics(), 1.0);
-    look.common_stylesheet().switch.resolve_geometry(size.as_str(), fallback, 1.0)
+    look.common_stylesheet().switch.inspect_geometry(size.as_str(), fallback, 1.0)
 }
 
 struct SwitchThemeAdapter {

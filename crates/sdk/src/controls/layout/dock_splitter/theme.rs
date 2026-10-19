@@ -7,7 +7,7 @@ use crate::theme::ThemeTokens;
 #[derive(Clone, Debug)]
 pub struct DockSplitterLook {
     /// Captured, resolved thumb geometry and resting opacity.
-    pub geometry: crate::theme::stylesheet::ResolvedDockSplitterGeometry,
+    pub geometry: crate::theme::stylesheet::DockSplitterGeometry,
     pub line_color: Hsla,
     pub hover_color: Hsla,
     pub thumb_color: Hsla,
@@ -57,8 +57,8 @@ impl DockSplitterTheme for DefaultDockSplitterTheme {
             } else {
                 palette.state.disabled.foreground
             },
-            hit_target_px: geometry.hit_target.value_px,
-            visible_line_px: geometry.visible_line.value_px,
+            hit_target_px: geometry.hit_target,
+            visible_line_px: geometry.visible_line,
             geometry,
         }
     }

@@ -243,9 +243,9 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                                 value.as_ref(),
                                 0,
                                 selection,
-                                marked_range.as_ref().map(|range| {
-                                    (range, canvas_look.helper_geometry.composition_underline_width.value_px)
-                                }),
+                                marked_range
+                                    .as_ref()
+                                    .map(|range| (range, canvas_look.helper_geometry.composition_underline_width)),
                                 {
                                     let mut font = font(canvas_look.font_family.clone());
                                     font.weight = canvas_look.typography.weight;

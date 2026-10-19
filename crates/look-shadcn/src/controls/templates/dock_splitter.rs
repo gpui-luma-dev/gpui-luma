@@ -27,8 +27,8 @@ impl DockSplitterTheme for ShadcnDockSplitterTheme {
             } else {
                 disabled
             },
-            hit_target_px: geometry.hit_target.value_px,
-            visible_line_px: geometry.visible_line.value_px,
+            hit_target_px: geometry.hit_target,
+            visible_line_px: geometry.visible_line,
             geometry,
         }
     }

@@ -13,21 +13,31 @@
 //! | Selected fg       | `sidebar-primary-foreground`       |
 //! | Focus ring        | `sidebar-ring`                     |
 
-use crate::stylesheet::config::{matches_optional_bool, matches_optional_layer};
+use crate::stylesheet::config::matches_optional_bool;
+use crate::stylesheet::config::matches_optional_layer;
 use serde::Deserialize;
 
-use gpui_luma::controls::sidebar::{SidebarItemLook, SidebarSectionLook};
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::controls::sidebar::SidebarItemLook;
+use gpui_luma::controls::sidebar::SidebarSectionLook;
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::ThemeMode;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{LookResolver, ResolvedColor};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
 use crate::look::ShadcnLook;
-use crate::stylesheet::{
-    StylesheetConfig, find_sidebar_branch_color_rule, find_sidebar_container_color_rule, find_sidebar_item_color_rule,
-    find_sidebar_section_color_rule, resolve_sidebar_branch_color_rule, resolve_sidebar_container_color_rule,
-    resolve_sidebar_item_color_rule, resolve_sidebar_section_color_rule,
-};
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_sidebar_branch_color_rule;
+use crate::stylesheet::find_sidebar_container_color_rule;
+use crate::stylesheet::find_sidebar_item_color_rule;
+use crate::stylesheet::find_sidebar_section_color_rule;
+use crate::stylesheet::resolve_sidebar_branch_color_rule;
+use crate::stylesheet::resolve_sidebar_container_color_rule;
+use crate::stylesheet::resolve_sidebar_item_color_rule;
+use crate::stylesheet::resolve_sidebar_section_color_rule;
 use crate::tokens::ShadcnTextSize;
 
 #[derive(Clone, Debug)]
@@ -634,4 +644,56 @@ pub(crate) fn native_sidebar_stylesheet() -> gpui_luma::theme::stylesheet::Sideb
         },
         ..Default::default()
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct SidebarMetricTable {
+    pub section_height: crate::ResolvedMetric,
+    pub item_height: crate::ResolvedMetric,
+    pub item_padding_x: crate::ResolvedMetric,
+    pub item_gap: crate::ResolvedMetric,
+    pub item_radius: crate::ResolvedMetric,
+    pub item_icon_size: crate::ResolvedMetric,
+}
+
+pub fn resolve_sidebar_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> SidebarMetricTable {
+    use crate::tables::metrics::helpers::{derived_metric, radius_metric, spacing_control_metric};
+
+    let ctx = crate::LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let metrics = ctx.metrics();
+    let catalog = ctx.catalog();
+    let size_metrics = metrics.for_size(size);
+
+    let mut table = SidebarMetricTable {
+        section_height: derived_metric("navigation sidebar section height", 20.0),
+        item_height: derived_metric("navigation sidebar item height", 30.0),
+        item_padding_x: derived_metric("navigation sidebar item padding x", 8.0),
+        item_gap: spacing_control_metric(catalog, size, crate::catalog::SpacingField::Gap, size_metrics.gap),
+        item_radius: radius_metric(catalog, size, metrics.radius(size)),
+        item_icon_size: derived_metric("navigation sidebar icon size", 16.0),
+    };
+    let geometry = mode.stylesheet().common.sidebar.inspect_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::SidebarGeometry {
+            section_height: table.section_height.value_px,
+            item_height: table.item_height.value_px,
+            item_padding_x: table.item_padding_x.value_px,
+            item_gap: table.item_gap.value_px,
+            item_icon_size: table.item_icon_size.value_px,
+            ..Default::default()
+        },
+    );
+    table.section_height =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.section_height, table.section_height);
+    table.item_height = crate::tables::metrics::helpers::prefer_shared_metric(geometry.item_height, table.item_height);
+    table.item_padding_x =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.item_padding_x, table.item_padding_x);
+    table.item_gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.item_gap, table.item_gap);
+    table.item_icon_size =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.item_icon_size, table.item_icon_size);
+    table
 }

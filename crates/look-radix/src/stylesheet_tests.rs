@@ -117,8 +117,8 @@ fn numeric_ranges_remain_independent_of_inherited_sdk_presets() {
         }
     }
     // SDK helper recipes are inherited alongside Radix's own semantic sizes.
-    assert_eq!(stylesheet.tooltip.sizes.keys().collect::<Vec<_>>(), vec!["compact"]);
-    assert!(stylesheet.toolbar.sizes.is_empty());
+    assert_eq!(stylesheet.tooltip.sizes.custom.keys().map(String::as_str).collect::<Vec<_>>(), vec!["compact"]);
+    assert_eq!(stylesheet.toolbar.sizes, Default::default());
 }
 
 #[test]
@@ -215,13 +215,13 @@ fn sparse_configuration_keeps_composition_fallbacks_visible_and_zero_distinct() 
     let look = Look::built_in();
     let mut stylesheet = gpui_luma::theme::stylesheet::CommonStylesheet::default();
     look.set_common_stylesheet(stylesheet.clone());
-    assert!(crate::callout::resolve_geometry(&look).font_size.value_px > 0.0);
-    assert!(crate::segmented::resolve_geometry(&look).height.value_px > 0.0);
+    assert!(crate::callout::resolve_geometry(&look).font_size > 0.0);
+    assert!(crate::segmented::resolve_geometry(&look).height > 0.0);
     stylesheet.callout.geometry.font_size = Some(0.0);
     stylesheet.segmented.geometry.height = Some(0.0);
     look.set_common_stylesheet(stylesheet);
-    assert_eq!(crate::callout::resolve_geometry(&look).font_size.value_px, 0.0);
-    assert_eq!(crate::segmented::resolve_geometry(&look).height.value_px, 0.0);
+    assert_eq!(crate::callout::resolve_geometry(&look).font_size, 0.0);
+    assert_eq!(crate::segmented::resolve_geometry(&look).height, 0.0);
 }
 
 #[test]

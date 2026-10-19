@@ -378,11 +378,10 @@ mod stylesheet_tests {
                 .model
                 .stylesheet
                 .resolve_geometry(builder.model.size.stylesheet_key(), Default::default())
-                .clear_width
-                .value_px,
+                .clear_width,
             0.0
         );
-        assert_eq!(builder.model.stylesheet.resolve_geometry("md", Default::default()).clear_width.value_px, 27.0);
-        assert_eq!(builder.model.stylesheet.resolve_geometry("md", Default::default()).clear_icon_size.value_px, 12.0);
+        assert_eq!(builder.model.stylesheet.resolve_geometry("md", Default::default()).clear_width, 27.0);
+        assert_eq!(builder.model.stylesheet.resolve_geometry("md", Default::default()).clear_icon_size, 12.0);
     }
 }

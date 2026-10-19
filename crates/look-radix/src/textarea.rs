@@ -95,14 +95,14 @@ impl TextAreaTheme for TextAreaThemeAdapter {
                 ..Default::default()
             },
         );
-        look.caret_width = geometry.caret_width.value_px;
-        look.caret_height_extra = geometry.caret_height_extra.value_px;
-        look.disabled_opacity = geometry.disabled_opacity.value_px;
-        look.min_height = geometry.min_height.value_px;
-        look.padding_x = geometry.padding_x.value_px;
-        look.padding_y = geometry.padding_y.value_px;
-        look.typography.size = geometry.font_size.value_px;
-        look.typography.line_height = geometry.line_height.value_px;
+        look.caret_width = geometry.caret_width;
+        look.caret_height_extra = geometry.caret_height_extra;
+        look.disabled_opacity = geometry.disabled_opacity;
+        look.min_height = geometry.min_height;
+        look.padding_x = geometry.padding_x;
+        look.padding_y = geometry.padding_y;
+        look.typography.size = geometry.font_size;
+        look.typography.line_height = geometry.line_height;
         if matches!(self.variant, TextFieldVariant::Soft | TextFieldVariant::Classic) {
             look.border_width = 0.0;
         }

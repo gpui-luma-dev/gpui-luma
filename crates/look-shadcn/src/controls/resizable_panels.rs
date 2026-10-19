@@ -8,16 +8,22 @@
 //! | Grip emphasis | `accent` (layer)   |
 //! | Disabled      | `muted-foreground` |
 
-use crate::stylesheet::config::{matches_optional_bool, matches_optional_layer};
+use crate::stylesheet::config::matches_optional_bool;
+use crate::stylesheet::config::matches_optional_layer;
 use serde::Deserialize;
 
 use gpui_luma::controls::resizable_panels::ResizablePanelsLook;
-use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::ThemeMode;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{StylesheetConfig, find_resizable_panels_color_rule, resolve_resizable_panels_color_rule};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_resizable_panels_color_rule;
+use crate::stylesheet::resolve_resizable_panels_color_rule;
 
 #[derive(Clone, Debug)]
 pub struct ResizablePanelsColorTable {
@@ -79,16 +85,12 @@ pub fn resizable_panels_look(
 
     ResizablePanelsLook {
         border: colors.border.hsla(),
-        border_width: geometry.border_width.value_px,
-        divider_width: geometry.divider_width.value_px,
+        border_width: geometry.border_width,
+        divider_width: geometry.divider_width,
         divider: colors.divider.hsla(),
         grip: colors.grip.hsla(),
         grip_emphasis: colors.grip_emphasis.hsla(),
-        disabled_opacity: if state.disabled {
-            geometry.disabled_opacity.value_px
-        } else {
-            1.0
-        },
+        disabled_opacity: if state.disabled { geometry.disabled_opacity } else { 1.0 },
     }
 }
 
@@ -176,4 +178,43 @@ pub struct ResizablePanelsColorRule {
     pub divider: String,
     pub grip: String,
     pub grip_emphasis: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct ResizablePanelsMetricTable {
+    pub lane_px: crate::ResolvedMetric,
+    pub hit_target_px: crate::ResolvedMetric,
+    pub grip_cross_axis_px: crate::ResolvedMetric,
+    pub grip_main_axis_px: crate::ResolvedMetric,
+}
+
+pub fn resolve_resizable_panels_metrics(
+    handle_size: gpui_luma::controls::resizable_panels::ResizeHandleSize,
+    stylesheet: &gpui_luma::theme::stylesheet::CommonStylesheet,
+) -> ResizablePanelsMetricTable {
+    use crate::tables::metrics::helpers::inspect_shared_metric;
+
+    let metrics = handle_size.metrics_with_stylesheet(stylesheet);
+    let size_label = match handle_size {
+        gpui_luma::controls::resizable_panels::ResizeHandleSize::Sm => "sm",
+        gpui_luma::controls::resizable_panels::ResizeHandleSize::Md => "md",
+        gpui_luma::controls::resizable_panels::ResizeHandleSize::Lg => "lg",
+    };
+
+    let geometry = stylesheet.resizable_panels.inspect_geometry(
+        size_label,
+        gpui_luma::theme::stylesheet::ResizablePanelsGeometry {
+            lane_width: metrics.lane_px,
+            hit_target: metrics.hit_target_px,
+            grip_cross_axis: metrics.grip_cross_axis_px,
+            grip_main_axis: metrics.grip_main_axis_px,
+            ..Default::default()
+        },
+    );
+    ResizablePanelsMetricTable {
+        lane_px: inspect_shared_metric(geometry.lane_width),
+        hit_target_px: inspect_shared_metric(geometry.hit_target),
+        grip_cross_axis_px: inspect_shared_metric(geometry.grip_cross_axis),
+        grip_main_axis_px: inspect_shared_metric(geometry.grip_main_axis),
+    }
 }

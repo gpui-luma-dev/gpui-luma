@@ -124,7 +124,7 @@ pub(crate) fn selector_geometry(
         .selector
         .authored_geometry(size.stylesheet_key());
     let recipe = mode.stylesheet().common.selector.authored_geometry(size.stylesheet_key()).with_fallback(&baseline);
-    mode.stylesheet().common.selector.resolve_geometry(
+    mode.stylesheet().common.selector.inspect_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
         gpui_luma::theme::stylesheet::SelectorGeometry {
             height: scale.height,

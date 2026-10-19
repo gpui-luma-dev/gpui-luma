@@ -65,15 +65,7 @@ impl SwitchScale {
             gap: snap_to_pixel(metrics.gap(size), scale_factor),
             label_baseline_shift: label_baseline_shift(size, stylesheet),
         };
-        let geometry = stylesheet.switch.resolve_geometry(key, fallback, scale_factor);
-        Self {
-            track_width: geometry.track_width.value_px,
-            track_height: geometry.track_height.value_px,
-            track_padding: geometry.track_padding.value_px,
-            thumb_size: geometry.thumb_size.value_px,
-            gap: geometry.gap.value_px,
-            ..fallback
-        }
+        stylesheet.switch.resolve_geometry(size, fallback, scale_factor)
     }
 }
 
@@ -184,7 +176,7 @@ impl SwitchTheme for DefaultSwitchTheme {
 pub struct SwitchStylesheet {
     pub geometry: SwitchGeometryStylesheet,
     /// Semantic size keys belong to the look (for example Radix "1"/"2"/"3").
-    pub sizes: HashMap<String, SwitchGeometryStylesheet>,
+    pub sizes: crate::theme::ControlSizes<SwitchGeometryStylesheet>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
@@ -314,7 +306,8 @@ impl SwitchStylesheet {
 
     /// Configure or override a size key without manual map manipulation.
     pub fn size(&mut self, key: impl Into<String>, configure: impl FnOnce(&mut SwitchGeometryStylesheet)) -> &mut Self {
-        let entry = self.sizes.entry(key.into()).or_default();
+        let key = key.into();
+        let entry = self.sizes.get_or_default(key.as_str());
         configure(entry);
         self
     }
@@ -345,9 +338,29 @@ impl SwitchStylesheet {
         }
     }
 
+    /// Resolve concrete dimensions without allocating inspector source strings.
+    pub fn resolve_geometry<'a>(
+        &self,
+        key: impl Into<crate::theme::SizeKey<'a>>,
+        fallback: SwitchScale,
+        scale_factor: f32,
+    ) -> SwitchScale {
+        let authored = self.authored_geometry(key.into().as_str());
+        let pixel = |value: Option<f32>, baseline| value.map(|v| snap_to_pixel(v, scale_factor)).unwrap_or(baseline);
+        SwitchScale {
+            disabled_opacity: authored.disabled_opacity.unwrap_or(fallback.disabled_opacity),
+            track_width: pixel(authored.track_width, fallback.track_width),
+            track_height: pixel(authored.track_height, fallback.track_height),
+            track_padding: pixel(authored.track_padding, fallback.track_padding),
+            thumb_size: pixel(authored.thumb_size, fallback.thumb_size),
+            gap: pixel(authored.gap, fallback.gap),
+            ..fallback
+        }
+    }
+
     /// Resolve per-size, general, then supplied SDK/legacy fallback geometry.
     /// Authored values are snapped once at the requested display scale factor.
-    pub fn resolve_geometry(
+    pub fn inspect_geometry(
         &self,
         key: &str,
         fallback: crate::controls::switch::SwitchScale,

@@ -261,6 +261,19 @@ impl Look {
     /// Update shared geometry for subsequent renders and motion for future controls.
     /// Existing motion retains its snapshot. Notify affected views after geometry edits.
     pub fn set_common_stylesheet(&self, stylesheet: gpui_luma::theme::stylesheet::CommonStylesheet) {
+        // Numeric slider identities belong to Radix; the SDK stores standard sizes directly.
+        let mut stylesheet = stylesheet;
+        let mut numeric = gpui_luma::theme::stylesheet::SliderStylesheet::default();
+        for (key, size) in [
+            ("1", gpui_luma::theme::ControlSize::Sm),
+            ("2", gpui_luma::theme::ControlSize::Md),
+            ("3", gpui_luma::theme::ControlSize::Lg),
+        ] {
+            if let Some(authored) = stylesheet.slider.sizes.custom.get(key) {
+                *numeric.sizes.get_or_default(size) = authored.clone();
+            }
+        }
+        numeric.apply_to(&mut stylesheet.slider);
         *self.state.common_stylesheet.write().unwrap_or_else(|poisoned| poisoned.into_inner()) = stylesheet;
         self.bump_revision();
     }

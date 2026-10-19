@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
@@ -224,7 +222,7 @@ impl PagerStylesheet {
                 disabled_opacity: Some(0.56),
                 ..Default::default()
             },
-            sizes: HashMap::from([(
+            sizes: crate::theme::ControlSizes::from([(
                 "minimal".into(),
                 PagerGeometryStylesheet { button_extra_width_scale: Some(0.0), ..Default::default() },
             )]),

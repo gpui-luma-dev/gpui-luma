@@ -158,19 +158,19 @@ pub(crate) fn button_box_with_stylesheet(
     );
 
     ButtonBox {
-        height: geometry.height.value_px,
-        padding_x: geometry.padding_x.value_px,
-        padding_y: geometry.padding_y.value_px,
-        gap: geometry.gap.value_px,
+        height: geometry.height,
+        padding_x: geometry.padding_x,
+        padding_y: geometry.padding_y,
+        gap: geometry.gap,
         radius: if radius == Radius::Full {
-            geometry.height.value_px / 2.0
+            geometry.height / 2.0
         } else {
             resolve_button_radius(size, radius)
         },
-        icon_size: geometry.icon_size.value_px,
+        icon_size: geometry.icon_size,
         typography: LumaTextStyle {
-            size: geometry.font_size.value_px,
-            line_height: geometry.line_height.value_px,
+            size: geometry.font_size,
+            line_height: geometry.line_height,
             weight: FontWeight::MEDIUM,
         },
     }
@@ -195,7 +195,6 @@ fn button_box_height(size: ButtonSize) -> f32 {
         .button
         .resolve_geometry(size.as_str(), Default::default())
         .height
-        .value_px
 }
 
 /// Applies Radix size/radius geometry onto a resolved color palette.

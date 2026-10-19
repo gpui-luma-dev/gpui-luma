@@ -1,4 +1,4 @@
-use crate::theme::provenance::ResolvedMetric;
+use crate::theme::provenance::{MetricSource, ResolvedMetric};
 use crate::theme::stylesheet::{CommonStylesheet, PaletteRole, SliderMotionStylesheet, TransitionSpec};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -8,7 +8,7 @@ use std::sync::{Arc, OnceLock};
 use gpui::{BoxShadow, Hsla};
 
 use super::SliderThumbSize;
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeTokens};
+use crate::theme::{ControlSize, ControlSizes, InteractionLayer, InteractionState, MetricTokens, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct SliderLook {
@@ -61,10 +61,12 @@ impl SliderTheme for DefaultSliderTheme {
             InteractionLayer::Default => selected.background,
         };
 
-        let selected_thumb = thumb_size.unwrap_or(size.into());
-        let mut look = SliderLook {
+        let fallback = SliderGeometry::sdk_default(metrics, size, thumb_size, &self.tokens.stylesheet);
+        let geometry =
+            self.tokens.stylesheet.slider.resolve_geometry(size, thumb_size.map(thumb_control_size), &fallback);
+        SliderLook {
             thumb_border_width: self.tokens.metrics.border_width.default,
-            decoration: self.tokens.stylesheet.slider.decoration(size.stylesheet_key()),
+            decoration: self.tokens.stylesheet.slider.decoration(size),
             track_background: if state.disabled {
                 palette.state.disabled.background
             } else {
@@ -82,19 +84,12 @@ impl SliderTheme for DefaultSliderTheme {
                 selected.background
             },
             thumb_shadow: elevation.thumb.to_box_shadows(),
-            width: 0.0,
-            height: slider_height(metrics, size, &self.tokens.stylesheet),
-            track_height: slider_track_height(metrics, size),
-            thumb_size: slider_thumb_size_with_stylesheet(metrics, selected_thumb, &self.tokens.stylesheet),
+            width: geometry.width,
+            height: geometry.height,
+            track_height: geometry.track_height,
+            thumb_size: geometry.thumb_size,
             radius: metrics.radius.pill,
-        };
-        let thumb_key = thumb_size.map(|size| thumb_control_size(size).stylesheet_key());
-        let geometry = self.tokens.stylesheet.slider.resolve_geometry(size.stylesheet_key(), thumb_key, &look);
-        look.width = geometry.width.value_px;
-        look.height = geometry.height.value_px;
-        look.track_height = geometry.track_height.value_px;
-        look.thumb_size = geometry.thumb_size.value_px;
-        look
+        }
     }
 }
 
@@ -103,7 +98,7 @@ fn slider_height(
     size: ControlSize,
     stylesheet: &crate::theme::stylesheet::CommonStylesheet,
 ) -> f32 {
-    let recipe = stylesheet.slider.authored_geometry(size.stylesheet_key());
+    let recipe = stylesheet.slider.authored_geometry(size);
     let floor = recipe
         .height_floor_scale
         .or(crate::theme::stylesheet::CommonStylesheet::sdk_default().slider.geometry.height_floor_scale)
@@ -131,7 +126,7 @@ fn slider_thumb_size_with_stylesheet(
     stylesheet: &crate::theme::stylesheet::CommonStylesheet,
 ) -> f32 {
     let size = thumb_control_size(size);
-    let recipe = stylesheet.slider.authored_geometry(size.stylesheet_key());
+    let recipe = stylesheet.slider.authored_geometry(size);
     let factor = recipe
         .thumb_scale
         .or(crate::theme::stylesheet::CommonStylesheet::sdk_default().slider.geometry.thumb_scale)
@@ -196,7 +191,7 @@ mod tests {
 pub struct SliderStylesheet {
     pub geometry: SliderGeometryStylesheet,
     /// Semantic size keys belong to the look; the SDK does not normalize them.
-    pub sizes: HashMap<String, SliderGeometryStylesheet>,
+    pub sizes: ControlSizes<SliderGeometryStylesheet>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
@@ -224,29 +219,39 @@ pub struct SliderGeometryStylesheet {
     pub thumb_scale: Option<f32>,
 }
 
-#[derive(Clone, Debug)]
-pub struct ResolvedSliderGeometry {
-    pub width: ResolvedMetric,
-    pub height: ResolvedMetric,
-    pub track_height: ResolvedMetric,
-    pub thumb_size: ResolvedMetric,
+/// Concrete layout values shared by rendering and inspection.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct SliderGeometry {
+    pub width: f32,
+    pub height: f32,
+    pub track_height: f32,
+    pub thumb_size: f32,
 }
 
-crate::theme::stylesheet::geometry::inherit_geometry!(
-    SliderStylesheet,
-    sizes,
-    [
-        width,
-        height,
-        track_height,
-        thumb_size,
-        height_floor_scale,
-        thumb_scale,
-        dial_size,
-        track_radius,
-        disabled_opacity
-    ]
-);
+/// Inspector descriptions are separate from the geometry used for painting.
+#[derive(Clone, Debug)]
+pub struct SliderGeometrySources {
+    pub width: MetricSource,
+    pub height: MetricSource,
+    pub track_height: MetricSource,
+    pub thumb_size: MetricSource,
+}
+
+impl SliderGeometry {
+    pub fn sdk_default(
+        metrics: &MetricTokens,
+        size: ControlSize,
+        thumb_size: Option<SliderThumbSize>,
+        stylesheet: &CommonStylesheet,
+    ) -> Self {
+        Self {
+            width: 0.0,
+            height: slider_height(metrics, size, stylesheet),
+            track_height: slider_track_height(metrics, size),
+            thumb_size: slider_thumb_size_with_stylesheet(metrics, thumb_size.unwrap_or(size.into()), stylesheet),
+        }
+    }
+}
 
 /// Nonlinear slider presentation metrics, in logical pixels and unit opacity.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -258,7 +263,7 @@ pub struct SliderDecoration {
 
 impl SliderStylesheet {
     /// Resolve radial paint dimensions and disabled opacity for the selected size.
-    pub fn decoration(&self, key: &str) -> SliderDecoration {
+    pub fn decoration(&self, key: ControlSize) -> SliderDecoration {
         let recipe = self.authored_geometry(key);
         let baseline = CommonStylesheet::sdk_default().slider.authored_geometry(key);
         SliderDecoration {
@@ -268,7 +273,7 @@ impl SliderStylesheet {
         }
     }
     /// Optional size/general inputs, including token-derived recipe coefficients.
-    pub fn authored_geometry(&self, key: &str) -> SliderGeometryStylesheet {
+    pub fn authored_geometry(&self, key: ControlSize) -> SliderGeometryStylesheet {
         let specific = self.sizes.get(key).cloned().unwrap_or_default();
         macro_rules! field {
             ($name:ident) => {
@@ -288,19 +293,36 @@ impl SliderStylesheet {
         }
     }
 
+    /// Resolve concrete dimensions without constructing inspector metadata.
+    pub fn resolve_geometry(
+        &self,
+        key: ControlSize,
+        thumb_key: Option<ControlSize>,
+        fallback: &SliderGeometry,
+    ) -> SliderGeometry {
+        let authored = self.authored_geometry(key);
+        let thumb = self.authored_geometry(thumb_key.unwrap_or(key));
+        SliderGeometry {
+            width: authored.width.unwrap_or(fallback.width),
+            height: authored.height.unwrap_or(fallback.height),
+            track_height: authored.track_height.unwrap_or(fallback.track_height),
+            thumb_size: thumb.thumb_size.unwrap_or(fallback.thumb_size),
+        }
+    }
+
     /// Resolve per-size, general, then SDK/legacy dimensions. Explicit thumb-size
     /// selections use the corresponding look size, independently of control size.
     /// Slider dimensions retain logical pixels without introducing display snapping.
-    pub fn resolve_geometry(
+    pub fn inspect_geometry(
         &self,
-        key: &str,
-        thumb_key: Option<&str>,
-        fallback: &crate::controls::slider::SliderLook,
-    ) -> ResolvedSliderGeometry {
+        key: ControlSize,
+        thumb_key: Option<ControlSize>,
+        fallback: &SliderGeometry,
+    ) -> (SliderGeometry, SliderGeometrySources) {
         let specific = self.sizes.get(key).cloned().unwrap_or_default();
-        let resolve = |key: &str, field: &str, specific: Option<f32>, general: Option<f32>, fallback: f32| {
+        let resolve = |key: ControlSize, field: &str, specific: Option<f32>, general: Option<f32>, fallback: f32| {
             if let Some(value) = specific {
-                ResolvedMetric::authored(value, format!("common.slider.sizes.{key}.{field}"))
+                ResolvedMetric::authored(value, format!("common.slider.sizes.{}.{field}", key.stylesheet_key()))
             } else if let Some(value) = general {
                 ResolvedMetric::authored(value, format!("common.slider.geometry.{field}"))
             } else {
@@ -322,21 +344,27 @@ impl SliderStylesheet {
                 _ => "SDK/legacy thumb fallback".into(),
             };
             thumb.source = crate::theme::provenance::MetricSource::Derived {
-                note: format!("instance thumb_size {selected_thumb_key} → {source}"),
+                note: format!("instance thumb_size {} → {source}", selected_thumb_key.stylesheet_key()),
             };
         }
-        ResolvedSliderGeometry {
-            width: resolve(key, "width", specific.width, self.geometry.width, fallback.width),
-            height: resolve(key, "height", specific.height, self.geometry.height, fallback.height),
-            track_height: resolve(
-                key,
-                "track_height",
-                specific.track_height,
-                self.geometry.track_height,
-                fallback.track_height,
-            ),
-            thumb_size: thumb,
-        }
+        let width = resolve(key, "width", specific.width, self.geometry.width, fallback.width);
+        let height = resolve(key, "height", specific.height, self.geometry.height, fallback.height);
+        let track_height =
+            resolve(key, "track_height", specific.track_height, self.geometry.track_height, fallback.track_height);
+        (
+            SliderGeometry {
+                width: width.value_px,
+                height: height.value_px,
+                track_height: track_height.value_px,
+                thumb_size: thumb.value_px,
+            },
+            SliderGeometrySources {
+                width: width.source,
+                height: height.source,
+                track_height: track_height.source,
+                thumb_size: thumb.source,
+            },
+        )
     }
 
     /// Configure general slider width in logical pixels.
@@ -394,8 +422,8 @@ impl SliderStylesheet {
     }
 
     /// Configure or override a size key without manual map manipulation.
-    pub fn size(&mut self, key: impl Into<String>, configure: impl FnOnce(&mut SliderGeometryStylesheet)) -> &mut Self {
-        let entry = self.sizes.entry(key.into()).or_default();
+    pub fn size(&mut self, key: ControlSize, configure: impl FnOnce(&mut SliderGeometryStylesheet)) -> &mut Self {
+        let entry = self.sizes.get_or_default(key);
         configure(entry);
         self
     }
@@ -418,6 +446,22 @@ impl SliderStylesheet {
         *target = self.clone().with_baseline(target);
     }
 }
+
+crate::theme::stylesheet::geometry::inherit_geometry!(
+    SliderStylesheet,
+    sizes,
+    [
+        width,
+        height,
+        track_height,
+        thumb_size,
+        height_floor_scale,
+        thumb_scale,
+        dial_size,
+        track_radius,
+        disabled_opacity
+    ]
+);
 
 impl SliderGeometryStylesheet {
     pub fn width(&mut self, width: f32) -> &mut Self {

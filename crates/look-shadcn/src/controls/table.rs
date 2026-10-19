@@ -7,20 +7,28 @@
 //! | Selected    | `muted`               |
 //! | Keyboard active | `muted`           |
 
-use crate::stylesheet::config::{EnabledColorRule, find_enabled_color_rule, matches_optional_layer};
+use crate::stylesheet::config::EnabledColorRule;
+use crate::stylesheet::config::find_enabled_color_rule;
+use crate::stylesheet::config::matches_optional_layer;
 use serde::Deserialize;
 use std::collections::HashMap;
 
-use gpui_luma::controls::table::{TableLook, TableRowPalette};
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState};
+use gpui_luma::controls::table::TableLook;
+use gpui_luma::controls::table::TableRowPalette;
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionState;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{
-    StylesheetConfig, find_table_row_color_rule, find_table_surface_color_rule, resolve_table_row_color_rule,
-    resolve_table_surface_color_rule, resolve_stylesheet_metric,
-};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_table_row_color_rule;
+use crate::stylesheet::find_table_surface_color_rule;
+use crate::stylesheet::resolve_table_row_color_rule;
+use crate::stylesheet::resolve_table_surface_color_rule;
+use crate::stylesheet::resolve_stylesheet_metric;
 
 #[derive(Clone, Debug)]
 pub struct TableSurfaceColorTable {
@@ -151,8 +159,8 @@ pub fn table_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: 
             ..Default::default()
         },
     );
-    look.padding_x = geometry.padding_x.value_px;
-    look.padding_y = geometry.padding_y.value_px;
+    look.padding_x = geometry.padding_x;
+    look.padding_y = geometry.padding_y;
 
     look
 }
@@ -377,4 +385,55 @@ pub struct TableRowColorRule {
     pub background: String,
     pub label_color: String,
     pub divider: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct TableMetricTable {
+    pub radius: crate::ResolvedMetric,
+    pub padding_x: crate::ResolvedMetric,
+    pub padding_y: crate::ResolvedMetric,
+    pub row_min_height: crate::ResolvedMetric,
+    pub row_padding_x: crate::ResolvedMetric,
+    pub row_padding_y: crate::ResolvedMetric,
+}
+
+pub fn resolve_table_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> TableMetricTable {
+    use gpui_luma::theme::ListRowScale;
+
+    use crate::catalog::SpacingField;
+    use crate::tables::metrics::helpers::{
+        control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric,
+    };
+
+    let ctx = crate::LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let metrics = ctx.metrics();
+    let catalog = ctx.catalog();
+    let look = crate::paint::table_look(mode, true, false, size);
+    let row_scale = ListRowScale::compute(size, metrics, 1.0);
+    let size_key = control_size_key(size);
+
+    let mut table = TableMetricTable {
+        radius: radius_metric(catalog, size, look.radius),
+        padding_x: derived_metric("list padding x", look.padding_x),
+        padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, look.padding_y),
+        row_min_height: scaffold_control_metric(size_key, "control_height", row_scale.min_height),
+        row_padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, row_scale.padding_x),
+        row_padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, row_scale.padding_y),
+    };
+    let geometry = mode.stylesheet().common.table.inspect_geometry(
+        size_key,
+        gpui_luma::theme::stylesheet::TableGeometry {
+            padding_x: table.padding_x.value_px,
+            padding_y: table.padding_y.value_px,
+            ..Default::default()
+        },
+    );
+    table.padding_x = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_x, table.padding_x);
+    table.padding_y = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_y, table.padding_y);
+
+    table
 }

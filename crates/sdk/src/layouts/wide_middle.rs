@@ -26,11 +26,11 @@ impl WideMiddle {
         let geometry = crate::theme::stylesheet::CommonStylesheet::sdk_default().shared_geometry();
         Self {
             stacked: false,
-            gap: geometry.wide_middle_gap.value_px,
-            side_min_width: geometry.wide_side_min_width.value_px,
-            side_preferred_width: geometry.wide_side_preferred_width.value_px,
-            middle_min_width: geometry.wide_middle_min_width.value_px,
-            middle_max_width: geometry.wide_middle_max_width.value_px,
+            gap: geometry.wide_middle_gap,
+            side_min_width: geometry.wide_side_min_width,
+            side_preferred_width: geometry.wide_side_preferred_width,
+            middle_min_width: geometry.wide_middle_min_width,
+            middle_max_width: geometry.wide_middle_max_width,
         }
     }
 

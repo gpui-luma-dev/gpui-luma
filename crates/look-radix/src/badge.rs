@@ -55,13 +55,7 @@ impl BadgeSize {
             Self::One => 3.0,
             Self::Two | Self::Three => 4.0,
         };
-        (
-            geometry.font_size.value_px,
-            geometry.line_height.value_px,
-            geometry.padding_x.value_px,
-            geometry.padding_y.value_px,
-            radius,
-        )
+        (geometry.font_size, geometry.line_height, geometry.padding_x, geometry.padding_y, radius)
     }
 }
 
@@ -146,12 +140,8 @@ impl IntoElement for Badge {
                 ..Default::default()
             },
         );
-        let (font_size, line_height, padding_x, padding_y) = (
-            geometry.font_size.value_px,
-            geometry.line_height.value_px,
-            geometry.padding_x.value_px,
-            geometry.padding_y.value_px,
-        );
+        let (font_size, line_height, padding_x, padding_y) =
+            (geometry.font_size, geometry.line_height, geometry.padding_x, geometry.padding_y);
         let radius = if self.pill { 999.0 } else { radius };
         // An inset outline preserves identical dimensions across variants.
         div()

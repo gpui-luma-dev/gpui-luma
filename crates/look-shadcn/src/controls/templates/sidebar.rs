@@ -19,7 +19,7 @@ impl SidebarTheme for ShadcnSidebarTheme {
         self.theme.stylesheet().common.font_features.resolve("sidebar_section")
     }
 
-    fn geometry(&self) -> gpui_luma::theme::stylesheet::ResolvedSidebarGeometry {
+    fn geometry(&self) -> gpui_luma::theme::stylesheet::SidebarGeometry {
         self.theme.mode_tokens().stylesheet().common.sidebar.resolve_geometry("", Default::default())
     }
     fn resolve_drag(&self, size: ControlSize) -> gpui_luma::infra::drag_drop::DragDropLook {

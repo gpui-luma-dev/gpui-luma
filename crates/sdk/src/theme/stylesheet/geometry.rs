@@ -8,12 +8,30 @@ macro_rules! apply_common_geometry {
             $($field: $look.$($target).+,)+
             $(..$defaults)?
         });
-        $($look.$($target).+ = geometry.$field.value_px;)+
+        $($look.$($target).+ = geometry.$field;)+
     }};
 }
 pub(crate) use apply_common_geometry;
 
 macro_rules! inherit_geometry {
+    ($stylesheet:ident, sizes, [$($field:ident),+]) => {
+        impl $stylesheet {
+            pub(crate) fn with_baseline(mut self, baseline: &Self) -> Self {
+                let mut inherited = baseline.sizes.clone();
+                for value in inherited.values_mut() {
+                    $(if self.geometry.$field.is_some() { value.$field = None; })+
+                }
+                for (key, authored) in self.sizes {
+                    let value = inherited.get_or_default(key.as_str());
+                    $(value.$field = authored.$field.or(value.$field);)+
+                }
+                $(self.geometry.$field = self.geometry.$field.or(baseline.geometry.$field);)+
+                self.sizes = inherited;
+                self
+            }
+        }
+    };
+
     ($stylesheet:ident, $axis:ident, [$($field:ident),+]) => {
         impl $stylesheet {
             pub(crate) fn with_baseline(mut self, baseline: &Self) -> Self {
@@ -48,7 +66,7 @@ macro_rules! geometry_family_impl {
         #[serde(default, deny_unknown_fields)]
         pub struct $stylesheet {
             pub geometry: $authored,
-            pub sizes: std::collections::HashMap<String, $authored>,
+            pub sizes: $crate::theme::ControlSizes<$authored>,
         }
         /// Optional logical pixel values. Authored zero overrides the fallback.
         #[derive(Clone, Debug, Default, serde::Deserialize, PartialEq, serde::Serialize)]
@@ -62,10 +80,10 @@ macro_rules! geometry_family_impl {
                 Self { $($field: self.$field.or(fallback.$field),)+ }
             }
         }
-        /// Dimensions supplied by the SDK or look tokens when configuration is unset.
+        /// Concrete geometry used by controls.
         #[derive(Clone, Copy, Debug, Default, PartialEq)]
         pub struct $fallback { $(pub $field: f32,)+ }
-        /// Resolved common dimensions with the source of each value.
+        /// Inspector projection; rendering uses the concrete geometry above.
         #[derive(Clone, Debug)]
         pub struct $resolved { $(pub $field: $crate::theme::provenance::ResolvedMetric,)+ }
         $crate::theme::stylesheet::geometry::inherit_geometry!($stylesheet, sizes, [$($field),+]);
@@ -77,10 +95,12 @@ macro_rules! geometry_family_impl {
                         "[common.{}.sizes.\"custom\"]\n{} = {value}", $family, stringify!($field))).is_err());
                 })+
                 let authored = $authored { $($field: Some(0.0),)+ };
-                let config = $stylesheet { geometry: $authored { $($field: Some(9.0),)+ }, sizes: std::collections::HashMap::from([("4".into(), authored)]) };
-                let selected = config.resolve_geometry("4", $fallback { $($field: 7.0,)+ });
-                let general = config.resolve_geometry("other", $fallback { $($field: 7.0,)+ });
-                let missing = Self::default().resolve_geometry("4", $fallback { $($field: 7.0,)+ });
+                let config = $stylesheet { geometry: $authored { $($field: Some(9.0),)+ }, sizes: $crate::theme::ControlSizes::from([("4".into(), authored)]) };
+                let selected = config.inspect_geometry("4", $fallback { $($field: 7.0,)+ });
+                let concrete = config.resolve_geometry($crate::theme::SizeKey::Custom("4"), $fallback { $($field: 7.0,)+ });
+                $(assert_eq!(concrete.$field, selected.$field.value_px);)+
+                let general = config.inspect_geometry("other", $fallback { $($field: 7.0,)+ });
+                let missing = Self::default().inspect_geometry("4", $fallback { $($field: 7.0,)+ });
                 $(assert_eq!(selected.$field.value_px, 0.0);
                 assert_eq!(general.$field.value_px, 9.0);
                 assert_eq!(missing.$field.value_px, 7.0);
@@ -94,8 +114,13 @@ macro_rules! geometry_family_impl {
             pub fn authored_geometry(&self, key: &str) -> $authored {
                 self.sizes.get(key).cloned().unwrap_or_default().with_fallback(&self.geometry)
             }
+            /// Resolve concrete values without constructing inspector metadata.
+            pub fn resolve_geometry<'a>(&self, key: impl Into<$crate::theme::SizeKey<'a>>, fallback: $fallback) -> $fallback {
+                let authored = self.authored_geometry(key.into().as_str());
+                $fallback { $($field: authored.$field.unwrap_or(fallback.$field),)+ }
+            }
             /// Per-size values override general geometry, then supplied fallbacks.
-            pub fn resolve_geometry(&self, key: &str, fallback: $fallback) -> $resolved {
+            pub fn inspect_geometry(&self, key: &str, fallback: $fallback) -> $resolved {
                 let specific = self.sizes.get(key);
                 $resolved {
                     $($field: if let Some(value) = specific.and_then(|size| size.$field) {

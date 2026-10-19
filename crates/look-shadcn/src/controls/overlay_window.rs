@@ -1,11 +1,14 @@
-use std::collections::HashMap;
-
-use gpui::{Hsla, black};
-use gpui_luma::controls::overlay_window::{OverlayWindowLook, OverlayWindowMode};
+use gpui::Hsla;
+use gpui::black;
+use gpui_luma::controls::overlay_window::OverlayWindowLook;
+use gpui_luma::controls::overlay_window::OverlayWindowMode;
 use gpui_luma::theme::ControlSize;
 
 use crate::look::ShadcnLook;
-use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnToken};
+use crate::tokens::ShadcnFont;
+use crate::tokens::ShadcnRadius;
+use crate::tokens::ShadcnShadow;
+use crate::tokens::ShadcnToken;
 
 pub fn overlay_window_look(theme: &ShadcnLook, size: ControlSize, mode: OverlayWindowMode) -> OverlayWindowLook {
     let tokens = theme.mode_tokens();
@@ -40,7 +43,7 @@ pub fn overlay_window_look(theme: &ShadcnLook, size: ControlSize, mode: OverlayW
         body: typography.text.body,
         font_family: theme.font(ShadcnFont::Sans),
     };
-    let geometry = tokens.stylesheet().common.overlay_window.resolve_geometry(
+    let geometry = tokens.stylesheet().common.overlay_window.inspect_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
         gpui_luma::theme::stylesheet::OverlayWindowGeometry {
             padding: look.padding,
@@ -82,13 +85,63 @@ pub fn overlay_window_look(theme: &ShadcnLook, size: ControlSize, mode: OverlayW
 /// Native common geometry owned by this control.
 pub(crate) fn native_overlay_window_stylesheet() -> gpui_luma::theme::stylesheet::OverlayWindowStylesheet {
     use gpui_luma::theme::stylesheet::*;
-    use HashMap;
     OverlayWindowStylesheet {
         geometry: OverlayWindowGeometryStylesheet { backdrop_opacity: Some(0.42), ..Default::default() },
-        sizes: HashMap::from([
+        sizes: gpui_luma::theme::ControlSizes::from([
             ("sm".into(), OverlayWindowGeometryStylesheet { max_width: Some(420.0), ..Default::default() }),
             ("md".into(), OverlayWindowGeometryStylesheet::default()),
             ("lg".into(), OverlayWindowGeometryStylesheet { max_width: Some(620.0), ..Default::default() }),
         ]),
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct OverlayWindowMetricTable {
+    pub radius: crate::ResolvedMetric,
+    pub padding: crate::ResolvedMetric,
+    pub min_width: crate::ResolvedMetric,
+    pub max_width: crate::ResolvedMetric,
+    pub estimated_height: crate::ResolvedMetric,
+}
+
+pub fn resolve_overlay_window_metrics(
+    look: &crate::ShadcnLook,
+    size: gpui_luma::theme::ControlSize,
+    mode: gpui_luma::controls::overlay_window::OverlayWindowMode,
+) -> OverlayWindowMetricTable {
+    use crate::tables::metrics::helpers::derived_metric;
+
+    let shell = crate::paint::overlay_window_look(look, size, mode);
+    let size_key = match size {
+        gpui_luma::theme::ControlSize::Sm => "sm",
+        gpui_luma::theme::ControlSize::Md => "md",
+        gpui_luma::theme::ControlSize::Lg => "lg",
+    };
+
+    let mut table = OverlayWindowMetricTable {
+        radius: derived_metric("overlay radius = radius.lg", shell.radius),
+        padding: derived_metric(format!("{size_key} overlay padding"), shell.padding),
+        min_width: derived_metric(format!("{size_key} overlay min width"), shell.min_width),
+        max_width: derived_metric(format!("{size_key} overlay max width"), shell.max_width),
+        estimated_height: derived_metric(format!("{size_key} overlay estimated height"), shell.estimated_height),
+    };
+    let geometry = look.mode_tokens().stylesheet().common.overlay_window.inspect_geometry(
+        size_key,
+        gpui_luma::theme::stylesheet::OverlayWindowGeometry {
+            radius: table.radius.value_px,
+            padding: table.padding.value_px,
+            min_width: table.min_width.value_px,
+            max_width: table.max_width.value_px,
+            estimated_height: table.estimated_height.value_px,
+            ..Default::default()
+        },
+    );
+    table.radius = crate::tables::metrics::helpers::prefer_shared_metric(geometry.radius, table.radius);
+    table.padding = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding, table.padding);
+    table.min_width = crate::tables::metrics::helpers::prefer_shared_metric(geometry.min_width, table.min_width);
+    table.max_width = crate::tables::metrics::helpers::prefer_shared_metric(geometry.max_width, table.max_width);
+    table.estimated_height =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.estimated_height, table.estimated_height);
+
+    table
 }

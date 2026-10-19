@@ -489,11 +489,7 @@ mod stylesheet_tests {
         let geometry =
             builder.model.stylesheet.resolve_geometry(builder.model.size.stylesheet_key(), Default::default());
         assert_eq!(
-            (
-                geometry.affordance_inset.value_px,
-                geometry.affordance_width.value_px,
-                geometry.affordance_icon_size.value_px
-            ),
+            (geometry.affordance_inset, geometry.affordance_width, geometry.affordance_icon_size),
             (0.0, 31.0, 23.0)
         );
     }

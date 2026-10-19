@@ -105,7 +105,7 @@ pub(crate) fn popup_menu_geometry(
     scale: &gpui_luma::theme::StandardBoxScale,
     typography: &gpui_luma::theme::LumaTextStyle,
 ) -> gpui_luma::theme::stylesheet::ResolvedPopupMenuGeometry {
-    mode.stylesheet().common.popup_menu.resolve_geometry(
+    mode.stylesheet().common.popup_menu.inspect_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
         gpui_luma::theme::stylesheet::PopupMenuGeometry {
             height: scale.height,

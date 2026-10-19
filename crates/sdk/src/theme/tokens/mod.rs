@@ -23,6 +23,145 @@ pub enum ControlSize {
     Lg,
 }
 
+/// Typed standard sizes, with named extensions for controls that actually use
+/// additional sizes (for example Radix buttons and avatars).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ControlSizes<T> {
+    pub sm: T,
+    pub md: T,
+    pub lg: T,
+    pub custom: std::collections::HashMap<String, T>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SizeKey<'a> {
+    Sm,
+    Md,
+    Lg,
+    Custom(&'a str),
+}
+
+impl<'a> SizeKey<'a> {
+    pub fn as_str(self) -> &'a str {
+        match self {
+            Self::Sm => "sm",
+            Self::Md => "md",
+            Self::Lg => "lg",
+            Self::Custom(key) => key,
+        }
+    }
+}
+
+impl From<ControlSize> for SizeKey<'_> {
+    fn from(size: ControlSize) -> Self {
+        match size {
+            ControlSize::Sm => Self::Sm,
+            ControlSize::Md => Self::Md,
+            ControlSize::Lg => Self::Lg,
+        }
+    }
+}
+
+impl<'a> From<&'a str> for SizeKey<'a> {
+    fn from(key: &'a str) -> Self {
+        match key {
+            "sm" => Self::Sm,
+            "md" => Self::Md,
+            "lg" => Self::Lg,
+            _ => Self::Custom(key),
+        }
+    }
+}
+
+impl<'a> From<&'a String> for SizeKey<'a> {
+    fn from(key: &'a String) -> Self {
+        key.as_str().into()
+    }
+}
+
+impl<T> ControlSizes<T> {
+    pub fn get<'a>(&self, size: impl Into<SizeKey<'a>>) -> Option<&T> {
+        match size.into() {
+            SizeKey::Sm => Some(&self.sm),
+            SizeKey::Md => Some(&self.md),
+            SizeKey::Lg => Some(&self.lg),
+            SizeKey::Custom(key) => self.custom.get(key),
+        }
+    }
+
+    pub fn get_mut<'a>(&mut self, size: impl Into<SizeKey<'a>>) -> Option<&mut T> {
+        match size.into() {
+            SizeKey::Sm => Some(&mut self.sm),
+            SizeKey::Md => Some(&mut self.md),
+            SizeKey::Lg => Some(&mut self.lg),
+            SizeKey::Custom(key) => self.custom.get_mut(key),
+        }
+    }
+
+    pub fn insert(&mut self, key: String, value: T) {
+        match SizeKey::from(key.as_str()) {
+            SizeKey::Sm => self.sm = value,
+            SizeKey::Md => self.md = value,
+            SizeKey::Lg => self.lg = value,
+            SizeKey::Custom(_) => {
+                self.custom.insert(key, value);
+            }
+        }
+    }
+
+    pub fn keys(&self) -> impl Iterator<Item = &str> {
+        ["sm", "md", "lg"].into_iter().chain(self.custom.keys().map(String::as_str))
+    }
+
+    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut T> {
+        [&mut self.sm, &mut self.md, &mut self.lg].into_iter().chain(self.custom.values_mut())
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&str, &mut T)> {
+        [("sm", &mut self.sm), ("md", &mut self.md), ("lg", &mut self.lg)]
+            .into_iter()
+            .chain(self.custom.iter_mut().map(|(key, value)| (key.as_str(), value)))
+    }
+}
+
+impl<T: Default> ControlSizes<T> {
+    pub fn get_or_default<'a>(&mut self, size: impl Into<SizeKey<'a>>) -> &mut T {
+        match size.into() {
+            SizeKey::Sm => &mut self.sm,
+            SizeKey::Md => &mut self.md,
+            SizeKey::Lg => &mut self.lg,
+            SizeKey::Custom(key) => self.custom.entry(key.into()).or_default(),
+        }
+    }
+}
+
+impl<T: Default> FromIterator<(String, T)> for ControlSizes<T> {
+    fn from_iter<I: IntoIterator<Item = (String, T)>>(iter: I) -> Self {
+        let mut sizes = Self::default();
+        for (key, value) in iter {
+            sizes.insert(key, value);
+        }
+        sizes
+    }
+}
+
+impl<T: Default, const N: usize> From<[(String, T); N]> for ControlSizes<T> {
+    fn from(values: [(String, T); N]) -> Self {
+        values.into_iter().collect()
+    }
+}
+
+impl<T> IntoIterator for ControlSizes<T> {
+    type Item = (String, T);
+    type IntoIter =
+        std::iter::Chain<std::array::IntoIter<(String, T), 3>, std::collections::hash_map::IntoIter<String, T>>;
+    fn into_iter(self) -> Self::IntoIter {
+        [("sm".into(), self.sm), ("md".into(), self.md), ("lg".into(), self.lg)]
+            .into_iter()
+            .chain(self.custom)
+    }
+}
+
 impl ControlSize {
     /// Vanilla semantic key used by the shared stylesheet.
     pub fn stylesheet_key(self) -> &'static str {

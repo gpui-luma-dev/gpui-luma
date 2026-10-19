@@ -55,8 +55,8 @@ impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
 
         ResizablePanelsLook {
             border: palette.border.default,
-            border_width: geometry.border_width.value_px,
-            divider_width: geometry.divider_width.value_px,
+            border_width: geometry.border_width,
+            divider_width: geometry.divider_width,
             divider: if disabled {
                 palette.state.disabled.background
             } else {
@@ -72,11 +72,7 @@ impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
             } else {
                 palette.state.hover.background
             },
-            disabled_opacity: if disabled {
-                geometry.disabled_opacity.value_px
-            } else {
-                1.0
-            },
+            disabled_opacity: if disabled { geometry.disabled_opacity } else { 1.0 },
         }
     }
 }

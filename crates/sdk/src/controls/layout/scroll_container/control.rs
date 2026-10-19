@@ -56,8 +56,7 @@ impl ScrollContainer {
             scrollbar,
             scrollbar_width: px(crate::theme::stylesheet::CommonStylesheet::sdk_default()
                 .shared_geometry()
-                .scrollbar_width
-                .value_px),
+                .scrollbar_width),
             placement: ScrollbarPlacement::Inset,
             visibility: ScrollbarVisibility::AlwaysVisible,
             auto_hide_activate: ScrollbarAutoHideActivate::HoverOrMove,

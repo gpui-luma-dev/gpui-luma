@@ -744,7 +744,6 @@ where
                 crate::theme::stylesheet::CommonStylesheet::sdk_default()
                     .shared_geometry()
                     .selection_scrollbar_width
-                    .value_px
             } else {
                 0.0
             };

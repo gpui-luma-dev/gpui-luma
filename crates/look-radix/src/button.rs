@@ -99,16 +99,16 @@ impl ButtonFamilyTheme for ButtonFamilyThemeAdapter {
                 line_height: palette.typography.line_height,
             },
         );
-        palette.typography.size = geometry.font_size.value_px;
-        palette.typography.line_height = geometry.line_height.value_px;
+        palette.typography.size = geometry.font_size;
+        palette.typography.line_height = geometry.line_height;
         let mut look = compose_button_family_look(&palette, role, scale, pill_radius);
-        look.height = geometry.height.value_px;
-        look.gap = geometry.gap.value_px;
+        look.height = geometry.height;
+        look.gap = geometry.gap;
         if role != ButtonFamilyRole::Icon {
-            look.padding_x = geometry.padding_x.value_px;
-            look.padding_y = geometry.padding_y.value_px;
+            look.padding_x = geometry.padding_x;
+            look.padding_y = geometry.padding_y;
         } else {
-            look.icon_size = geometry.icon_size.value_px;
+            look.icon_size = geometry.icon_size;
         }
         if matches!(self.variant, ButtonVariant::Page) {
             look.radius = pill_radius;

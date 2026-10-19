@@ -248,8 +248,8 @@ impl Tabs {
                 .absolute()
                 .top_0()
                 .bottom_0()
-                .left(px(marker - start - look.geometry.drag_marker_width.value_px / 2.0))
-                .w(px(look.geometry.drag_marker_width.value_px))
+                .left(px(marker - start - look.geometry.drag_marker_width / 2.0))
+                .w(px(look.geometry.drag_marker_width))
                 .bg(color)
                 .opacity(0.)
                 // GPUI only resolves group drag styles for elements with a hitbox.

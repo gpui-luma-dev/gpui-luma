@@ -6,7 +6,9 @@
 //! | Menu   | floating menu surface              |
 
 use gpui_luma::controls::context_menu::ContextMenuLook;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::ThemeMode;
 
 use crate::look_context::LookContext;
 use super::floating_menu::floating_menu_look;
@@ -76,7 +78,7 @@ pub fn context_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: 
         target_min_width: 200.0,
         floating_menu: floating_menu_look(ctx.tokens, ctx.theme_mode, size),
     };
-    let geometry = mode.stylesheet().common.context_menu.resolve_geometry(
+    let geometry = mode.stylesheet().common.context_menu.inspect_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
         gpui_luma::theme::stylesheet::ContextMenuGeometry {
             min_width: look.target_min_width,
@@ -157,4 +159,51 @@ pub(crate) fn native_context_menu_stylesheet() -> gpui_luma::theme::stylesheet::
         geometry: ContextMenuGeometryStylesheet { min_width: Some(200.0), ..Default::default() },
         ..Default::default()
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct ContextMenuMetricTable {
+    pub target_padding_x: crate::ResolvedMetric,
+    pub target_padding_y: crate::ResolvedMetric,
+    pub target_radius: crate::ResolvedMetric,
+    pub target_min_width: crate::ResolvedMetric,
+    pub menu: crate::controls::floating_menu::FloatingMenuMetricTable,
+}
+
+pub fn resolve_context_menu_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> ContextMenuMetricTable {
+    use crate::tables::metrics::helpers::{derived_metric, radius_metric, spacing_control_metric};
+    use crate::catalog::SpacingField;
+
+    let ctx = crate::LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let look = crate::paint::context_menu_look(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let catalog = ctx.catalog();
+
+    let mut table = ContextMenuMetricTable {
+        target_padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, look.target_padding_x),
+        target_padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, look.target_padding_y),
+        target_radius: radius_metric(catalog, size, look.target_radius),
+        target_min_width: derived_metric("context menu target min width", look.target_min_width),
+        menu: crate::controls::floating_menu::resolve_floating_menu_metrics(mode, theme_mode, size),
+    };
+    let geometry = mode.stylesheet().common.context_menu.inspect_geometry(
+        "md",
+        gpui_luma::theme::stylesheet::ContextMenuGeometry {
+            min_width: table.target_min_width.value_px,
+            padding_x: table.target_padding_x.value_px,
+            padding_y: table.target_padding_y.value_px,
+            ..Default::default()
+        },
+    );
+    table.target_min_width =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.min_width, table.target_min_width);
+    table.target_padding_x =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_x, table.target_padding_x);
+    table.target_padding_y =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_y, table.target_padding_y);
+
+    table
 }

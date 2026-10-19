@@ -1,9 +1,10 @@
-use std::collections::HashMap;
-
 use gpui::FontWeight;
-use gpui_luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole};
-use gpui_luma::controls::pager::{PagerLook, PagerStyle};
-use gpui_luma::theme::{ControlSize, InteractionState};
+use gpui_luma::controls::button_family::ButtonFamilyLook;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::pager::PagerLook;
+use gpui_luma::controls::pager::PagerStyle;
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionState;
 
 use crate::look::ShadcnLook;
 
@@ -57,7 +58,7 @@ pub fn pager_look(theme: &ShadcnLook, enabled: bool, style: PagerStyle) -> Pager
         group_gap: metrics.gap(ControlSize::Sm),
         disabled_opacity: recipe.disabled_opacity.unwrap_or_default(),
     };
-    let geometry = tokens.stylesheet().common.pager.resolve_geometry(
+    let geometry = tokens.stylesheet().common.pager.inspect_geometry(
         key,
         gpui_luma::theme::stylesheet::PagerGeometry {
             button_size: look.button_size,
@@ -124,7 +125,6 @@ pub fn pager_button_look(
 /// Native common geometry owned by this control.
 pub(crate) fn native_pager_stylesheet() -> gpui_luma::theme::stylesheet::PagerStylesheet {
     use gpui_luma::theme::stylesheet::*;
-    use HashMap;
     PagerStylesheet {
         geometry: PagerGeometryStylesheet {
             padding_x: Some(8.0),
@@ -132,7 +132,7 @@ pub(crate) fn native_pager_stylesheet() -> gpui_luma::theme::stylesheet::PagerSt
             gap: Some(4.0),
             ..Default::default()
         },
-        sizes: HashMap::from([
+        sizes: gpui_luma::theme::ControlSizes::from([
             (
                 "minimal".into(),
                 PagerGeometryStylesheet {
@@ -151,5 +151,101 @@ pub(crate) fn native_pager_stylesheet() -> gpui_luma::theme::stylesheet::PagerSt
                 PagerGeometryStylesheet { button_min_width: Some(32.0), group_gap: Some(16.0), ..Default::default() },
             ),
         ]),
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct PagerMetricTable {
+    pub control_height: crate::ResolvedMetric,
+    pub button_size: crate::ResolvedMetric,
+    pub button_min_width: crate::ResolvedMetric,
+    pub radius: crate::ResolvedMetric,
+    pub padding_x: crate::ResolvedMetric,
+    pub padding_y: crate::ResolvedMetric,
+    pub gap: crate::ResolvedMetric,
+    pub group_gap: crate::ResolvedMetric,
+    pub font_family: crate::ResolvedTypography,
+    pub reserved_shadow_extent: crate::ResolvedMetric,
+}
+
+pub fn resolve_pager_metrics(
+    look: &crate::ShadcnLook,
+    style: gpui_luma::controls::pager::PagerStyle,
+) -> PagerMetricTable {
+    use crate::tables::metrics::helpers::derived_metric;
+
+    let pager = crate::paint::pager_look(look, true, style);
+    let style_label = pager_style_label(style);
+    let button = look.resolve_outline_button(
+        gpui_luma::controls::button_family::ButtonFamilyRole::Toggle { selected: false },
+        gpui_luma::theme::ControlSize::Sm,
+        gpui_luma::theme::InteractionState::default(),
+    );
+    let reserved_shadow_extent =
+        gpui_luma::infra::shadow_layout::shadow_projection_extent(button.shadow.as_deref(), 1.0, true);
+
+    let mut table = PagerMetricTable {
+        control_height: derived_metric(format!("{style_label} page-size trigger height"), pager.control_height),
+        button_size: derived_metric(format!("{style_label} button size"), pager.button_size),
+        button_min_width: derived_metric(format!("{style_label} button min width"), pager.button_min_width),
+        radius: derived_metric(format!("{style_label} radius = radius.sm"), pager.radius),
+        padding_x: derived_metric(format!("{style_label} shell padding x"), pager.padding_x),
+        padding_y: derived_metric(format!("{style_label} shell padding y"), pager.padding_y),
+        gap: derived_metric(format!("{style_label} item gap"), pager.gap),
+        group_gap: derived_metric(format!("{style_label} group gap"), pager.group_gap),
+        font_family: pager_font_family(look),
+        reserved_shadow_extent: crate::ResolvedMetric {
+            value_px: reserved_shadow_extent,
+            source: crate::MetricSource::Derived { note: "button outline shadow projection extent".into() },
+        },
+    };
+    let geometry = look.mode_tokens().stylesheet().common.pager.inspect_geometry(
+        style_label,
+        gpui_luma::theme::stylesheet::PagerGeometry {
+            control_height: table.control_height.value_px,
+            button_size: table.button_size.value_px,
+            button_min_width: table.button_min_width.value_px,
+            padding_x: table.padding_x.value_px,
+            padding_y: table.padding_y.value_px,
+            gap: table.gap.value_px,
+            group_gap: table.group_gap.value_px,
+            radius: table.radius.value_px,
+            ..Default::default()
+        },
+    );
+    table.control_height =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.control_height, table.control_height);
+    table.button_size = crate::tables::metrics::helpers::prefer_shared_metric(geometry.button_size, table.button_size);
+    table.button_min_width =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.button_min_width, table.button_min_width);
+    table.padding_x = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_x, table.padding_x);
+    table.padding_y = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_y, table.padding_y);
+    table.gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.gap, table.gap);
+    table.group_gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.group_gap, table.group_gap);
+    table.radius = crate::tables::metrics::helpers::prefer_shared_metric(geometry.radius, table.radius);
+
+    table
+}
+
+fn pager_font_family(look: &crate::ShadcnLook) -> crate::ResolvedTypography {
+    let family = look.mode_tokens().typography.font.sans.family.clone();
+    if look.mode_tokens().catalog.get("font-sans").is_some() {
+        crate::ResolvedTypography {
+            value: family,
+            source: crate::TypographySource::CssVar { token: "font-sans".into() },
+        }
+    } else {
+        crate::ResolvedTypography {
+            value: family,
+            source: crate::TypographySource::Scaffold { path: "LumaTypography.font.sans.family".into() },
+        }
+    }
+}
+
+fn pager_style_label(style: gpui_luma::controls::pager::PagerStyle) -> &'static str {
+    match style {
+        gpui_luma::controls::pager::PagerStyle::Minimal => "minimal",
+        gpui_luma::controls::pager::PagerStyle::MinimalEdge => "minimal-edge",
+        gpui_luma::controls::pager::PagerStyle::Numeric => "numeric",
     }
 }

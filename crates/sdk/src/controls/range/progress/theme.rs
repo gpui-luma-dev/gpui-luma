@@ -7,7 +7,7 @@ use crate::theme::{ControlSize, ThemeTokens};
 #[derive(Clone, Debug)]
 pub struct ProgressLook {
     /// Resolved sweep and shimmer appearance, independent of phase/timing.
-    pub geometry: crate::theme::stylesheet::ResolvedProgressGeometry,
+    pub geometry: crate::theme::stylesheet::ProgressGeometry,
     pub track_color: Hsla,
     pub progress_color: Hsla,
     pub thumb_color: Hsla,
@@ -62,10 +62,10 @@ impl ProgressTheme for DefaultProgressTheme {
             track_color,
             progress_color,
             thumb_color: progress_color,
-            track_height: geometry.track_height.value_px,
-            thumb_size: geometry.thumb_size.value_px,
-            size: geometry.size.value_px,
-            stroke_width: geometry.stroke_width.value_px,
+            track_height: geometry.track_height,
+            thumb_size: geometry.thumb_size,
+            size: geometry.size,
+            stroke_width: geometry.stroke_width,
             geometry,
         }
     }

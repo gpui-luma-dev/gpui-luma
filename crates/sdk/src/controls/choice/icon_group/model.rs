@@ -83,9 +83,9 @@ where
             },
         );
         base(model, handlers, window, cx)
-            .rounded(px(geometry.radius.value_px))
-            .gap(px(geometry.gap.value_px))
-            .px(px(geometry.padding_x.value_px))
-            .py(px(geometry.padding_y.value_px))
+            .rounded(px(geometry.radius))
+            .gap(px(geometry.gap))
+            .px(px(geometry.padding_x))
+            .py(px(geometry.padding_y))
     })
 }

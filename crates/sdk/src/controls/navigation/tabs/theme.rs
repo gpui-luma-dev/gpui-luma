@@ -207,6 +207,14 @@ pub struct TabsGeometryStylesheet {
 }
 
 /// The same resolved geometry is consumed by paint paths and inspectors.
+/// Concrete tab list and indicator dimensions.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct TabsGeometry {
+    pub list_gap: f32,
+    pub list_padding: f32,
+    pub indicator_height: f32,
+}
+
 #[derive(Clone, Debug)]
 pub struct ResolvedTabsGeometry {
     pub list_gap: ResolvedMetric,
@@ -238,8 +246,24 @@ impl TabsStylesheet {
                 .unwrap_or_default(),
         )
     }
+    /// Resolve concrete dimensions without constructing inspector metadata.
+    pub fn resolve_geometry(&self, variant: &str, fallback: TabsGeometry) -> TabsGeometry {
+        let specific = self.variants.get(variant);
+        TabsGeometry {
+            list_gap: specific.and_then(|v| v.list_gap).or(self.geometry.list_gap).unwrap_or(fallback.list_gap),
+            list_padding: specific
+                .and_then(|v| v.list_padding)
+                .or(self.geometry.list_padding)
+                .unwrap_or(fallback.list_padding),
+            indicator_height: specific
+                .and_then(|v| v.indicator_height)
+                .or(self.geometry.indicator_height)
+                .unwrap_or(fallback.indicator_height),
+        }
+    }
+
     /// Resolve variant, general, then supplied look-token/SDK fallback values.
-    pub fn resolve_geometry(&self, variant: &str, fallback: ResolvedTabsGeometry) -> ResolvedTabsGeometry {
+    pub fn inspect_geometry(&self, variant: &str, fallback: ResolvedTabsGeometry) -> ResolvedTabsGeometry {
         let specific = self.variants.get(variant);
         let resolve = |field: &str, general: Option<f32>, specific: Option<f32>, fallback: ResolvedMetric| {
             if let Some(value) = specific {

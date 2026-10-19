@@ -5,13 +5,18 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 use gpui_luma::controls::stepper::StepperLook;
-use gpui_luma::theme::{ControlSize, InteractionState};
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionState;
 
 use crate::controls::progress::ProgressColorTable;
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
-use crate::stylesheet::{StylesheetConfig, resolve_color_ref, resolve_stepper_metrics, ResolvedFields};
+use crate::provenance::ColorSource;
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::resolve_color_ref;
+use crate::stylesheet::ResolvedFields;
 use crate::controls::progress::resolve_progress_colors_with_stylesheet;
 
 #[derive(Clone, Debug)]
@@ -113,13 +118,13 @@ pub fn stepper_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -
     let (step_badge_size, track_thickness) = stylesheet
         .stepper
         .metrics_for_size(size)
-        .map(resolve_stepper_metrics)
+        .map(crate::stylesheet::resolve_stepper_metrics)
         .map(|metrics| (metrics.step_badge_size, metrics.track_thickness))
         .unwrap_or_else(|| {
             let base = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default()
                 .stepper
                 .resolve_geometry(size.stylesheet_key(), Default::default());
-            (base.step_badge_size.value_px, base.track_thickness.value_px)
+            (base.step_badge_size, base.track_thickness)
         });
 
     let mut look = StepperLook {
@@ -145,8 +150,8 @@ pub fn stepper_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -
             ..Default::default()
         },
     );
-    look.step_badge_size = geometry.step_badge_size.value_px;
-    look.track_thickness = geometry.track_thickness.value_px;
+    look.step_badge_size = geometry.step_badge_size;
+    look.track_thickness = geometry.track_thickness;
 
     look
 }
@@ -247,4 +252,47 @@ pub(crate) fn native_stepper_stylesheet() -> gpui_luma::theme::stylesheet::Stepp
             .collect(),
         ..Default::default()
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct StepperMetricTable {
+    pub step_badge_size: crate::ResolvedMetric,
+    pub track_thickness: crate::ResolvedMetric,
+}
+
+pub fn resolve_stepper_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+) -> StepperMetricTable {
+    resolve_stepper_metrics_for_size(mode, theme_mode, gpui_luma::theme::ControlSize::Md)
+}
+
+/// Resolve the selected look's Stepper dimensions and their sources for a size.
+pub fn resolve_stepper_metrics_for_size(
+    mode: &crate::ShadcnModeTokens,
+    _theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> StepperMetricTable {
+    use crate::tables::metrics::helpers::derived_metric;
+
+    let look = crate::paint::stepper_look(mode, true, size);
+
+    let mut table = StepperMetricTable {
+        step_badge_size: derived_metric("stepper badge size", look.step_badge_size),
+        track_thickness: derived_metric("stepper track thickness", look.track_thickness),
+    };
+    let geometry = mode.stylesheet().common.stepper.inspect_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::StepperGeometry {
+            step_badge_size: table.step_badge_size.value_px,
+            track_thickness: table.track_thickness.value_px,
+            ..Default::default()
+        },
+    );
+    table.step_badge_size =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.step_badge_size, table.step_badge_size);
+    table.track_thickness =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.track_thickness, table.track_thickness);
+
+    table
 }

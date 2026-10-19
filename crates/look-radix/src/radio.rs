@@ -69,7 +69,6 @@ impl RadioSize {
             .radio
             .resolve_geometry(self.as_str(), Default::default())
             .indicator_size
-            .value_px
     }
 
     /// Inner dot diameter — Radix scales the indicator with `transform: scale(0.4)`.
@@ -78,7 +77,6 @@ impl RadioSize {
             .radio
             .resolve_geometry(self.as_str(), Default::default())
             .dot_size
-            .value_px
     }
 }
 
@@ -100,17 +98,17 @@ fn radio_scale_with_stylesheet(
             ..Default::default()
         },
     );
-    let box_size = geometry.indicator_size.value_px;
+    let box_size = geometry.indicator_size;
     RadioScale {
-        disabled_opacity: geometry.disabled_opacity.value_px,
+        disabled_opacity: geometry.disabled_opacity,
         control_radius: box_size / 2.0,
-        control_padding_x: geometry.control_padding_x.value_px,
-        control_padding_y: geometry.control_padding_y.value_px,
+        control_padding_x: geometry.control_padding_x,
+        control_padding_y: geometry.control_padding_y,
         indicator_size: box_size,
         height: box_size,
-        gap: geometry.gap.value_px,
+        gap: geometry.gap,
         label_baseline_shift: 0.0,
-        dot_size: geometry.dot_size.value_px,
+        dot_size: geometry.dot_size,
     }
 }
 

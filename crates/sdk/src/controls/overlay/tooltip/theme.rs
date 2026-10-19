@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use std::sync::Arc;
 use gpui::{BoxShadow, Hsla, SharedString};
 use crate::theme::ThemeTokens;
@@ -12,13 +10,13 @@ pub struct TooltipPlacementGeometry {
     pub pointer_size: f32,
     pub pointer_inset: f32,
 }
-impl From<&crate::theme::stylesheet::ResolvedTooltipGeometry> for TooltipPlacementGeometry {
-    fn from(value: &crate::theme::stylesheet::ResolvedTooltipGeometry) -> Self {
+impl From<&crate::theme::stylesheet::TooltipGeometry> for TooltipPlacementGeometry {
+    fn from(value: &crate::theme::stylesheet::TooltipGeometry) -> Self {
         Self {
-            gap: value.target_gap.value_px,
-            margin: value.window_margin.value_px,
-            pointer_size: value.pointer_size.value_px,
-            pointer_inset: value.pointer_inset.value_px,
+            gap: value.target_gap,
+            margin: value.window_margin,
+            pointer_size: value.pointer_size,
+            pointer_inset: value.pointer_inset,
         }
     }
 }
@@ -59,17 +57,17 @@ impl TooltipLook {
             .resolve_geometry("compact", crate::theme::stylesheet::TooltipGeometry::default());
         Self {
             placement: (&geometry).into(),
-            shortcut_gap: geometry.shortcut_gap.value_px,
-            shortcut_font_size: geometry.shortcut_font_size.value_px,
-            shortcut_opacity: geometry.shortcut_opacity.value_px,
+            shortcut_gap: geometry.shortcut_gap,
+            shortcut_font_size: geometry.shortcut_font_size,
+            shortcut_opacity: geometry.shortcut_opacity,
             background,
             foreground,
             radius,
-            padding: geometry.padding.value_px,
-            padding_y: geometry.padding_y.value_px,
-            max_width: geometry.max_width.value_px,
-            text_size: geometry.font_size.value_px,
-            line_height: geometry.line_height.value_px,
+            padding: geometry.padding,
+            padding_y: geometry.padding_y,
+            max_width: geometry.max_width,
+            text_size: geometry.font_size,
+            line_height: geometry.line_height,
             shadow: Vec::new(),
         }
     }
@@ -95,17 +93,17 @@ impl TooltipLook {
         let palette = tokens.stylesheet.recipes.palette("tooltip", &tokens.palette);
         Self {
             placement: (&geometry).into(),
-            shortcut_gap: geometry.shortcut_gap.value_px,
-            shortcut_font_size: geometry.shortcut_font_size.value_px,
-            shortcut_opacity: geometry.shortcut_opacity.value_px,
+            shortcut_gap: geometry.shortcut_gap,
+            shortcut_font_size: geometry.shortcut_font_size,
+            shortcut_opacity: geometry.shortcut_opacity,
             background: palette.surface.floating.background,
             foreground: palette.surface.floating.foreground,
-            padding: geometry.padding.value_px,
-            padding_y: geometry.padding_y.value_px,
+            padding: geometry.padding,
+            padding_y: geometry.padding_y,
             radius: tokens.metrics.radius.md,
-            max_width: geometry.max_width.value_px,
-            text_size: geometry.font_size.value_px,
-            line_height: geometry.line_height.value_px,
+            max_width: geometry.max_width,
+            text_size: geometry.font_size,
+            line_height: geometry.line_height,
             shadow: tokens.elevation.menu.to_box_shadows(),
         }
     }
@@ -175,7 +173,7 @@ impl TooltipStylesheet {
                 font_size: Some(14.0),
                 line_height: Some(20.0),
             },
-            sizes: HashMap::from([(
+            sizes: crate::theme::ControlSizes::from([(
                 "compact".into(),
                 TooltipGeometryStylesheet {
                     padding: Some(8.0),

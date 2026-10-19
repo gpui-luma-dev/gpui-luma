@@ -13,17 +13,26 @@
 
 use serde::Deserialize;
 
-use gpui_luma::controls::textfield::{TextFieldLook, TextFieldPalette, TextFieldState, compose_textfield_look};
-use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale, ThemeMode};
+use gpui_luma::controls::textfield::TextFieldLook;
+use gpui_luma::controls::textfield::TextFieldPalette;
+use gpui_luma::controls::textfield::TextFieldState;
+use gpui_luma::controls::textfield::compose_textfield_look;
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::LumaTextStyle;
+use gpui_luma::theme::StandardBoxScale;
+use gpui_luma::theme::ThemeMode;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{LookResolver, ResolvedColor};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
 use crate::shadow::parse_shadow_token;
-use crate::stylesheet::{
-    StylesheetConfig, find_textfield_color_rule, find_textfield_elevation_rule, resolve_textfield_color_rule,
-    resolve_stylesheet_shadow_token,
-};
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_textfield_color_rule;
+use crate::stylesheet::find_textfield_elevation_rule;
+use crate::stylesheet::resolve_textfield_color_rule;
+use crate::stylesheet::resolve_stylesheet_shadow_token;
 
 fn textfield_style_key(style: ShadcnTextFieldStyle) -> &'static str {
     match style {
@@ -179,7 +188,7 @@ pub(crate) fn textfield_geometry(
     scale: &StandardBoxScale,
     typography: &LumaTextStyle,
 ) -> gpui_luma::theme::stylesheet::ResolvedTextFieldGeometry {
-    mode.stylesheet().common.textfield.resolve_geometry(
+    mode.stylesheet().common.textfield.inspect_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
         gpui_luma::theme::stylesheet::TextFieldGeometry {
             min_height: scale.height,
@@ -545,4 +554,52 @@ pub struct TextfieldColorRule {
     pub selection_background: String,
     pub selection_foreground: String,
     pub caret: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct TextFieldMetricTable {
+    pub min_height: crate::ResolvedMetric,
+    pub icon_size: crate::ResolvedMetric,
+    pub padding_x: crate::ResolvedMetric,
+    pub padding_y: crate::ResolvedMetric,
+    pub radius: crate::ResolvedMetric,
+    pub border_width: crate::ResolvedMetric,
+    pub focus_ring_width: crate::ResolvedMetric,
+    pub focus_ring_offset: crate::ResolvedMetric,
+}
+
+pub fn resolve_textfield_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> TextFieldMetricTable {
+    use gpui_luma::theme::StandardBoxScale;
+
+    use crate::tables::metrics::helpers::{
+        border_width_metric, control_size_key, focus_ring_offset_metric, focus_ring_width_metric, radius_metric,
+        scaffold_control_metric, spacing_control_metric,
+    };
+    use crate::catalog::SpacingField;
+
+    let ctx = crate::LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
+    let scale = StandardBoxScale::compute(size, metrics, 1.0);
+
+    let geometry = crate::controls::textfield::textfield_geometry(mode, size, &scale, &mode.typography.text.body);
+    let mut table = TextFieldMetricTable {
+        min_height: scaffold_control_metric(control_size_key(size), "control_height", scale.height),
+        icon_size: scaffold_control_metric(control_size_key(size), "icon_size", scale.icon_size),
+        padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, scale.padding_x),
+        padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, scale.padding_y),
+        radius: radius_metric(catalog, size, scale.radius),
+        border_width: border_width_metric(metrics),
+        focus_ring_width: focus_ring_width_metric(metrics),
+        focus_ring_offset: focus_ring_offset_metric(metrics),
+    };
+    table.min_height = crate::tables::metrics::helpers::prefer_shared_metric(geometry.min_height, table.min_height);
+    table.icon_size = crate::tables::metrics::helpers::prefer_shared_metric(geometry.icon_size, table.icon_size);
+    table.padding_x = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_x, table.padding_x);
+    table.padding_y = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_y, table.padding_y);
+    table
 }

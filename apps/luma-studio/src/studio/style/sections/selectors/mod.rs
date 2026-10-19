@@ -98,7 +98,7 @@ struct ComboBoxPopupTemplates<'a> {
 }
 
 struct SearchSelectorPopupTemplates<'a> {
-    geometry: gpui_luma::theme::stylesheet::ResolvedSearchSelectorGeometry,
+    geometry: gpui_luma::theme::stylesheet::SearchSelectorGeometry,
     items: &'a Arc<dyn SearchSelectorItemsTemplate>,
     panel: &'a Arc<dyn SearchSelectorPanelTemplate>,
 }
@@ -1140,7 +1140,7 @@ fn render_selector_search_selector_popup_preview_from_templates(
         .items
         .render(
             &SearchSelectorItemsRenderModel {
-                trailing_icon_size: templates.geometry.trailing_icon_size.value_px,
+                trailing_icon_size: templates.geometry.trailing_icon_size,
                 menu_id: popup_id,
                 search_selector_id: popup_id,
                 items: &search_items,

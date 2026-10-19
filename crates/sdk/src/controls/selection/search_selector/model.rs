@@ -521,13 +521,13 @@ mod stylesheet_tests {
         let geometry = builder.model.stylesheet.resolve_geometry("md", Default::default());
         assert_eq!(
             (
-                geometry.search_padding.value_px,
-                geometry.search_separator_height.value_px,
-                geometry.search_icon_size.value_px,
-                geometry.search_chrome_height.value_px
+                geometry.search_padding,
+                geometry.search_separator_height,
+                geometry.search_icon_size,
+                geometry.search_chrome_height
             ),
             (0.0, 0.0, 21.0, 0.0)
         );
-        assert_eq!(geometry.search_icon_width.value_px, 18.0);
+        assert_eq!(geometry.search_icon_width, 18.0);
     }
 }

@@ -96,7 +96,7 @@ impl StepperTemplate for ThemedStepperTemplate {
                     .w_full()
                     .flex()
                     .flex_col()
-                    .gap(px(look.geometry.content_gap.value_px))
+                    .gap(px(look.geometry.content_gap))
                     .child(indicator)
                     .child(panel)
             } else {
@@ -106,7 +106,7 @@ impl StepperTemplate for ThemedStepperTemplate {
                     .w_full()
                     .flex()
                     .flex_row()
-                    .gap(px(look.geometry.content_gap.value_px))
+                    .gap(px(look.geometry.content_gap))
                     .child(indicator)
                     .child(panel.flex_1())
             }
@@ -165,7 +165,7 @@ fn render_horizontal_stepper(
                 .flex()
                 .flex_col()
                 .items_center()
-                .gap(px(look.geometry.label_gap.value_px))
+                .gap(px(look.geometry.label_gap))
                 .child(
                     div()
                         .w_full()
@@ -213,9 +213,9 @@ fn render_vertical_stepper(
         .h_full()
         .w_full()
         .min_w(px(if side_labels {
-            badge_size + look.geometry.side_label_width.value_px
+            badge_size + look.geometry.side_label_width
         } else {
-            badge_size + look.geometry.label_width.value_px
+            badge_size + look.geometry.label_width
         }))
         .flex()
         .flex_col()
@@ -281,7 +281,7 @@ fn render_vertical_stepper(
                 .flex()
                 .flex_row()
                 .items_center()
-                .gap(px(look.geometry.side_label_gap.value_px))
+                .gap(px(look.geometry.side_label_gap))
                 .child(render_side_label_slot(label, look, true))
                 .child(badge_column)
                 .child(div().flex_1()),
@@ -292,7 +292,7 @@ fn render_vertical_stepper(
                 .flex()
                 .flex_row()
                 .items_center()
-                .gap(px(look.geometry.side_label_gap.value_px))
+                .gap(px(look.geometry.side_label_gap))
                 .child(div().flex_1())
                 .child(badge_column)
                 .child(render_side_label_slot(label, look, false)),
@@ -321,7 +321,7 @@ fn render_content_panel(
     if let Some(height) = model.content_height {
         host = host.h(px(height));
     } else {
-        host = host.h(px(look.geometry.content_height.value_px));
+        host = host.h(px(look.geometry.content_height));
     }
 
     if settled {
@@ -361,8 +361,8 @@ fn positioned_panel(content: AnyElement, horizontal: bool, offset: f32, key: &'s
 fn render_step_label(label: &SharedString, look: &StepperLook, align_end: bool) -> Stateful<Div> {
     let mut label_node = div()
         .id((label.clone(), 0usize))
-        .text_size(px(look.geometry.font_size.value_px))
-        .line_height(px(look.geometry.line_height.value_px))
+        .text_size(px(look.geometry.font_size))
+        .line_height(px(look.geometry.line_height))
         .text_color(look.incomplete_fg)
         .child(label.clone());
 
@@ -458,16 +458,16 @@ fn render_badge(
         .size(px(badge_size))
         .rounded(px(badge_radius))
         .bg(background)
-        .border(px(look.geometry.border_width.value_px))
+        .border(px(look.geometry.border_width))
         .border_color(border)
         .child(match state {
             StepState::Complete => {
-                render_checkmark(foreground, badge_size * look.geometry.glyph_scale.value_px, &icons.completed)
+                render_checkmark(foreground, badge_size * look.geometry.glyph_scale, &icons.completed)
             }
             StepState::InProgress | StepState::Incomplete => render_step_number(
                 step_index + 1,
                 foreground,
-                badge_size * look.geometry.number_scale.value_px,
+                badge_size * look.geometry.number_scale,
                 look.number_weight,
             ),
         })

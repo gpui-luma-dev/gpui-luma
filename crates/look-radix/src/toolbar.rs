@@ -53,14 +53,14 @@ impl ToolbarTheme for RadixToolbarTheme {
             },
         );
         let style = self.style.unwrap_or(ToolbarStyle {
-            padding_x: geometry.padding_x.value_px,
-            padding_y: geometry.padding_y.value_px,
-            gap: geometry.gap.value_px,
+            padding_x: geometry.padding_x,
+            padding_y: geometry.padding_y,
+            gap: geometry.gap,
             ..fallback
         });
         ToolbarLook {
-            border_width: geometry.border_width.value_px,
-            separator_width: geometry.separator_width.value_px,
+            border_width: geometry.border_width,
+            separator_width: geometry.separator_width,
             background,
             border,
             separator: gray(6),

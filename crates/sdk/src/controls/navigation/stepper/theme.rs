@@ -8,7 +8,7 @@ use crate::theme::{ControlSize, ThemeTokens};
 pub struct StepperLook {
     pub number_weight: gpui::FontWeight,
     /// Resolved decoration and layout defaults shared with templates.
-    pub geometry: crate::theme::stylesheet::ResolvedStepperGeometry,
+    pub geometry: crate::theme::stylesheet::StepperGeometry,
     pub complete_bg: Hsla,
     pub complete_fg: Hsla,
     pub in_progress_bg: Hsla,
@@ -89,8 +89,8 @@ impl StepperTheme for DefaultStepperTheme {
             incomplete_fg,
             track_active_color,
             track_muted_color,
-            step_badge_size: geometry.step_badge_size.value_px,
-            track_thickness: geometry.track_thickness.value_px,
+            step_badge_size: geometry.step_badge_size,
+            track_thickness: geometry.track_thickness,
             geometry,
         }
     }

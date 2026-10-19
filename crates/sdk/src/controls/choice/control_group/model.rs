@@ -658,8 +658,8 @@ where
             self.with_menu_row_item_content_sized(
                 theme,
                 ControlSize::Sm,
-                geometry.menu_row_height.value_px,
-                geometry.menu_row_gap.value_px,
+                geometry.menu_row_height,
+                geometry.menu_row_gap,
                 content,
             )
         }

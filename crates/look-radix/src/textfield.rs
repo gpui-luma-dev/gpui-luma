@@ -119,16 +119,16 @@ impl TextFieldTheme for TextFieldThemeAdapter {
                 ..Default::default()
             },
         );
-        look.caret_width = geometry.caret_width.value_px;
-        look.caret_height_extra = geometry.caret_height_extra.value_px;
-        look.disabled_opacity = geometry.disabled_opacity.value_px;
-        look.min_height = geometry.min_height.value_px;
-        look.padding_x = geometry.padding_x.value_px;
-        look.padding_y = geometry.padding_y.value_px;
-        look.gap = geometry.gap.value_px;
-        look.icon_size = geometry.icon_size.value_px;
-        look.typography.size = geometry.font_size.value_px;
-        look.typography.line_height = geometry.line_height.value_px;
+        look.caret_width = geometry.caret_width;
+        look.caret_height_extra = geometry.caret_height_extra;
+        look.disabled_opacity = geometry.disabled_opacity;
+        look.min_height = geometry.min_height;
+        look.padding_x = geometry.padding_x;
+        look.padding_y = geometry.padding_y;
+        look.gap = geometry.gap;
+        look.icon_size = geometry.icon_size;
+        look.typography.size = geometry.font_size;
+        look.typography.line_height = geometry.line_height;
         if matches!(self.variant, TextFieldVariant::Soft | TextFieldVariant::Classic) {
             // Soft has no rim; Classic draws its edge via shadow-1.
             look.border_width = 0.0;
@@ -261,11 +261,7 @@ fn typography_for_size(size: ControlSize) -> LumaTextStyle {
     let geometry = crate::look::embedded_common_stylesheet()
         .textfield
         .resolve_geometry(crate::look::sdk_size_key(size), Default::default());
-    LumaTextStyle {
-        size: geometry.font_size.value_px,
-        line_height: geometry.line_height.value_px,
-        weight: FontWeight::NORMAL,
-    }
+    LumaTextStyle { size: geometry.font_size, line_height: geometry.line_height, weight: FontWeight::NORMAL }
 }
 
 #[cfg(test)]

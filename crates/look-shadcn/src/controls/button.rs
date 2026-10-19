@@ -1,19 +1,29 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 
-use gpui_luma::controls::button_family::{
-    ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_look,
-};
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, StandardBoxScale, ThemeMode, snap_to_pixel};
+use gpui_luma::controls::button_family::ButtonFamilyLook;
+use gpui_luma::controls::button_family::ButtonFamilyPalette;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::button_family::compose_button_family_look;
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::StandardBoxScale;
+use gpui_luma::theme::ThemeMode;
+use gpui_luma::theme::snap_to_pixel;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{LookResolver, ResolvedColor};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
 use crate::shadow::parse_shadow_token;
-use crate::stylesheet::{
-    StylesheetConfig, find_button_color_rule, find_button_elevation_rule, resolve_button_color_rule,
-    resolve_button_metrics_rule, resolve_layered_elevation_shadow, resolve_stylesheet_shadow_token,
-};
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_button_color_rule;
+use crate::stylesheet::find_button_elevation_rule;
+use crate::stylesheet::resolve_button_color_rule;
+use crate::stylesheet::resolve_button_metrics_rule;
+use crate::stylesheet::resolve_layered_elevation_shadow;
+use crate::stylesheet::resolve_stylesheet_shadow_token;
 
 /// Button-local corner radius presets (shadcn/Shadcn `radius` prop).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -266,7 +276,7 @@ pub(crate) fn resolve_family_geometry(
         }
     }
     let mut geometry = if toggle {
-        let value = stylesheet.common.toggle.resolve_geometry(
+        let value = stylesheet.common.toggle.inspect_geometry(
             key,
             ToggleGeometry {
                 height: fallback.height,
@@ -288,7 +298,7 @@ pub(crate) fn resolve_family_geometry(
             line_height: value.line_height,
         }
     } else {
-        stylesheet.common.button.resolve_geometry(key, fallback)
+        stylesheet.common.button.inspect_geometry(key, fallback)
     };
     let family = if toggle { "toggle" } else { "button" };
     if matches!(geometry.height.source, gpui_luma::theme::provenance::MetricSource::Constant { .. }) {
@@ -1061,5 +1071,184 @@ pub(crate) fn native_button_stylesheet() -> gpui_luma::theme::stylesheet::Button
             })
             .collect(),
         ..Default::default()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ButtonMetricTable {
+    pub height: crate::ResolvedMetric,
+    pub icon_size: crate::ResolvedMetric,
+    pub padding_x: crate::ResolvedMetric,
+    pub padding_y: crate::ResolvedMetric,
+    pub gap: crate::ResolvedMetric,
+    pub radius: crate::ResolvedMetric,
+    pub border_width: crate::ResolvedMetric,
+    pub focus_ring_width: crate::ResolvedMetric,
+    pub focus_ring_offset: crate::ResolvedMetric,
+}
+
+pub fn resolve_button_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    style: crate::ShadcnButtonStyle,
+    role: gpui_luma::controls::button_family::ButtonFamilyRole,
+    size: gpui_luma::theme::ControlSize,
+    state: gpui_luma::theme::InteractionState,
+) -> ButtonMetricTable {
+    resolve_button_metrics_with_stylesheet(mode, mode.stylesheet(), theme_mode, style, role, size, state)
+}
+
+pub fn resolve_button_metrics_with_stylesheet(
+    mode: &crate::ShadcnModeTokens,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    style: crate::ShadcnButtonStyle,
+    role: gpui_luma::controls::button_family::ButtonFamilyRole,
+    size: gpui_luma::theme::ControlSize,
+    state: gpui_luma::theme::InteractionState,
+) -> ButtonMetricTable {
+    let look = crate::controls::button::button_look_with_stylesheet(
+        mode, stylesheet, theme_mode, style, role, size, None, state,
+    );
+    let ctx = crate::LookContext::new(mode, theme_mode, state);
+    let metrics = ctx.metrics();
+    let catalog = ctx.catalog();
+
+    let size_key = crate::tables::metrics::helpers::control_size_key(size);
+    let family = if matches!(role, gpui_luma::controls::button_family::ButtonFamilyRole::Toggle { .. }) {
+        "toggle"
+    } else {
+        "button"
+    };
+    let legacy = if matches!(role, gpui_luma::controls::button_family::ButtonFamilyRole::Toggle { .. }) {
+        stylesheet.toggle.metrics_for_size(size)
+    } else {
+        stylesheet.button.metrics_for_size(size)
+    };
+    let stylesheet_metric = |field: &str, value_px| crate::ResolvedMetric {
+        value_px,
+        source: if legacy.is_some() {
+            crate::MetricSource::Derived { note: format!("stylesheet [{family}.metrics.{size_key}].{field}") }
+        } else {
+            let metric = match field {
+                "padding_horizontal" => crate::tables::metrics::helpers::spacing_control_metric(
+                    catalog,
+                    size,
+                    crate::catalog::SpacingField::PaddingX,
+                    value_px,
+                ),
+                "corner_radius" => crate::tables::metrics::helpers::radius_metric(catalog, size, value_px),
+                _ => crate::tables::metrics::helpers::scaffold_control_metric(size_key, field, value_px),
+            };
+            metric.source
+        },
+    };
+
+    let mut table = ButtonMetricTable {
+        height: stylesheet_metric("height", look.height),
+        icon_size: if legacy.is_some() {
+            crate::ResolvedMetric {
+                value_px: look.icon_size,
+                source: crate::MetricSource::Constant {
+                    label: format!("stylesheet [{family}.metrics.{size_key}].icon_size"),
+                },
+            }
+        } else {
+            crate::tables::metrics::helpers::derived_metric(
+                "role icon size from box scale or label typography",
+                look.icon_size,
+            )
+        },
+        padding_x: if matches!(role, gpui_luma::controls::button_family::ButtonFamilyRole::Icon) {
+            crate::tables::metrics::helpers::derived_metric("icon button has no padding", look.padding_x)
+        } else {
+            stylesheet_metric("padding_horizontal", look.padding_x)
+        },
+        padding_y: if matches!(role, gpui_luma::controls::button_family::ButtonFamilyRole::Icon) {
+            crate::tables::metrics::helpers::derived_metric("icon button has no padding", look.padding_y)
+        } else {
+            crate::tables::metrics::helpers::spacing_control_metric(
+                catalog,
+                size,
+                crate::catalog::SpacingField::PaddingY,
+                look.padding_y,
+            )
+        },
+        gap: crate::tables::metrics::helpers::spacing_control_metric(
+            catalog,
+            size,
+            crate::catalog::SpacingField::Gap,
+            look.gap,
+        ),
+        radius: if matches!(role, gpui_luma::controls::button_family::ButtonFamilyRole::Icon) {
+            crate::tables::metrics::helpers::pill_radius_metric(catalog, look.radius)
+        } else {
+            stylesheet_metric("corner_radius", look.radius)
+        },
+        border_width: crate::ResolvedMetric {
+            value_px: metrics.border_width.default,
+            source: crate::MetricSource::Scaffold { path: "MetricTokens.border_width.default".into() },
+        },
+        focus_ring_width: crate::ResolvedMetric {
+            value_px: metrics.focus.width,
+            source: crate::MetricSource::Scaffold { path: "MetricTokens.focus.width".into() },
+        },
+        focus_ring_offset: focus_ring_offset_metric(
+            gpui_luma::controls::button_family::button_family_effective_border(look.border),
+            metrics,
+        ),
+    };
+    let (geometry, _) = crate::controls::button::resolve_family_geometry(
+        &ctx,
+        stylesheet,
+        size,
+        matches!(role, gpui_luma::controls::button_family::ButtonFamilyRole::Toggle { .. }),
+        1.0,
+    );
+    let shared = |metric: gpui_luma::theme::provenance::ResolvedMetric, fallback: crate::ResolvedMetric| {
+        if matches!(metric.source, gpui_luma::theme::provenance::MetricSource::Constant { .. }) {
+            fallback
+        } else {
+            crate::tables::metrics::helpers::inspect_shared_metric(metric)
+        }
+    };
+    table.height = shared(geometry.height, table.height);
+    table.icon_size = shared(geometry.icon_size, table.icon_size);
+    if !matches!(role, gpui_luma::controls::button_family::ButtonFamilyRole::Icon) {
+        table.padding_x = shared(geometry.padding_x, table.padding_x);
+        table.padding_y = shared(geometry.padding_y, table.padding_y);
+        let tokens = if matches!(role, gpui_luma::controls::button_family::ButtonFamilyRole::Toggle { .. }) {
+            &stylesheet.toggle.tokens
+        } else {
+            &stylesheet.button.tokens
+        };
+        if let Some(token) = tokens
+            .get(size_key)
+            .and_then(|rule| rule.corner_radius.as_ref())
+            .filter(|token| crate::stylesheet::resolve_stylesheet_metric(token, metrics, size).is_some())
+        {
+            table.radius = crate::tables::metrics::helpers::derived_metric(
+                format!("stylesheet · {family}.tokens.{size_key}.corner_radius → {token}"),
+                look.radius,
+            );
+        }
+    }
+    table.gap = shared(geometry.gap, table.gap);
+    table
+}
+
+fn focus_ring_offset_metric(border: gpui::Hsla, metrics: &gpui_luma::theme::MetricTokens) -> crate::ResolvedMetric {
+    let border_width = metrics.border_width.default;
+    let focus = metrics.focus.width;
+    if border.a <= 0.0 {
+        crate::ResolvedMetric {
+            value_px: 0.0,
+            source: crate::MetricSource::Derived { note: "inset · borderless".into() },
+        }
+    } else {
+        crate::ResolvedMetric {
+            value_px: border_width + focus,
+            source: crate::MetricSource::Derived { note: "border_width.default + focus.width".into() },
+        }
     }
 }

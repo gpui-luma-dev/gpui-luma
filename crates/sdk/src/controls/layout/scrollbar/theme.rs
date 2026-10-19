@@ -74,12 +74,12 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
         };
 
         let length = match orientation {
-            ScrollbarOrientation::Horizontal => geometry.length_h.value_px,
-            ScrollbarOrientation::Vertical => geometry.length_v.value_px,
+            ScrollbarOrientation::Horizontal => geometry.length_h,
+            ScrollbarOrientation::Vertical => geometry.length_v,
         };
 
         ScrollbarLook {
-            disabled_opacity: geometry.disabled_opacity.value_px,
+            disabled_opacity: geometry.disabled_opacity,
             track_background: if state.disabled {
                 palette.state.disabled.background
             } else if style == ScrollbarStyle::Soft {
@@ -89,10 +89,10 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
             },
             thumb_background,
             length,
-            thickness: geometry.thickness.value_px,
-            track_thickness: geometry.track_thickness.value_px,
-            thumb_thickness: geometry.thumb_thickness.value_px,
-            min_thumb_length: geometry.min_thumb_length.value_px,
+            thickness: geometry.thickness,
+            track_thickness: geometry.track_thickness,
+            thumb_thickness: geometry.thumb_thickness,
+            min_thumb_length: geometry.min_thumb_length,
             radius: metrics.radius.pill,
         }
     }

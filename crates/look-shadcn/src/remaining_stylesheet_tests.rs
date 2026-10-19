@@ -626,17 +626,9 @@ drag_width=310
     let themed = look.table_theme();
     for theme in [&sdk as &dyn TableTheme, themed.as_ref()] {
         let md = theme.resolve_drag(ControlSize::Md).geometry;
-        assert_eq!(
-            (
-                md.drag_offset.value_px,
-                md.drag_width.value_px,
-                md.drag_padding_x.value_px,
-                md.drag_padding_y.value_px
-            ),
-            (5.0, 180.0, 7.0, 3.0)
-        );
-        assert_eq!((md.drag_border_width.value_px, md.drag_marker_width.value_px), (0.0, 0.0));
-        assert_eq!(theme.resolve_drag(ControlSize::Lg).geometry.drag_width.value_px, 310.0);
+        assert_eq!((md.drag_offset, md.drag_width, md.drag_padding_x, md.drag_padding_y), (5.0, 180.0, 7.0, 3.0));
+        assert_eq!((md.drag_border_width, md.drag_marker_width), (0.0, 0.0));
+        assert_eq!(theme.resolve_drag(ControlSize::Lg).geometry.drag_width, 310.0);
     }
 }
 
@@ -833,13 +825,13 @@ subtitle_opacity=0.2
         assert_eq!((resolved.border_width, resolved.separator_width), (0.0, 3.0));
     }
     for resolved in [sdk_dock.resolve(true), look.dock_splitter_theme().resolve(true)] {
-        assert_eq!((resolved.geometry.thumb_width.value_px, resolved.geometry.thumb_rest_opacity.value_px), (9.0, 0.0));
+        assert_eq!((resolved.geometry.thumb_width, resolved.geometry.thumb_rest_opacity), (9.0, 0.0));
     }
     for resolved in [sdk_stepper.resolve(true, ControlSize::Md), look.stepper_theme().resolve(true, ControlSize::Md)] {
-        assert_eq!((resolved.geometry.content_gap.value_px, resolved.geometry.glyph_scale.value_px), (0.0, 0.7));
+        assert_eq!((resolved.geometry.content_gap, resolved.geometry.glyph_scale), (0.0, 0.7));
     }
     for resolved in [sdk_split.resolve(false, true), look.split_view_theme().resolve(false, true)] {
-        assert_eq!((resolved.geometry.hitbox_width.value_px, resolved.geometry.cue_width.value_px), (32.0, 0.0));
+        assert_eq!((resolved.geometry.hitbox_width, resolved.geometry.cue_width), (32.0, 0.0));
     }
 }
 
@@ -884,10 +876,7 @@ shortcut_opacity=0
     }
     for resolved in [sdk_progress.resolve(true, ControlSize::Md), look.progress_theme().resolve(true, ControlSize::Md)]
     {
-        assert_eq!(
-            (resolved.geometry.indeterminate_fraction.value_px, resolved.geometry.shimmer_soft_opacity.value_px),
-            (0.0, 0.0)
-        );
+        assert_eq!((resolved.geometry.indeterminate_fraction, resolved.geometry.shimmer_soft_opacity), (0.0, 0.0));
     }
     let tooltip = crate::tooltip_theme(&look).resolve();
     assert_eq!(

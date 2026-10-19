@@ -124,13 +124,13 @@ impl ControlGroupTheme for DefaultControlGroupTheme {
                 palette.state.disabled.background
             },
             border: palette.border.default,
-            radius: geometry.radius.value_px,
-            padding_x: geometry.padding_x.value_px,
-            padding_y: geometry.padding_y.value_px,
-            gap: geometry.gap.value_px,
-            vertical_gap: geometry.vertical_gap.value_px,
-            border_width: geometry.border_width.value_px,
-            disabled_opacity: geometry.disabled_opacity.value_px,
+            radius: geometry.radius,
+            padding_x: geometry.padding_x,
+            padding_y: geometry.padding_y,
+            gap: geometry.gap,
+            vertical_gap: geometry.vertical_gap,
+            border_width: geometry.border_width,
+            disabled_opacity: geometry.disabled_opacity,
         }
     }
 

@@ -843,21 +843,17 @@ impl crate::infra::attachments::TooltipEntityExt for gpui::Entity<ComboBoxContro
 
 // Preserve the stock inset reservation while allowing a wider configured gap
 // between both affordances to increase the minimum trigger width.
-fn reserved_affordance_width(
-    geometry: &crate::theme::stylesheet::ResolvedComboBoxGeometry,
-    arrow: bool,
-    clear: bool,
-) -> f32 {
-    let inset = geometry.affordance_inset.value_px;
-    let width = geometry.affordance_width.value_px;
+fn reserved_affordance_width(geometry: &crate::theme::stylesheet::ComboBoxGeometry, arrow: bool, clear: bool) -> f32 {
+    let inset = geometry.affordance_inset;
+    let width = geometry.affordance_width;
     let arrow_width = if arrow { width + inset } else { 0.0 };
     let clear_inset = if arrow {
-        inset.max(geometry.affordance_gap.value_px)
+        inset.max(geometry.affordance_gap)
     } else {
         inset
     };
     let clear_width = if clear { width + clear_inset } else { 0.0 };
-    arrow_width + clear_width + geometry.trigger_extra_gap.value_px
+    arrow_width + clear_width + geometry.trigger_extra_gap
 }
 
 #[cfg(test)]

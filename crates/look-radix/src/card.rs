@@ -51,7 +51,6 @@ impl CardSize {
             .card
             .resolve_geometry(self.as_str(), Default::default())
             .padding
-            .value_px
     }
     pub fn radius(self) -> f32 {
         match self {
@@ -132,7 +131,7 @@ impl Card {
             gpui_luma::theme::stylesheet::CardGeometry { padding: self.size.padding(), ..Default::default() },
         );
         let mut style = CardStyle {
-            padding: geometry.padding.value_px,
+            padding: geometry.padding,
             radius: self.size.radius(),
             margin: 0.0,
             background: None,

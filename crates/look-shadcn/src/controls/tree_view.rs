@@ -13,14 +13,19 @@ use crate::stylesheet::config::matches_optional_layer;
 use serde::Deserialize;
 
 use gpui_luma::controls::tree_view::TreeViewPalette;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState};
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionState;
 
 use super::apply_button_metrics_typography;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{StylesheetConfig, find_tree_view_row_color_rule, resolve_tree_view_row_color_rule};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_tree_view_row_color_rule;
+use crate::stylesheet::resolve_tree_view_row_color_rule;
 
 #[derive(Clone, Debug)]
 pub struct TreeViewRowColorTable {
@@ -250,4 +255,73 @@ pub struct TreeViewRowColorRule {
     pub icon_color: String,
     pub chevron_color: String,
     pub background: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TreeViewMetricTable {
+    pub row_height: crate::ResolvedMetric,
+    pub base_padding_x: crate::ResolvedMetric,
+    pub indentation_width: crate::ResolvedMetric,
+    pub inner_gap: crate::ResolvedMetric,
+    pub radius: crate::ResolvedMetric,
+    pub icon_size: crate::ResolvedMetric,
+    pub chevron_size: crate::ResolvedMetric,
+}
+
+pub fn resolve_tree_view_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> TreeViewMetricTable {
+    use gpui_luma::controls::tree_view::TreeViewScale;
+
+    use crate::catalog::SpacingField;
+    use crate::tables::metrics::helpers::{control_size_key, derived_metric, radius_metric, spacing_control_metric};
+
+    let ctx = crate::LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let metrics = ctx.metrics();
+    let catalog = ctx.catalog();
+    let scale = TreeViewScale::compute_with_stylesheet(size, metrics, 1.0, &mode.stylesheet().common);
+    let size_key = control_size_key(size);
+
+    let mut table = TreeViewMetricTable {
+        row_height: derived_metric(format!("{size_key} tree row height from configured scale"), scale.row_height),
+        base_padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, scale.base_padding_x),
+        indentation_width: derived_metric("tree indentation width", scale.indentation_width),
+        inner_gap: spacing_control_metric(catalog, size, SpacingField::Gap, scale.inner_gap),
+        radius: radius_metric(catalog, size, scale.radius),
+        icon_size: derived_metric("tree icon size", scale.icon_size),
+        chevron_size: derived_metric("tree chevron size", scale.chevron_size),
+    };
+    let geometry = mode.stylesheet().common.tree_view.inspect_geometry(
+        size_key,
+        gpui_luma::theme::stylesheet::TreeViewGeometry {
+            row_height: scale.row_height,
+            base_padding_x: scale.base_padding_x,
+            indentation_width: scale.indentation_width,
+            inner_gap: scale.inner_gap,
+            radius: scale.radius,
+            icon_size: scale.icon_size,
+            chevron_size: scale.chevron_size,
+            ..Default::default()
+        },
+    );
+    table.row_height = crate::tables::metrics::helpers::prefer_shared_metric(geometry.row_height, table.row_height);
+    table.row_height.value_px = scale.row_height;
+    table.base_padding_x =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.base_padding_x, table.base_padding_x);
+    table.base_padding_x.value_px = scale.base_padding_x;
+    table.indentation_width =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.indentation_width, table.indentation_width);
+    table.indentation_width.value_px = scale.indentation_width;
+    table.inner_gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.inner_gap, table.inner_gap);
+    table.inner_gap.value_px = scale.inner_gap;
+    table.radius = crate::tables::metrics::helpers::prefer_shared_metric(geometry.radius, table.radius);
+    table.radius.value_px = scale.radius;
+    table.icon_size = crate::tables::metrics::helpers::prefer_shared_metric(geometry.icon_size, table.icon_size);
+    table.icon_size.value_px = scale.icon_size;
+    table.chevron_size =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.chevron_size, table.chevron_size);
+    table.chevron_size.value_px = scale.chevron_size;
+    table
 }

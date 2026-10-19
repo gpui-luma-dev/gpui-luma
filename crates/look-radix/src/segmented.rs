@@ -1,7 +1,5 @@
 //! Segmented presentation for the SDK radio group; selection stays SDK-owned.
 
-use std::collections::HashMap;
-
 use std::sync::Arc;
 use gpui::{IntoElement, div, prelude::*, px};
 use gpui_luma::controls::control_group::{ControlGroupItemHandlerExt, ControlGroupItemLike};
@@ -44,14 +42,14 @@ pub fn segmented_radio_template<T: ControlGroupItemLike + 'static>(look: &Look) 
                     .items_center()
                     .justify_center()
                     .flex_1()
-                    .h(px(geometry.height.value_px))
-                    .px(px(geometry.padding_x.value_px))
+                    .h(px(geometry.height))
+                    .px(px(geometry.padding_x))
                     .rounded(px(4.0))
                     .border_1()
                     .border_color(border)
                     .bg(gray(fill))
-                    .text_size(px(geometry.font_size.value_px))
-                    .line_height(px(geometry.line_height.value_px))
+                    .text_size(px(geometry.font_size))
+                    .line_height(px(geometry.line_height))
                     .text_color(gray(if item.enabled { 12 } else { 8 }))
                     .when(item.enabled, |row| row.cursor_pointer())
                     .child(content)
@@ -62,7 +60,7 @@ pub fn segmented_radio_template<T: ControlGroupItemLike + 'static>(look: &Look) 
     })
 }
 
-pub(crate) fn resolve_geometry(look: &Look) -> gpui_luma::theme::stylesheet::ResolvedSegmentedGeometry {
+pub(crate) fn resolve_geometry(look: &Look) -> gpui_luma::theme::stylesheet::SegmentedGeometry {
     let control = look.metrics().control.md;
     let typography = gpui_luma::theme::ThemeTokens::default().typography.text.label;
     look.common_stylesheet().segmented.resolve_geometry(
@@ -79,9 +77,8 @@ pub(crate) fn resolve_geometry(look: &Look) -> gpui_luma::theme::stylesheet::Res
 /// Native common geometry owned by this control.
 pub(crate) fn native_segmented_stylesheet() -> gpui_luma::theme::stylesheet::SegmentedStylesheet {
     use gpui_luma::theme::stylesheet::*;
-    use HashMap;
     SegmentedStylesheet {
-        sizes: HashMap::from([(
+        sizes: gpui_luma::theme::ControlSizes::from([(
             "2".into(),
             SegmentedGeometryStylesheet {
                 height: Some(32.0),
