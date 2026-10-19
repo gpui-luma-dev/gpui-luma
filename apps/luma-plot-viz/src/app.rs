@@ -187,9 +187,10 @@ impl Render for PlotVizApp {
             .child(
                 TitleBar::new()
                     .height(crate::app_shell::SHELL_TITLEBAR_HEIGHT)
-                    .background_color(chrome.app_background)
-                    .border_color(chrome.border)
-                    .text_color(chrome.title_text)
+                    // Keep the title bar dark regardless of the content theme.
+                    .background_color(gpui::hsla(0.0, 0.0, 0.22, 1.0))
+                    .border_color(gpui::hsla(0.0, 0.0, 0.2667, 1.0))
+                    .text_color(gpui::hsla(0.0, 0.0, 1.0, 1.0))
                     .child(div().px_4().typography_style(typography.text.label).child("Plot Viz")),
             )
             .child(

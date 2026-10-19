@@ -65,10 +65,10 @@ impl Render for RadialGallery {
             let host=cx.weak_entity();
             let mut chart=RadialChartBuilder::new(data,series).id(("radial-example",index)).draw_progress(progress).style(move|| {
                 let mut style=theme::radial::style(&look);
-                if index==1 {style.label_text.color=gpui::white();style.label_text.font_size=px(11.0);style.label_text.line_height=px(12.0);}
+                if index==1 {style.label_text.color=crate::theme::palette::LABEL_WHITE;style.label_text.font_size=px(11.0);style.label_text.line_height=px(12.0);}
                 if index==2 {style.track=None;style.grid=Some(gpui_luma_plot::Stroke{color:theme::chrome(&look).border,width:px(1.0)});}
-                if index==3 {style.inner_radius=0.88;style.rounded=true;style.palette=vec![gpui::rgb(0x2b7fff).into()];}
-                if index==4 {style.inner_radius=0.72;style.palette=vec![gpui::rgb(0x2b7fff).into()];}
+                if index==3 {style.inner_radius=0.88;style.rounded=true;style.palette=vec![crate::theme::palette::BLUE_BRIGHT.into()];}
+                if index==4 {style.inner_radius=0.72;style.palette=vec![crate::theme::palette::BLUE_BRIGHT.into()];}
                 if index==5 {style.inner_radius=0.77;style.rounded=true;}
                 style
             }).bar_tooltip(move|bar|gpui_luma::controls::tooltip::Tooltip::new(bar.label.clone()).shortcut(format!("{} visitors",bar.sample.y)).theme(std::sync::Arc::new(tooltip_look.clone())).delay(Duration::from_millis(250))).tooltip_motion(Duration::from_millis(250)).on_bar_event(move|event,cx|{

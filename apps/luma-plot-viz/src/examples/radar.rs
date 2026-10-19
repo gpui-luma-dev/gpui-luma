@@ -66,15 +66,15 @@ impl Render for RadarGallery {
             let host=cx.weak_entity();
             let mut chart = RadarChartBuilder::new(self.data.clone(),"desktop").id(("radar-example",index)).categories(MONTHS).maximum(340.0).draw_progress(progress).style(move || {
                 let mut style = theme::radar::style(&look);
-                let mut desktop = RadarSeriesPresentation::new(gpui::rgb(0x93c5fd).into());
+                let mut desktop = RadarSeriesPresentation::new(crate::theme::palette::BLUE_PALE);
                 desktop.stroke = None;
                 if index == 1 || index == 5 || index == 6 || index == 7 { desktop.dot_radius = px(4.0); }
                 if index == 2 {
                     desktop.fill = None; desktop.stroke = Some(gpui_luma_plot::Stroke { color: desktop.dot_color, width: px(2.0) });
-                    let mut mobile = RadarSeriesPresentation::new(gpui::rgb(0x2b7fff).into()); mobile.fill = None;
+                    let mut mobile = RadarSeriesPresentation::new(crate::theme::palette::BLUE_BRIGHT); mobile.fill = None;
                     style.series.insert("mobile".into(),mobile);
                 }
-                if index == 3 { style.series.insert("mobile".into(),RadarSeriesPresentation::new(gpui::rgb(0x2b7fff).into())); }
+                if index == 3 { style.series.insert("mobile".into(),RadarSeriesPresentation::new(crate::theme::palette::BLUE_BRIGHT)); }
                 if index == 4 { style.grid_levels = vec![1.0]; style.spokes = false; }
                 if index == 5 { style.grid = None; }
                 if (6..=8).contains(&index) { style.grid_shape = gpui_luma_plot::RadarGridShape::Circle; }
@@ -84,7 +84,7 @@ impl Render for RadarGallery {
                     style.grid = None; style.spokes = false;
                 }
                 if index == 10 || index == 11 {
-                    style.series.insert("mobile".into(),RadarSeriesPresentation::new(gpui::rgb(0x2b7fff).into()));
+                    style.series.insert("mobile".into(),RadarSeriesPresentation::new(crate::theme::palette::BLUE_BRIGHT));
                 }
                 if index == 11 { style.legend.visible = true; style.legend.text_color = theme::chrome(&look).body_text; }
                 style.series.insert("desktop".into(),desktop); style

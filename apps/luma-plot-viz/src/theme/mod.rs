@@ -1,3 +1,4 @@
+pub(crate) mod palette;
 mod mode;
 mod plot;
 pub(crate) use mode::{id as mode_id, mode_for_id};

@@ -51,7 +51,7 @@ impl PieGallery {
                 "Pie Chart – Label List",
                 self.chart(look).slice_labels(|slice| slice.label.clone()).style_override(|style| {
                     style.label_placement = PieLabelPlacement::Inside;
-                    style.label_text.color = gpui::rgb(0x000000).into();
+                    style.label_text.color = crate::theme::palette::LABEL_BLACK;
                 }),
             ),
             ("pie-legend", "Pie Chart – Legend", self.chart(look).legend(true)),

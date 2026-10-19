@@ -34,7 +34,7 @@ fn chart(data: Dataset, look: &AppTheme) -> PieChartBuilder {
     PieChartBuilder::new(data, "desktop")
         .slice_names(MONTHS)
         .style(move || theme::pie::style(&live))
-        .slice_style(5, gpui::rgb(0x2563eb))
+        .slice_style(5, crate::theme::palette::BLUE_LIGHT_SECONDARY)
         .slice_tooltip(move |slice| {
             gpui_luma::controls::tooltip::Tooltip::new(format!("{} · {}", slice.label, slice.series))
                 .shortcut(format!("{} visitors · {:.1}%", slice.sample.y, slice.fraction * 100.0))

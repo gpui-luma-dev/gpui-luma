@@ -16,6 +16,7 @@ pub(crate) fn style(look: &AppTheme) -> PiePresentation {
     let mut caption = text.clone();
     caption.color = chrome.muted_text;
     let mut style = PiePresentation {
+        palette: super::palette::BLUE_SCALE.map(Into::into).to_vec(),
         label_text: text,
         center_title: title,
         center_caption: caption,

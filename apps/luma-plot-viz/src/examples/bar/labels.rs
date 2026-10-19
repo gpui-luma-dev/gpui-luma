@@ -27,7 +27,7 @@ pub(super) fn card(data: Dataset, look: &AppTheme, progress: f32, cx: &App) -> i
     values.font_size = px(14.0);
     values.line_height = px(20.0);
     let mut categories = values.clone();
-    categories.color = gpui::rgb(0x000000).into();
+    categories.color = crate::theme::palette::LABEL_BLACK;
     let tooltip_look = look.clone();
     let chart = CartesianChartBuilder::new(data)
         .id("bar-custom-labels-chart")
@@ -53,7 +53,7 @@ pub(super) fn card(data: Dataset, look: &AppTheme, progress: f32, cx: &App) -> i
         .tooltip_motion(std::time::Duration::from_millis(250))
         .axes([])
         .style_override(|style| {
-            style.bar.fill = gpui::rgb(0x2b7fff).into();
+            style.bar.fill = crate::theme::palette::BLUE_BRIGHT.into();
             style.grid.horizontal = None;
             style.legend.visible = false;
             style.metrics.plot_padding = px(8.0);

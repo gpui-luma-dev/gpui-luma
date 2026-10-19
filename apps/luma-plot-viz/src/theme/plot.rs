@@ -1,5 +1,4 @@
-use gpui::{Hsla, px, rgb, linear_gradient, linear_color_stop};
-use gpui_luma::theme::ThemeMode;
+use gpui::{Hsla, px, linear_gradient, linear_color_stop};
 use crate::theme::AppTheme;
 use gpui_luma_plot::{
     AreaPresentation, AxisPresentation, ChartMetrics, EmptyStatePresentation, GridPresentation, LinePresentation,
@@ -30,12 +29,9 @@ impl SdkCartesianStyle {
 
     fn colors(&self) -> [Hsla; 2] {
         if self.blue {
-            match self.look.mode() {
-                ThemeMode::Dark => [rgb(0x93c5fd).into(), rgb(0x3b82f6).into()],
-                ThemeMode::Light => [rgb(0x0284c7).into(), rgb(0x2563eb).into()],
-            }
+            super::palette::blue(self.look.mode())
         } else {
-            [self.look.tokens().palette.data.accent_1, self.look.tokens().palette.data.accent_2]
+            super::palette::categorical(self.look.mode())
         }
     }
     fn series_style(&self, color: Hsla) -> SeriesStyle {
@@ -90,6 +86,7 @@ impl CartesianStyleProvider for SdkCartesianStyle {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gpui_luma::theme::ThemeMode;
 
     #[test]
     fn retained_sdk_provider_resolves_current_mode_and_explicit_series_assignments() {
@@ -114,8 +111,14 @@ mod tests {
         for mode in [ThemeMode::Light, ThemeMode::Dark] {
             look.set_mode(mode);
             let style = SdkCartesianStyle::new(&look).series("a", 0).series("b", 1).resolve();
-            assert_eq!(style.series[&"a".into()].line.unwrap().stroke.color, look.tokens().palette.data.accent_1);
-            assert_eq!(style.series[&"b".into()].line.unwrap().stroke.color, look.tokens().palette.data.accent_2);
+            for id in ["a", "b"] {
+                let color = style.series[&id.into()].line.unwrap().stroke.color;
+                assert!(color.s > 0.5, "chart series must stay colored over monochrome UI");
+                assert_ne!(color, look.tokens().palette.data.accent_1);
+                assert_ne!(color, look.tokens().palette.data.accent_2);
+            }
+            assert_eq!(style.axes[0].presentation.stroke.color.s, 0.0);
+            assert_eq!(style.grid.horizontal.unwrap().color.s, 0.0);
             assert_ne!(
                 style.series[&"a".into()].line.unwrap().stroke.color,
                 style.series[&"b".into()].line.unwrap().stroke.color

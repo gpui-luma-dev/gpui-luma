@@ -91,10 +91,10 @@ impl Render for Features {
         let chrome = theme::chrome(&self.look);
         let typography = theme::typography();
         let host = cx.weak_entity();
-        let items = [("Desktop", 0x93c5fd), ("Mobile", 0x2b7fff)].map(|(name, color)| LegendItem {
-            label: name.into(),
-            swatch: SwatchPresentation::Fill(gpui::rgb(color).into()),
-        });
+        let items = ["Desktop", "Mobile"]
+            .into_iter()
+            .zip(theme::palette::blue(self.look.mode()))
+            .map(|(name, color)| LegendItem { label: name.into(), swatch: SwatchPresentation::Fill(color.into()) });
         let legend = LegendView::new(items, LegendPresentation::new(chrome.body_text), ChartMetrics::default())
             .interaction(LegendInteraction::default().hidden(self.hidden.clone()).on_activate(move |event, cx| {
                 let _ = host.update(cx, |this, cx| {
