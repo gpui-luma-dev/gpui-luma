@@ -26,7 +26,7 @@
 <p class="intro">Lookless controls own interaction. Templates render them. Look crates provide a visual system.</p>
 <div class="callout"><p><strong>You can customize SDK controls with easy-to-use templating or template overrides.</strong> Keep the behavior; change the presentation.</p></div>
 <section id="layers"><h2>Architecture</h2>
-<p>SDK controls handle state, focus, input, and events. Templates render them. Look crates configure templates and styling, so different designs share the same control behavior.</p>
+<p>SDK controls handle state, focus, input, and events. Templates render them. Look crates configure templates and styling, so different designs share the same control behavior. A Look is optional: the SDK’s embedded <code>style.toml</code> supplies complete vanilla styling, and Look stylesheets inherit it. See <a href="create-look.html#baseline">the shared baseline</a>.</p>
 <p class="small">The following are integration snippets for an initialized application. <code>cx</code> is the owning view’s context. The first snippet assumes an owner with a <code>save_requests: usize</code> field.</p></section>
 <section id="look"><h2><span class="number">01</span>Start with a look</h2><p>A styled builder still creates an SDK button. Your application subscribes to the same SDK events.</p><div class="codebox"><div class="codebar"><span>Rust · Look → SDK entity</span><button class="copy" aria-label="Copy Look → SDK entity example">Copy</button></div><pre><code class="language-rust">use gpui::Entity;
 use gpui_luma::controls::button::Button;
@@ -90,7 +90,7 @@ use gpui_luma::infra::presenter::HasPresenter;
 let save = Button::new(&quot;save&quot;)
     .label(&quot;Save changes&quot;)
     .template(Arc::new(WorkspaceButtonTemplate))
-    .spawn(cx);</code></pre></div><p class="small">This uses the SDK fallback appearance. A completely custom template can render its own face instead; it must provide appropriate disabled and focus visuals. The SDK control retains its input and event wiring.</p></section>
+    .spawn(cx);</code></pre></div><p class="small">This uses the SDK’s stylesheet-backed baseline appearance. A completely custom template can render its own face instead; it must provide appropriate disabled and focus visuals. The SDK control retains its input and event wiring.</p></section>
 <section id="source"><h2>Where to look next</h2><p class="small"><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/button/template.rs">Template contract</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/button/model.rs">SDK builder</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-shadcn/src/controls/button_builder.rs">Look adapter</a> · <a class="source-link" href="button.html">Button guide</a></p></section>
 <footer data-site-footer></footer>
 </main>

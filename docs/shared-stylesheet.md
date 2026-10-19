@@ -2,7 +2,11 @@
 
 The SDK embeds `crates/sdk/assets/style.toml` as the authoritative vanilla
 appearance and motion baseline. SDK-only applications need no look crate.
-Shadcn and Radix inherit this data and author their own differences.
+Shadcn and Radix inherit this data and author their own differences. The bundled
+SDK palette is monochrome in both light and dark modes, including focus, status,
+data accents and shell controls. A look or application can still author colors.
+Plot Viz keeps chart series colors in independent named HSLA palettes; its axes,
+labels and grids follow SDK tokens.
 
 ## Ownership and public APIs
 
@@ -55,6 +59,12 @@ controls to adopt new snapshots. Bundled look theme adapters resolve their curre
 look on render; explicit look setters require the host to notify affected views.
 Radix clones share edits and forks copy independently.
 
+Changing a mode variable alone does not update a captured `Default*Theme`. For
+live SDK-only mode switching, bind themes that select prebuilt light/dark
+snapshots at resolution time, or update retained controls with rebuilt themes.
+Request an owner redraw; do not recreate controls just to recolor them. Plot Viz
+provides an [application-local adapter example](../apps/luma-plot-viz/src/theme/live.rs).
+
 Instance icon pairs, explicit geometry/row-limit setters, look callbacks and final
 template modifiers remain authoritative. Supplying Sidebar content later, including
 runtime content replacement, preserves the host's captured disclosure defaults;
@@ -70,7 +80,7 @@ saturation/lightness are percentages and alpha is 0–1.
 
 ```toml
 [common.tokens.palette.light.app]
-foreground = "hsla(222.22, 47.37%, 11.18%, 1)"
+foreground = "hsla(0, 0%, 11.18%, 1)"
 ```
 
 Build-time and runtime loading use the same conversion. Explicit tagged
@@ -142,7 +152,10 @@ Pager/Selector/Checkbox/SelectionPanel/Stepper icon objects and disclosure pairs
 override captured defaults regardless of builder order. Tabs render custom SVG
 accessories through the shared icon renderer. TreeView node icons remain content;
 default folder/file icons and Accordion drag handles come from selected themes.
-Title-bar window actions use the same icon-role contract.
+Title-bar window actions use the same icon-role contract. `TitleBar::text_color`
+also supplies the inherited foreground for title-bar children; explicit child
+colors still take precedence. Plot Viz deliberately fixes its title-bar colors
+independently of the content mode.
 
 Selector and PopupMenu placement share resolved popup margins, including centered
 row alignment. Tooltip pointer geometry, target gaps and shortcut styling,
