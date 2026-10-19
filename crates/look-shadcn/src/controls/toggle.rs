@@ -1,3 +1,8 @@
+use crate::controls::button::{ButtonMetricsRule, ButtonMetricTokensRule};
+use crate::stylesheet::config::LayeredElevationRule;
+use serde::Deserialize;
+use gpui_luma::theme::InteractionLayer;
+use std::collections::HashMap;
 use gpui_luma::controls::button_family::{
     ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_look,
 };
@@ -363,5 +368,72 @@ mod tests {
         );
 
         assert!((full.radius - full.height / 2.0).abs() < f32::EPSILON);
+    }
+}
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_toggle_stylesheet() -> gpui_luma::theme::stylesheet::ToggleStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    ToggleStylesheet {
+        sizes: [("sm", 10.0, 12.0, 14.0, 36.0), ("md", 12.0, 14.0, 16.0, 40.0), ("lg", 20.0, 16.0, 18.0, 44.0)]
+            .into_iter()
+            .map(|(key, padding, font, icon, height)| {
+                (
+                    key.into(),
+                    ToggleGeometryStylesheet {
+                        padding_x: Some(padding),
+                        font_size: Some(font),
+                        icon_size: Some(icon),
+                        height: Some(height),
+                        ..Default::default()
+                    },
+                )
+            })
+            .collect(),
+        ..Default::default()
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
+pub struct ToggleStylesheet {
+    #[serde(default)]
+    pub metrics: HashMap<String, ButtonMetricsRule>,
+    /// Look-owned metric-token references; literals live in the common contract.
+    #[serde(default)]
+    pub tokens: HashMap<String, ButtonMetricTokensRule>,
+    #[serde(default)]
+    pub elevation_rules: Vec<LayeredElevationRule>,
+}
+
+impl ToggleStylesheet {
+    /// Native bundled toggle token references and elevation.
+    pub fn native_default() -> Self {
+        Self {
+            tokens: ["sm", "md", "lg"]
+                .into_iter()
+                .map(|key| (key.into(), ButtonMetricTokensRule { height: None, corner_radius: Some("radius".into()) }))
+                .collect(),
+            elevation_rules: vec![
+                LayeredElevationRule { layer: None, shadow: "shadow-sm".into() },
+                LayeredElevationRule { layer: Some("disabled".into()), shadow: "none".into() },
+            ],
+            ..Default::default()
+        }
+    }
+
+    pub fn elevation_rule_for_layer(&self, layer: InteractionLayer) -> Option<&LayeredElevationRule> {
+        if layer == InteractionLayer::Disabled {
+            return self.elevation_rules.iter().find(|rule| rule.layer.as_deref() == Some("disabled"));
+        }
+        self.elevation_rules.iter().find(|rule| rule.layer.is_none())
+    }
+
+    pub fn metrics_for_size(&self, size: ControlSize) -> Option<&ButtonMetricsRule> {
+        let key = match size {
+            ControlSize::Sm => "sm",
+            ControlSize::Md => "md",
+            ControlSize::Lg => "lg",
+        };
+        self.metrics.get(key)
     }
 }

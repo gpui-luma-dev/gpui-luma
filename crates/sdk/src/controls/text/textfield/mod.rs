@@ -2,7 +2,7 @@ mod control;
 mod model;
 mod state;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::{TextFieldDrag, TextFieldEvent};
 pub use model::{TextFieldLookOverride, TextFieldBuilder, TextFieldModel, TextFieldRenderModel, Validator};

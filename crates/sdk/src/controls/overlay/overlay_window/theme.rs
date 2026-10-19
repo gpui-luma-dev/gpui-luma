@@ -100,3 +100,55 @@ impl OverlayWindowTheme for DefaultOverlayWindowTheme {
         }
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    OverlayWindowStylesheet,
+    OverlayWindowGeometryStylesheet,
+    OverlayWindowGeometry,
+    ResolvedOverlayWindowGeometry,
+    "overlay_window",
+    [
+        viewport_padding,
+        window_margin,
+        drag_header_height,
+        padding,
+        min_width,
+        max_width,
+        estimated_height,
+        font_size,
+        line_height,
+        border_width,
+        radius
+    ],
+    unit[backdrop_opacity]
+);
+
+impl OverlayWindowStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: OverlayWindowGeometryStylesheet {
+                viewport_padding: Some(24.0),
+                window_margin: Some(12.0),
+                drag_header_height: Some(56.0),
+                border_width: Some(1.0),
+                backdrop_opacity: Some(0.44),
+                ..Default::default()
+            },
+            sizes: [("sm", 320.0, 440.0, 196.0), ("md", 400.0, 520.0, 228.0), ("lg", 480.0, 600.0, 264.0)]
+                .into_iter()
+                .map(|(key, min, max, height)| {
+                    (
+                        key.into(),
+                        OverlayWindowGeometryStylesheet {
+                            min_width: Some(min),
+                            max_width: Some(max),
+                            estimated_height: Some(height),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}

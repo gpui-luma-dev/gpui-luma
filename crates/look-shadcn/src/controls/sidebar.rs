@@ -13,6 +13,9 @@
 //! | Selected fg       | `sidebar-primary-foreground`       |
 //! | Focus ring        | `sidebar-ring`                     |
 
+use crate::stylesheet::config::{matches_optional_bool, matches_optional_layer};
+use serde::Deserialize;
+
 use gpui_luma::controls::sidebar::{SidebarItemLook, SidebarSectionLook};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
@@ -361,4 +364,274 @@ pub struct SidebarContainerLook {
     pub foreground: gpui::Hsla,
     pub border: gpui::Hsla,
     pub radius: f32,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
+pub struct SidebarStylesheet {
+    #[serde(default)]
+    pub metrics: SidebarMetricsRule,
+    #[serde(default)]
+    pub container: SidebarContainerStylesheet,
+    #[serde(default)]
+    pub section: SidebarSectionStylesheet,
+    #[serde(default)]
+    pub branch: SidebarBranchStylesheet,
+    #[serde(default)]
+    pub item: SidebarItemStylesheet,
+}
+
+impl SidebarStylesheet {
+    /// Native bundled sidebar metrics and ordered rules.
+    pub fn native_default() -> Self {
+        Self {
+            metrics: SidebarMetricsRule::default(),
+            container: SidebarContainerStylesheet {
+                color_rules: vec![SidebarContainerColorRule {
+                    background: "first(sidebar,card,background)".into(),
+                    foreground: "first(sidebar-foreground,foreground)".into(),
+                    border: "first(sidebar-border,border)".into(),
+                }],
+            },
+            section: SidebarSectionStylesheet {
+                color_rules: vec![SidebarSectionColorRule { label_color: "muted-foreground".into() }],
+            },
+            branch: SidebarBranchStylesheet {
+                color_rules: [
+                    (true, None, "muted-foreground", None),
+                    (false, Some("default"), "first(sidebar-foreground,foreground)", None),
+                    (false, Some("disabled"), "first(sidebar-foreground,foreground)", None),
+                    (false, Some("hover"), "accent-foreground", Some("accent")),
+                    (false, Some("pressed"), "accent-foreground", Some("accent")),
+                ]
+                .into_iter()
+                .map(|(disabled, layer, color, background)| SidebarBranchColorRule {
+                    disabled: Some(disabled),
+                    layer: layer.map(Into::into),
+                    foreground: color.into(),
+                    icon_color: color.into(),
+                    background: background.map(Into::into),
+                })
+                .collect(),
+            },
+            item: SidebarItemStylesheet {
+                color_rules: [
+                    (true, true, None, "muted-foreground", None),
+                    (false, true, None, "muted-foreground", None),
+                    (
+                        true,
+                        false,
+                        Some("default"),
+                        "first(sidebar-primary-foreground,primary-foreground)",
+                        Some("first(sidebar-primary,primary)"),
+                    ),
+                    (
+                        true,
+                        false,
+                        Some("hover"),
+                        "first(sidebar-primary-foreground,primary-foreground)",
+                        Some("first_layer(sidebar-primary,primary)"),
+                    ),
+                    (
+                        true,
+                        false,
+                        Some("pressed"),
+                        "first(sidebar-primary-foreground,primary-foreground)",
+                        Some("first_layer(sidebar-primary,primary)"),
+                    ),
+                    (
+                        true,
+                        false,
+                        Some("disabled"),
+                        "first(sidebar-primary-foreground,primary-foreground)",
+                        Some("first(sidebar-primary,primary)"),
+                    ),
+                    (false, false, Some("default"), "first(sidebar-foreground,foreground)", None),
+                    (false, false, Some("disabled"), "first(sidebar-foreground,foreground)", None),
+                    (false, false, Some("hover"), "accent-foreground", Some("accent")),
+                    (false, false, Some("pressed"), "accent-foreground", Some("accent")),
+                ]
+                .into_iter()
+                .map(|(selected, disabled, layer, color, background)| SidebarItemColorRule {
+                    selected: Some(selected),
+                    disabled: Some(disabled),
+                    layer: layer.map(Into::into),
+                    foreground: color.into(),
+                    icon_color: color.into(),
+                    background: background.map(Into::into),
+                })
+                .collect(),
+            },
+        }
+    }
+}
+
+/// Layout metrics for [`gpui_luma::controls::sidebar::SidebarMetricScale`].
+///
+/// Values accept bare numbers, `px`, or `rem` (1rem = 16px).
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct SidebarMetricsRule {
+    #[serde(default = "sidebar_metric_width_expanded")]
+    pub width_expanded: String,
+    #[serde(default = "sidebar_metric_width_icon_rail")]
+    pub width_icon_rail: String,
+    #[serde(default = "sidebar_metric_width_mobile")]
+    pub width_mobile: String,
+    #[serde(default = "sidebar_metric_item_height")]
+    pub item_height: String,
+    #[serde(default = "sidebar_metric_icon_size")]
+    pub icon_size: String,
+    #[serde(default = "sidebar_metric_rail_hit_width")]
+    pub rail_hit_width: String,
+    #[serde(default = "sidebar_metric_popover_offset")]
+    pub popover_offset: String,
+}
+
+impl Default for SidebarMetricsRule {
+    fn default() -> Self {
+        Self {
+            width_expanded: sidebar_metric_width_expanded(),
+            width_icon_rail: sidebar_metric_width_icon_rail(),
+            width_mobile: sidebar_metric_width_mobile(),
+            item_height: sidebar_metric_item_height(),
+            icon_size: sidebar_metric_icon_size(),
+            rail_hit_width: sidebar_metric_rail_hit_width(),
+            popover_offset: sidebar_metric_popover_offset(),
+        }
+    }
+}
+
+fn sidebar_metric_width_expanded() -> String {
+    "16rem".into()
+}
+fn sidebar_metric_width_icon_rail() -> String {
+    "3rem".into()
+}
+fn sidebar_metric_width_mobile() -> String {
+    "18rem".into()
+}
+fn sidebar_metric_item_height() -> String {
+    "2rem".into()
+}
+fn sidebar_metric_icon_size() -> String {
+    "1rem".into()
+}
+fn sidebar_metric_rail_hit_width() -> String {
+    "0.375rem".into()
+}
+fn sidebar_metric_popover_offset() -> String {
+    "0.5rem".into()
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
+pub struct SidebarContainerStylesheet {
+    #[serde(default)]
+    pub color_rules: Vec<SidebarContainerColorRule>,
+}
+
+impl SidebarContainerStylesheet {
+    pub fn color_rule(&self) -> Option<&SidebarContainerColorRule> {
+        self.color_rules.first()
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct SidebarContainerColorRule {
+    pub background: String,
+    pub foreground: String,
+    pub border: String,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
+pub struct SidebarSectionStylesheet {
+    #[serde(default)]
+    pub color_rules: Vec<SidebarSectionColorRule>,
+}
+
+impl SidebarSectionStylesheet {
+    pub fn color_rule(&self) -> Option<&SidebarSectionColorRule> {
+        self.color_rules.first()
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct SidebarSectionColorRule {
+    pub label_color: String,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
+pub struct SidebarBranchStylesheet {
+    #[serde(default)]
+    pub color_rules: Vec<SidebarBranchColorRule>,
+}
+
+impl SidebarBranchStylesheet {
+    pub fn find_color_rule(&self, disabled: bool, layer: InteractionLayer) -> Option<&SidebarBranchColorRule> {
+        self.color_rules.iter().find(|rule| {
+            if rule.disabled == Some(true) {
+                return disabled;
+            }
+            if disabled {
+                return false;
+            }
+            matches_optional_layer(rule.layer.as_deref(), layer)
+        })
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct SidebarBranchColorRule {
+    pub disabled: Option<bool>,
+    pub layer: Option<String>,
+    pub foreground: String,
+    pub icon_color: String,
+    pub background: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
+pub struct SidebarItemStylesheet {
+    #[serde(default)]
+    pub color_rules: Vec<SidebarItemColorRule>,
+}
+
+impl SidebarItemStylesheet {
+    pub fn find_color_rule(
+        &self,
+        selected: bool,
+        disabled: bool,
+        layer: InteractionLayer,
+    ) -> Option<&SidebarItemColorRule> {
+        self.color_rules.iter().find(|rule| {
+            if rule.disabled == Some(true) {
+                return disabled && matches_optional_bool(rule.selected, selected);
+            }
+            if disabled {
+                return false;
+            }
+            matches_optional_bool(rule.selected, selected) && matches_optional_layer(rule.layer.as_deref(), layer)
+        })
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct SidebarItemColorRule {
+    pub selected: Option<bool>,
+    pub disabled: Option<bool>,
+    pub layer: Option<String>,
+    pub foreground: String,
+    pub icon_color: String,
+    pub background: Option<String>,
+}
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_sidebar_stylesheet() -> gpui_luma::theme::stylesheet::SidebarStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    SidebarStylesheet {
+        geometry: SidebarGeometryStylesheet {
+            section_height: Some(20.0),
+            item_height: Some(30.0),
+            item_padding_x: Some(8.0),
+            ..Default::default()
+        },
+        ..Default::default()
+    }
 }

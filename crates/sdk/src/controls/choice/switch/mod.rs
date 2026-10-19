@@ -2,7 +2,7 @@ mod callback;
 pub use callback::{SwitchCallbacks, SwitchEventExt};
 
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use template::{ThemedSwitchTemplate, default_template as default_switch_template};
 pub use theme::{DefaultSwitchTheme, SwitchLook, SwitchPalette, SwitchScale, SwitchTheme, default_switch_theme};

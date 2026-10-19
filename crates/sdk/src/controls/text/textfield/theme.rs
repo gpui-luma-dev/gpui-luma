@@ -242,3 +242,38 @@ mod tests {
         assert_eq!(sm.icon_size, theme.metrics().control.sm.icon_size);
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    TextFieldStylesheet,
+    TextFieldGeometryStylesheet,
+    TextFieldGeometry,
+    ResolvedTextFieldGeometry,
+    "textfield",
+    [
+        min_height,
+        padding_x,
+        padding_y,
+        gap,
+        icon_size,
+        font_size,
+        line_height,
+        caret_width,
+        caret_height_extra
+    ],
+    unit[disabled_opacity]
+);
+
+impl TextFieldStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: TextFieldGeometryStylesheet {
+                caret_width: Some(1.5),
+                caret_height_extra: Some(2.0),
+                disabled_opacity: Some(0.6),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}

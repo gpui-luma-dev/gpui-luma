@@ -1,14 +1,14 @@
 use gpui::FontWeight;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct LumaTypography {
     pub font: FontTokens,
     pub text: TextTokens,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct FontTokens {
     pub sans: FontFamilyToken,
@@ -16,7 +16,7 @@ pub struct FontTokens {
     pub serif: FontFamilyToken,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct FontFamilyToken {
     pub family: String,
@@ -41,7 +41,7 @@ pub enum LumaTextScale {
     TwoXl,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct TextScaleTokens {
     pub xs: LumaTextStyle,
@@ -52,7 +52,7 @@ pub struct TextScaleTokens {
     pub two_xl: LumaTextStyle,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct TextRoleTokens {
     pub h1: LumaTextStyle,
@@ -62,7 +62,7 @@ pub struct TextRoleTokens {
     pub p: LumaTextStyle,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct TextTokens {
     pub body: LumaTextStyle,
@@ -74,7 +74,7 @@ pub struct TextTokens {
     pub role: TextRoleTokens,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct LumaTextStyle {
     #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
@@ -87,7 +87,43 @@ pub struct LumaTextStyle {
 
 impl Default for LumaTypography {
     fn default() -> Self {
-        include!(concat!(env!("OUT_DIR"), "/typography.rs"))
+        Self::native_default()
+    }
+}
+
+impl LumaTypography {
+    /// Construct the bundled SDK font families and text styles.
+    pub fn native_default() -> Self {
+        let scale = TextScaleTokens {
+            xs: LumaTextStyle { size: 11.0, line_height: 16.0, weight: FontWeight(500.0) },
+            sm: LumaTextStyle { size: 12.5, line_height: 18.0, weight: FontWeight(400.0) },
+            md: LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight(400.0) },
+            lg: LumaTextStyle { size: 16.0, line_height: 22.0, weight: FontWeight(500.0) },
+            xl: LumaTextStyle { size: 18.0, line_height: 24.0, weight: FontWeight(600.0) },
+            two_xl: LumaTextStyle { size: 20.0, line_height: 28.0, weight: FontWeight(600.0) },
+        };
+        Self {
+            font: FontTokens {
+                sans: FontFamilyToken { family: "System UI".into() },
+                mono: FontFamilyToken { family: "Monaco".into() },
+                serif: FontFamilyToken { family: "New York".into() },
+            },
+            text: TextTokens {
+                body: scale.md,
+                label: LumaTextStyle { size: 12.5, line_height: 18.0, weight: FontWeight(500.0) },
+                caption: scale.xs,
+                title: scale.two_xl,
+                code: LumaTextStyle { size: 13.0, line_height: 18.0, weight: FontWeight(400.0) },
+                role: TextRoleTokens {
+                    h1: LumaTextStyle { size: 44.0, line_height: 52.0, weight: FontWeight(700.0) },
+                    h2: LumaTextStyle { size: 28.0, line_height: 36.0, weight: FontWeight(600.0) },
+                    h3: scale.two_xl,
+                    h4: scale.lg,
+                    p: scale.md,
+                },
+                scale,
+            },
+        }
     }
 }
 

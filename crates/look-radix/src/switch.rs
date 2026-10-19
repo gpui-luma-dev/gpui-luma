@@ -392,3 +392,26 @@ mod tests {
         assert_eq!(scale.thumb_size, 18.0);
     }
 }
+
+/// Constructs the native Radix switch definition in pure Rust without preloading TOML.
+pub fn native_radix_switch() -> gpui_luma::theme::stylesheet::SwitchStylesheet {
+    let mut switch = gpui_luma::theme::stylesheet::SwitchStylesheet::default();
+    switch
+        .track_padding(1.0)
+        .gap(8.0)
+        .size("1", |m| {
+            m.dimensions(28.0, 16.0, 14.0);
+        })
+        .size("2", |m| {
+            m.dimensions(35.0, 20.0, 18.0);
+        })
+        .size("3", |m| {
+            m.dimensions(42.0, 24.0, 22.0);
+        });
+    switch
+}
+
+/// Applies Radix switch geometry in Rust.
+pub(crate) fn apply_radix_switch_stylesheet(sheet: &mut gpui_luma::theme::stylesheet::CommonStylesheet) {
+    native_radix_switch().apply_to(&mut sheet.switch);
+}

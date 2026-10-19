@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
@@ -168,5 +170,64 @@ mod tests {
         assert_eq!(regular.group_gap, 19.0);
         assert_eq!(compact.button_min_width, 40.0);
         assert_eq!(compact.group_gap, 11.0);
+    }
+}
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    PagerStylesheet,
+    PagerGeometryStylesheet,
+    PagerGeometry,
+    ResolvedPagerGeometry,
+    "pager",
+    [
+        gap_icon_size,
+        button_size,
+        button_min_width,
+        control_height,
+        padding_x,
+        padding_y,
+        gap,
+        group_gap,
+        font_size,
+        line_height,
+        radius,
+        padding_x_inset_scale,
+        padding_y_gap_scale,
+        button_extra_width_scale,
+        border_width,
+        page_size_label_gap,
+        popup_offset_y,
+        popup_gap,
+        popup_padding,
+        popup_item_padding_y,
+        popup_item_radius_inset
+    ],
+    unit[disabled_opacity]
+);
+
+impl PagerStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: PagerGeometryStylesheet {
+                gap_icon_size: Some(16.0),
+                border_width: Some(1.0),
+                page_size_label_gap: Some(8.0),
+                popup_offset_y: Some(4.0),
+                popup_gap: Some(2.0),
+                popup_padding: Some(4.0),
+                popup_item_padding_y: Some(4.0),
+                popup_item_radius_inset: Some(2.0),
+                padding_x_inset_scale: Some(1.0 / 2.0),
+                padding_y_gap_scale: Some(1.0 / 2.0),
+                button_extra_width_scale: Some(1.0),
+                disabled_opacity: Some(0.56),
+                ..Default::default()
+            },
+            sizes: HashMap::from([(
+                "minimal".into(),
+                PagerGeometryStylesheet { button_extra_width_scale: Some(0.0), ..Default::default() },
+            )]),
+        }
     }
 }

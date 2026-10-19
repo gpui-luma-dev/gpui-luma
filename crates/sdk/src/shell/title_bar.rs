@@ -8,7 +8,11 @@ use gpui::{
 use crate::infra::icon::{IconSource, render_icon_source};
 use crate::theme::stylesheet::{CommonStylesheet, IconRole};
 
-include!(concat!(env!("OUT_DIR"), "/shell.rs"));
+pub const TITLE_BAR_HEIGHT: Pixels = px(34.0);
+#[cfg(target_os = "macos")]
+pub const TITLE_BAR_LEFT_PADDING: Pixels = px(80.0);
+#[cfg(not(target_os = "macos"))]
+pub const TITLE_BAR_LEFT_PADDING: Pixels = px(12.0);
 const TITLE_BAR_DRAG_THRESHOLD_PX: f64 = 4.0;
 
 /// Check if the left mouse button is currently pressed at the OS level.

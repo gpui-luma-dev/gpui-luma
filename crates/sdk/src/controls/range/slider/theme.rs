@@ -1,3 +1,8 @@
+use crate::theme::provenance::ResolvedMetric;
+use crate::theme::stylesheet::{CommonStylesheet, PaletteRole, SliderMotionStylesheet, TransitionSpec};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
 use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
@@ -183,4 +188,316 @@ mod tests {
         assert_eq!(look.track_height, 11.0);
         assert_eq!(look.thumb_size, 27.0);
     }
+}
+
+/// Shared slider dimensions; palettes, shadows and radius recipes remain look-owned.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct SliderStylesheet {
+    pub geometry: SliderGeometryStylesheet,
+    /// Semantic size keys belong to the look; the SDK does not normalize them.
+    pub sizes: HashMap<String, SliderGeometryStylesheet>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct SliderGeometryStylesheet {
+    #[serde(deserialize_with = "crate::theme::stylesheet::optional_length")]
+    pub dial_size: Option<f32>,
+    #[serde(deserialize_with = "crate::theme::stylesheet::optional_length")]
+    pub track_radius: Option<f32>,
+    #[serde(deserialize_with = "crate::theme::stylesheet::optional_unit")]
+    pub disabled_opacity: Option<f32>,
+    #[serde(deserialize_with = "crate::theme::stylesheet::optional_length")]
+    pub width: Option<f32>,
+    #[serde(deserialize_with = "crate::theme::stylesheet::optional_length")]
+    pub height: Option<f32>,
+    #[serde(deserialize_with = "crate::theme::stylesheet::optional_length")]
+    pub track_height: Option<f32>,
+    #[serde(deserialize_with = "crate::theme::stylesheet::optional_length")]
+    pub thumb_size: Option<f32>,
+    /// Minimum target height relative to the shared control height.
+    #[serde(deserialize_with = "crate::theme::stylesheet::optional_length")]
+    pub height_floor_scale: Option<f32>,
+    /// Default thumb diameter relative to the selected target height.
+    #[serde(deserialize_with = "crate::theme::stylesheet::optional_length")]
+    pub thumb_scale: Option<f32>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ResolvedSliderGeometry {
+    pub width: ResolvedMetric,
+    pub height: ResolvedMetric,
+    pub track_height: ResolvedMetric,
+    pub thumb_size: ResolvedMetric,
+}
+
+crate::theme::stylesheet::geometry::inherit_geometry!(
+    SliderStylesheet,
+    sizes,
+    [
+        width,
+        height,
+        track_height,
+        thumb_size,
+        height_floor_scale,
+        thumb_scale,
+        dial_size,
+        track_radius,
+        disabled_opacity
+    ]
+);
+
+/// Nonlinear slider presentation metrics, in logical pixels and unit opacity.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SliderDecoration {
+    pub dial_size: f32,
+    pub track_radius: f32,
+    pub disabled_opacity: f32,
+}
+
+impl SliderStylesheet {
+    /// Resolve radial paint dimensions and disabled opacity for the selected size.
+    pub fn decoration(&self, key: &str) -> SliderDecoration {
+        let recipe = self.authored_geometry(key);
+        let baseline = CommonStylesheet::sdk_default().slider.authored_geometry(key);
+        SliderDecoration {
+            dial_size: recipe.dial_size.or(baseline.dial_size).unwrap_or_default(),
+            track_radius: recipe.track_radius.or(baseline.track_radius).unwrap_or_default(),
+            disabled_opacity: recipe.disabled_opacity.or(baseline.disabled_opacity).unwrap_or_default(),
+        }
+    }
+    /// Optional size/general inputs, including token-derived recipe coefficients.
+    pub fn authored_geometry(&self, key: &str) -> SliderGeometryStylesheet {
+        let specific = self.sizes.get(key).cloned().unwrap_or_default();
+        macro_rules! field {
+            ($name:ident) => {
+                specific.$name.or(self.geometry.$name)
+            };
+        }
+        SliderGeometryStylesheet {
+            dial_size: field!(dial_size),
+            track_radius: field!(track_radius),
+            disabled_opacity: field!(disabled_opacity),
+            width: field!(width),
+            height: field!(height),
+            track_height: field!(track_height),
+            thumb_size: field!(thumb_size),
+            height_floor_scale: field!(height_floor_scale),
+            thumb_scale: field!(thumb_scale),
+        }
+    }
+
+    /// Resolve per-size, general, then SDK/legacy dimensions. Explicit thumb-size
+    /// selections use the corresponding look size, independently of control size.
+    /// Slider dimensions retain logical pixels without introducing display snapping.
+    pub fn resolve_geometry(
+        &self,
+        key: &str,
+        thumb_key: Option<&str>,
+        fallback: &crate::controls::slider::SliderLook,
+    ) -> ResolvedSliderGeometry {
+        let specific = self.sizes.get(key).cloned().unwrap_or_default();
+        let resolve = |key: &str, field: &str, specific: Option<f32>, general: Option<f32>, fallback: f32| {
+            if let Some(value) = specific {
+                ResolvedMetric::authored(value, format!("common.slider.sizes.{key}.{field}"))
+            } else if let Some(value) = general {
+                ResolvedMetric::authored(value, format!("common.slider.geometry.{field}"))
+            } else {
+                ResolvedMetric::constant(fallback, format!("slider {field} fallback"))
+            }
+        };
+        let selected_thumb_key = thumb_key.unwrap_or(key);
+        let thumb_geometry = self.sizes.get(selected_thumb_key).cloned().unwrap_or_default();
+        let mut thumb = resolve(
+            selected_thumb_key,
+            "thumb_size",
+            thumb_geometry.thumb_size,
+            self.geometry.thumb_size,
+            fallback.thumb_size,
+        );
+        if thumb_key.is_some() {
+            let source = match &thumb.source {
+                crate::theme::provenance::MetricSource::Authored { key } => key.clone(),
+                _ => "SDK/legacy thumb fallback".into(),
+            };
+            thumb.source = crate::theme::provenance::MetricSource::Derived {
+                note: format!("instance thumb_size {selected_thumb_key} → {source}"),
+            };
+        }
+        ResolvedSliderGeometry {
+            width: resolve(key, "width", specific.width, self.geometry.width, fallback.width),
+            height: resolve(key, "height", specific.height, self.geometry.height, fallback.height),
+            track_height: resolve(
+                key,
+                "track_height",
+                specific.track_height,
+                self.geometry.track_height,
+                fallback.track_height,
+            ),
+            thumb_size: thumb,
+        }
+    }
+
+    /// Configure general slider width in logical pixels.
+    pub fn width(&mut self, width: f32) -> &mut Self {
+        self.geometry.width = Some(width);
+        self
+    }
+
+    /// Configure general slider height in logical pixels.
+    pub fn height(&mut self, height: f32) -> &mut Self {
+        self.geometry.height = Some(height);
+        self
+    }
+
+    /// Configure general slider track height in logical pixels.
+    pub fn track_height(&mut self, track_height: f32) -> &mut Self {
+        self.geometry.track_height = Some(track_height);
+        self
+    }
+
+    /// Configure general slider thumb size in logical pixels.
+    pub fn thumb_size(&mut self, thumb_size: f32) -> &mut Self {
+        self.geometry.thumb_size = Some(thumb_size);
+        self
+    }
+
+    /// Configure general slider height floor scale relative to control height.
+    pub fn height_floor_scale(&mut self, scale: f32) -> &mut Self {
+        self.geometry.height_floor_scale = Some(scale);
+        self
+    }
+
+    /// Configure general slider thumb scale relative to resolved height.
+    pub fn thumb_scale(&mut self, scale: f32) -> &mut Self {
+        self.geometry.thumb_scale = Some(scale);
+        self
+    }
+
+    /// Configure general slider radial dial size in logical pixels.
+    pub fn dial_size(&mut self, dial_size: f32) -> &mut Self {
+        self.geometry.dial_size = Some(dial_size);
+        self
+    }
+
+    /// Configure general slider radial track radius in logical pixels.
+    pub fn track_radius(&mut self, track_radius: f32) -> &mut Self {
+        self.geometry.track_radius = Some(track_radius);
+        self
+    }
+
+    /// Configure general slider disabled opacity (0.0 to 1.0).
+    pub fn disabled_opacity(&mut self, opacity: f32) -> &mut Self {
+        self.geometry.disabled_opacity = Some(opacity);
+        self
+    }
+
+    /// Configure or override a size key without manual map manipulation.
+    pub fn size(&mut self, key: impl Into<String>, configure: impl FnOnce(&mut SliderGeometryStylesheet)) -> &mut Self {
+        let entry = self.sizes.entry(key.into()).or_default();
+        configure(entry);
+        self
+    }
+
+    /// Construct the native SDK slider stylesheet in pure Rust without preloading TOML.
+    pub fn native_default() -> Self {
+        let mut slider = Self::default();
+        slider
+            .width(260.0)
+            .height_floor_scale(0.5)
+            .thumb_scale(0.5)
+            .dial_size(200.0)
+            .track_radius(72.0)
+            .disabled_opacity(0.56);
+        slider
+    }
+
+    /// Apply authored slider fields with the existing stylesheet precedence.
+    pub fn apply_to(&self, target: &mut Self) {
+        *target = self.clone().with_baseline(target);
+    }
+}
+
+impl SliderGeometryStylesheet {
+    pub fn width(&mut self, width: f32) -> &mut Self {
+        self.width = Some(width);
+        self
+    }
+
+    pub fn height(&mut self, height: f32) -> &mut Self {
+        self.height = Some(height);
+        self
+    }
+
+    pub fn track_height(&mut self, track_height: f32) -> &mut Self {
+        self.track_height = Some(track_height);
+        self
+    }
+
+    pub fn thumb_size(&mut self, thumb_size: f32) -> &mut Self {
+        self.thumb_size = Some(thumb_size);
+        self
+    }
+
+    pub fn height_floor_scale(&mut self, scale: f32) -> &mut Self {
+        self.height_floor_scale = Some(scale);
+        self
+    }
+
+    pub fn thumb_scale(&mut self, scale: f32) -> &mut Self {
+        self.thumb_scale = Some(scale);
+        self
+    }
+
+    pub fn dial_size(&mut self, dial_size: f32) -> &mut Self {
+        self.dial_size = Some(dial_size);
+        self
+    }
+
+    pub fn track_radius(&mut self, track_radius: f32) -> &mut Self {
+        self.track_radius = Some(track_radius);
+        self
+    }
+
+    pub fn disabled_opacity(&mut self, opacity: f32) -> &mut Self {
+        self.disabled_opacity = Some(opacity);
+        self
+    }
+
+    /// Convenience setter for height, track height, and thumb size in logical pixels.
+    pub fn dimensions(&mut self, height: f32, track_height: f32, thumb_size: f32) -> &mut Self {
+        self.height(height);
+        self.track_height(track_height);
+        self.thumb_size(thumb_size);
+        self
+    }
+}
+
+impl SliderMotionStylesheet {
+    /// Construct native SDK slider motion specs in pure Rust without preloading TOML.
+    pub fn native_default() -> Self {
+        Self { thumb: Some(TransitionSpec::Timed { duration_ms: 200, easing: crate::motion::Easing::OutCubic }) }
+    }
+}
+
+/// Construct native SDK slider palette recipe mappings in pure Rust without preloading TOML.
+pub fn native_sdk_slider_recipes() -> HashMap<PaletteRole, PaletteRole> {
+    use PaletteRole::*;
+    HashMap::from([
+        (StateDisabledBackground, StateDisabledBackground),
+        (StateDisabledForeground, StateDisabledForeground),
+        (StatePressedBackground, StatePressedBackground),
+        (StateSelectedBackground, StateSelectedBackground),
+        (StateSelectedForeground, StateSelectedForeground),
+        (SurfacePanelBackground, SurfacePanelBackground),
+        (SurfaceSubtleBackground, SurfaceSubtleBackground),
+    ])
+}
+
+/// Native SDK slider defaults.
+pub fn define_sdk_slider(sheet: &mut CommonStylesheet) {
+    sheet.slider = SliderStylesheet::native_default();
+    sheet.motion.slider = SliderMotionStylesheet::native_default();
+    sheet.recipes.0.insert("slider".into(), native_sdk_slider_recipes());
 }

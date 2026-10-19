@@ -416,3 +416,25 @@ mod tests {
         assert!(classic.thumb_shadow.len() > surface.thumb_shadow.len());
     }
 }
+
+/// Constructs the native Radix slider definition in pure Rust without preloading TOML.
+pub fn native_radix_slider() -> gpui_luma::theme::stylesheet::SliderStylesheet {
+    let mut slider = gpui_luma::theme::stylesheet::SliderStylesheet::default();
+    slider
+        .width(120.0)
+        .size("1", |m| {
+            m.dimensions(16.0, 4.0, 12.0);
+        })
+        .size("2", |m| {
+            m.dimensions(20.0, 6.0, 16.0);
+        })
+        .size("3", |m| {
+            m.dimensions(24.0, 8.0, 20.0);
+        });
+    slider
+}
+
+/// Applies Radix slider geometry in Rust.
+pub(crate) fn apply_radix_slider_stylesheet(sheet: &mut gpui_luma::theme::stylesheet::CommonStylesheet) {
+    native_radix_slider().apply_to(&mut sheet.slider);
+}

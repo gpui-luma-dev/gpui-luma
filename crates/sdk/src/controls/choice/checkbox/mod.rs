@@ -6,7 +6,7 @@ mod callback;
 pub use callback::{CheckboxCallbacks, CheckboxEventExt};
 
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use template::{ThemedCheckboxTemplate, default_template as default_checkbox_template};
 

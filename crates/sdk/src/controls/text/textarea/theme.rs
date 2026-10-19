@@ -189,3 +189,28 @@ pub fn compose_textarea_look(palette: &TextAreaPalette, scale: &StandardBoxScale
         border_width,
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    TextAreaStylesheet,
+    TextAreaGeometryStylesheet,
+    TextAreaGeometry,
+    ResolvedTextAreaGeometry,
+    "textarea",
+    [min_height, padding_x, padding_y, font_size, line_height, caret_width, caret_height_extra],
+    unit[disabled_opacity]
+);
+
+impl TextAreaStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: TextAreaGeometryStylesheet {
+                caret_width: Some(1.5),
+                caret_height_extra: Some(2.0),
+                disabled_opacity: Some(0.6),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}

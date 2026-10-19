@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use gpui::{Hsla, black};
 use gpui_luma::controls::overlay_window::{OverlayWindowLook, OverlayWindowMode};
 use gpui_luma::theme::ControlSize;
@@ -75,4 +77,18 @@ pub fn overlay_window_look(theme: &ShadcnLook, size: ControlSize, mode: OverlayW
     );
 
     look
+}
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_overlay_window_stylesheet() -> gpui_luma::theme::stylesheet::OverlayWindowStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    use HashMap;
+    OverlayWindowStylesheet {
+        geometry: OverlayWindowGeometryStylesheet { backdrop_opacity: Some(0.42), ..Default::default() },
+        sizes: HashMap::from([
+            ("sm".into(), OverlayWindowGeometryStylesheet { max_width: Some(420.0), ..Default::default() }),
+            ("md".into(), OverlayWindowGeometryStylesheet::default()),
+            ("lg".into(), OverlayWindowGeometryStylesheet { max_width: Some(620.0), ..Default::default() }),
+        ]),
+    }
 }

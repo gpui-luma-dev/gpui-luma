@@ -43,3 +43,17 @@ pub(crate) fn resolve_geometry(look: &Look) -> gpui_luma::theme::stylesheet::Res
         },
     )
 }
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_callout_stylesheet() -> gpui_luma::theme::stylesheet::CalloutStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    CalloutStylesheet {
+        geometry: CalloutGeometryStylesheet {
+            padding: Some(12.0),
+            gap: Some(12.0),
+            icon_size: Some(15.0),
+            font_size: Some(14.0),
+        },
+        ..Default::default()
+    }
+}

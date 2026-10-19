@@ -108,7 +108,7 @@ pub fn border_width_metric(metrics: &gpui_luma::theme::MetricTokens) -> Resolved
 pub fn inspect_shared_metric(value: gpui_luma::theme::provenance::ResolvedMetric) -> crate::ResolvedMetric {
     use gpui_luma::theme::provenance::MetricSource;
     let source = match value.source {
-        MetricSource::Authored { key } => crate::MetricSource::Derived { note: format!("style.toml · {key}") },
+        MetricSource::Authored { key } => crate::MetricSource::Derived { note: format!("stylesheet · {key}") },
         MetricSource::Derived { note } => crate::MetricSource::Derived { note },
         MetricSource::Scaffold { path } => crate::MetricSource::Scaffold { path },
         MetricSource::Constant { label } => crate::MetricSource::Constant { label },

@@ -42,3 +42,73 @@ impl SidebarMetricScale {
         }
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    SidebarStylesheet,
+    SidebarGeometryStylesheet,
+    SidebarGeometry,
+    ResolvedSidebarGeometry,
+    "sidebar",
+    [
+        section_height,
+        item_height,
+        item_padding_x,
+        item_gap,
+        item_icon_size,
+        width_expanded,
+        width_icon_rail,
+        width_mobile,
+        rail_hit_width,
+        popover_offset,
+        container_gap,
+        region_gap,
+        header_padding_bottom,
+        footer_padding_top,
+        title_gap,
+        title_padding_bottom,
+        section_padding_top,
+        disclosure_icon_size,
+        rail_submenu_offset_x,
+        window_margin,
+        engine_item_height,
+        engine_section_height,
+        engine_item_padding_x, rail_branch_indicator_size, rail_branch_overhang
+    ],
+    unit[subtitle_opacity, disabled_opacity]
+);
+
+impl SidebarStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: SidebarGeometryStylesheet {
+                rail_branch_indicator_size: Some(18.0),
+                rail_branch_overhang: Some(10.0),
+                container_gap: Some(8.0),
+                region_gap: Some(4.0),
+                header_padding_bottom: Some(8.0),
+                footer_padding_top: Some(8.0),
+                title_gap: Some(2.0),
+                title_padding_bottom: Some(4.0),
+                section_padding_top: Some(8.0),
+                disclosure_icon_size: Some(14.0),
+                rail_submenu_offset_x: Some(12.0),
+                window_margin: Some(8.0),
+                engine_item_height: Some(30.0),
+                engine_section_height: Some(20.0),
+                engine_item_padding_x: Some(8.0),
+                subtitle_opacity: Some(0.72),
+                disabled_opacity: Some(0.56),
+                width_expanded: Some(256.0),
+                width_icon_rail: Some(48.0),
+                width_mobile: Some(288.0),
+                item_height: Some(32.0),
+                item_icon_size: Some(16.0),
+                rail_hit_width: Some(6.0),
+                popover_offset: Some(8.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}

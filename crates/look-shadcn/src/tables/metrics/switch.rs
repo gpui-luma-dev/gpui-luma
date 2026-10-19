@@ -49,7 +49,7 @@ pub fn resolve_switch_metrics_with_stylesheet(
     let legacy = stylesheet.switch.metrics_for_size(size).is_some();
     let dimension = |field: &str, value| {
         let note = if legacy {
-            format!("style.toml · switch.metrics.{size_key}.{field}")
+            format!("stylesheet · switch.metrics.{size_key}.{field}")
         } else {
             format!("SDK switch {field} fallback")
         };

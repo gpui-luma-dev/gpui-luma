@@ -1,19 +1,27 @@
 //! Common look configuration consumed by SDK controls.
 //!
-//! Looks embed this contract under `[common]` in their own `style.toml`.
+//! Looks author this contract in Rust; external documents use `[common]`.
 //! Other root sections remain look-owned. Unknown common fields are rejected;
 //! missing fields inherit SDK data, and explicit zero remains an override.
 
 use std::collections::HashMap;
-use crate::theme::provenance::ResolvedMetric;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 mod recipes;
 pub use recipes::*;
 mod icons;
 pub use icons::*;
-mod geometry;
+pub(crate) mod geometry;
 pub use geometry::*;
+pub use crate::controls::navigation::tabs::theme::{TabsStylesheet, TabsGeometryStylesheet, ResolvedTabsGeometry};
+pub use crate::controls::choice::switch::theme::{
+    SwitchStylesheet, SwitchGeometryStylesheet, ResolvedSwitchGeometry, native_sdk_switch_recipes, define_sdk_switch,
+};
+pub use crate::controls::range::slider::theme::{
+    SliderStylesheet, SliderGeometryStylesheet, ResolvedSliderGeometry, SliderDecoration, native_sdk_slider_recipes,
+    define_sdk_slider,
+};
+pub use crate::controls::choice::checkbox::theme::{native_sdk_checkbox_recipes, define_sdk_checkbox};
 mod motion;
 pub use motion::*;
 mod colors;
@@ -24,12 +32,9 @@ pub use tokens::*;
 #[cfg(test)]
 mod control_defaults;
 
-/// Embedded vanilla SDK configuration. Looks author only their overrides.
-pub const DEFAULT_STYLE_TOML: &str = include_str!("../../assets/style.toml");
-
 macro_rules! common_stylesheet {
     ($($field:ident: $kind:ty),+ $(,)?) => {
-        #[derive(Clone, Debug, Default, PartialEq)]
+        #[derive(Clone, Debug, Default, PartialEq, Serialize)]
         pub struct CommonStylesheet {
             pub tokens: TokenStylesheet,
             /// Typed role overrides, shared by SDK-only apps and all looks.
@@ -60,6 +65,12 @@ macro_rules! common_stylesheet {
                     tokens: self.tokens.clone(), motion: self.motion.clone(),
                     $($field: self.$field.clone().with_baseline(&baseline.$field),)+
                 }
+            }
+
+            /// Apply an in-place mutation or decorator closure.
+            pub fn with(mut self, decorator: impl FnOnce(&mut Self)) -> Self {
+                decorator(&mut self);
+                self
             }
         }
     };
@@ -115,32 +126,7 @@ common_stylesheet! {
     resizable_panels: ResizablePanelsStylesheet,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
-#[serde(default, deny_unknown_fields)]
-pub struct TabsStylesheet {
-    pub geometry: TabsGeometryStylesheet,
-    /// Variant names belong to each look; fields use the same common contract.
-    pub variants: HashMap<String, TabsGeometryStylesheet>,
-}
-
-/// Common tab geometry in logical pixels. Missing fields retain the supplied
-/// token/recipe fallback; variant values take precedence over general values.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
-#[serde(default, deny_unknown_fields)]
-pub struct TabsGeometryStylesheet {
-    #[serde(deserialize_with = "optional_length")]
-    pub accessory_size: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub accessory_gap: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub list_gap: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub list_padding: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub indicator_height: Option<f32>,
-}
-
-fn optional_length<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<f32>, D::Error> {
+pub(crate) fn optional_length<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<f32>, D::Error> {
     let value = Option::<f32>::deserialize(deserializer)?;
     if value.is_some_and(|value| !value.is_finite() || value < 0.0) {
         return Err(serde::de::Error::custom("geometry must be finite and nonnegative"));
@@ -148,7 +134,7 @@ fn optional_length<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<
     Ok(value)
 }
 
-fn optional_unit<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<f32>, D::Error> {
+pub(crate) fn optional_unit<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<f32>, D::Error> {
     let value = Option::<f32>::deserialize(deserializer)?;
     if value.is_some_and(|value| !value.is_finite() || !(0.0..=1.0).contains(&value)) {
         return Err(serde::de::Error::custom("opacity must be finite and in 0..=1"));
@@ -180,369 +166,372 @@ pub(crate) fn required_finite<'de, D: serde::Deserializer<'de>>(deserializer: D)
     Ok(value)
 }
 
-/// Shared switch dimensions. Size fields override general geometry field by field.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
-#[serde(default, deny_unknown_fields)]
-pub struct SwitchStylesheet {
-    pub geometry: SwitchGeometryStylesheet,
-    /// Semantic size keys belong to the look (for example Radix "1"/"2"/"3").
-    pub sizes: HashMap<String, SwitchGeometryStylesheet>,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
-#[serde(default, deny_unknown_fields)]
-pub struct SwitchGeometryStylesheet {
-    #[serde(deserialize_with = "optional_unit")]
-    pub disabled_opacity: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub track_width: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub track_height: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub track_padding: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub thumb_size: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub gap: Option<f32>,
-    /// Track width divided by control height; applied before pixel snapping.
-    #[serde(deserialize_with = "optional_length")]
-    pub track_width_scale: Option<f32>,
-    /// Track height divided by control height; applied before pixel snapping.
-    #[serde(deserialize_with = "optional_length")]
-    pub track_height_scale: Option<f32>,
-    /// Thumb size divided by control height; applied before pixel snapping.
-    #[serde(deserialize_with = "optional_length")]
-    pub thumb_scale: Option<f32>,
-}
-
-#[derive(Clone, Debug)]
-pub struct ResolvedSwitchGeometry {
-    pub disabled_opacity: ResolvedMetric,
-    pub track_width: ResolvedMetric,
-    pub track_height: ResolvedMetric,
-    pub track_padding: ResolvedMetric,
-    pub thumb_size: ResolvedMetric,
-    pub gap: ResolvedMetric,
-}
-
-geometry::inherit_geometry!(
-    SwitchStylesheet,
-    sizes,
-    [
-        track_width,
-        track_height,
-        track_padding,
-        thumb_size,
-        gap,
-        track_width_scale,
-        track_height_scale,
-        thumb_scale,
-        disabled_opacity
-    ]
-);
-
-impl SwitchStylesheet {
-    /// Resolve optional dimensions and proportional recipes over general fields.
-    pub fn authored_geometry(&self, key: &str) -> SwitchGeometryStylesheet {
-        let specific = self.sizes.get(key).cloned().unwrap_or_default();
-        macro_rules! field {
-            ($name:ident) => {
-                specific.$name.or(self.geometry.$name)
-            };
-        }
-        SwitchGeometryStylesheet {
-            disabled_opacity: field!(disabled_opacity),
-            track_width: field!(track_width),
-            track_height: field!(track_height),
-            track_padding: field!(track_padding),
-            thumb_size: field!(thumb_size),
-            gap: field!(gap),
-            track_width_scale: field!(track_width_scale),
-            track_height_scale: field!(track_height_scale),
-            thumb_scale: field!(thumb_scale),
-        }
-    }
-
-    /// Resolve per-size, general, then supplied SDK/legacy fallback geometry.
-    /// Authored values are snapped once at the requested display scale factor.
-    pub fn resolve_geometry(
-        &self,
-        key: &str,
-        fallback: crate::controls::switch::SwitchScale,
-        scale_factor: f32,
-    ) -> ResolvedSwitchGeometry {
-        use crate::theme::snap_to_pixel;
-        let specific = self.sizes.get(key).cloned().unwrap_or_default();
-        let resolve = |field: &str, specific: Option<f32>, general: Option<f32>, fallback: f32| {
-            if let Some(value) = specific {
-                ResolvedMetric::authored(
-                    snap_to_pixel(value, scale_factor),
-                    format!("common.switch.sizes.{key}.{field}"),
-                )
-            } else if let Some(value) = general {
-                ResolvedMetric::authored(snap_to_pixel(value, scale_factor), format!("common.switch.geometry.{field}"))
-            } else {
-                ResolvedMetric::constant(fallback, format!("switch {field} fallback"))
-            }
-        };
-        let disabled_opacity = if let Some(value) = specific.disabled_opacity {
-            ResolvedMetric::authored(value, format!("common.switch.sizes.{key}.disabled_opacity"))
-        } else if let Some(value) = self.geometry.disabled_opacity {
-            ResolvedMetric::authored(value, "common.switch.geometry.disabled_opacity")
-        } else {
-            ResolvedMetric::constant(fallback.disabled_opacity, "switch disabled opacity fallback")
-        };
-        ResolvedSwitchGeometry {
-            disabled_opacity,
-            track_width: resolve("track_width", specific.track_width, self.geometry.track_width, fallback.track_width),
-            track_height: resolve(
-                "track_height",
-                specific.track_height,
-                self.geometry.track_height,
-                fallback.track_height,
-            ),
-            track_padding: resolve(
-                "track_padding",
-                specific.track_padding,
-                self.geometry.track_padding,
-                fallback.track_padding,
-            ),
-            thumb_size: resolve("thumb_size", specific.thumb_size, self.geometry.thumb_size, fallback.thumb_size),
-            gap: resolve("gap", specific.gap, self.geometry.gap, fallback.gap),
-        }
-    }
-}
-
-impl ResolvedSwitchGeometry {
-    /// Preserve the look-owned radius and baseline shift while supplying common inputs.
-    pub fn apply_to(&self, mut scale: crate::controls::switch::SwitchScale) -> crate::controls::switch::SwitchScale {
-        scale.disabled_opacity = self.disabled_opacity.value_px;
-        scale.track_width = self.track_width.value_px;
-        scale.track_height = self.track_height.value_px;
-        scale.track_padding = self.track_padding.value_px;
-        scale.thumb_size = self.thumb_size.value_px;
-        scale.gap = self.gap.value_px;
-        scale
-    }
-}
-
-/// Shared slider dimensions; palettes, shadows and radius recipes remain look-owned.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
-#[serde(default, deny_unknown_fields)]
-pub struct SliderStylesheet {
-    pub geometry: SliderGeometryStylesheet,
-    /// Semantic size keys belong to the look; the SDK does not normalize them.
-    pub sizes: HashMap<String, SliderGeometryStylesheet>,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
-#[serde(default, deny_unknown_fields)]
-pub struct SliderGeometryStylesheet {
-    #[serde(deserialize_with = "optional_length")]
-    pub dial_size: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub track_radius: Option<f32>,
-    #[serde(deserialize_with = "optional_unit")]
-    pub disabled_opacity: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub width: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub height: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub track_height: Option<f32>,
-    #[serde(deserialize_with = "optional_length")]
-    pub thumb_size: Option<f32>,
-    /// Minimum target height relative to the shared control height.
-    #[serde(deserialize_with = "optional_length")]
-    pub height_floor_scale: Option<f32>,
-    /// Default thumb diameter relative to the selected target height.
-    #[serde(deserialize_with = "optional_length")]
-    pub thumb_scale: Option<f32>,
-}
-
-#[derive(Clone, Debug)]
-pub struct ResolvedSliderGeometry {
-    pub width: ResolvedMetric,
-    pub height: ResolvedMetric,
-    pub track_height: ResolvedMetric,
-    pub thumb_size: ResolvedMetric,
-}
-
-geometry::inherit_geometry!(
-    SliderStylesheet,
-    sizes,
-    [
-        width,
-        height,
-        track_height,
-        thumb_size,
-        height_floor_scale,
-        thumb_scale,
-        dial_size,
-        track_radius,
-        disabled_opacity
-    ]
-);
-
-/// Nonlinear slider presentation metrics, in logical pixels and unit opacity.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct SliderDecoration {
-    pub dial_size: f32,
-    pub track_radius: f32,
-    pub disabled_opacity: f32,
-}
-
-impl SliderStylesheet {
-    /// Resolve radial paint dimensions and disabled opacity for the selected size.
-    pub fn decoration(&self, key: &str) -> SliderDecoration {
-        let recipe = self.authored_geometry(key);
-        let baseline = CommonStylesheet::sdk_default().slider.authored_geometry(key);
-        SliderDecoration {
-            dial_size: recipe.dial_size.or(baseline.dial_size).unwrap_or_default(),
-            track_radius: recipe.track_radius.or(baseline.track_radius).unwrap_or_default(),
-            disabled_opacity: recipe.disabled_opacity.or(baseline.disabled_opacity).unwrap_or_default(),
-        }
-    }
-    /// Optional size/general inputs, including token-derived recipe coefficients.
-    pub fn authored_geometry(&self, key: &str) -> SliderGeometryStylesheet {
-        let specific = self.sizes.get(key).cloned().unwrap_or_default();
-        macro_rules! field {
-            ($name:ident) => {
-                specific.$name.or(self.geometry.$name)
-            };
-        }
-        SliderGeometryStylesheet {
-            dial_size: field!(dial_size),
-            track_radius: field!(track_radius),
-            disabled_opacity: field!(disabled_opacity),
-            width: field!(width),
-            height: field!(height),
-            track_height: field!(track_height),
-            thumb_size: field!(thumb_size),
-            height_floor_scale: field!(height_floor_scale),
-            thumb_scale: field!(thumb_scale),
-        }
-    }
-
-    /// Resolve per-size, general, then SDK/legacy dimensions. Explicit thumb-size
-    /// selections use the corresponding look size, independently of control size.
-    /// Slider dimensions retain logical pixels without introducing display snapping.
-    pub fn resolve_geometry(
-        &self,
-        key: &str,
-        thumb_key: Option<&str>,
-        fallback: &crate::controls::slider::SliderLook,
-    ) -> ResolvedSliderGeometry {
-        let specific = self.sizes.get(key).cloned().unwrap_or_default();
-        let resolve = |key: &str, field: &str, specific: Option<f32>, general: Option<f32>, fallback: f32| {
-            if let Some(value) = specific {
-                ResolvedMetric::authored(value, format!("common.slider.sizes.{key}.{field}"))
-            } else if let Some(value) = general {
-                ResolvedMetric::authored(value, format!("common.slider.geometry.{field}"))
-            } else {
-                ResolvedMetric::constant(fallback, format!("slider {field} fallback"))
-            }
-        };
-        let selected_thumb_key = thumb_key.unwrap_or(key);
-        let thumb_geometry = self.sizes.get(selected_thumb_key).cloned().unwrap_or_default();
-        let mut thumb = resolve(
-            selected_thumb_key,
-            "thumb_size",
-            thumb_geometry.thumb_size,
-            self.geometry.thumb_size,
-            fallback.thumb_size,
-        );
-        if thumb_key.is_some() {
-            let source = match &thumb.source {
-                crate::theme::provenance::MetricSource::Authored { key } => key.clone(),
-                _ => "SDK/legacy thumb fallback".into(),
-            };
-            thumb.source = crate::theme::provenance::MetricSource::Derived {
-                note: format!("instance thumb_size {selected_thumb_key} → {source}"),
-            };
-        }
-        ResolvedSliderGeometry {
-            width: resolve(key, "width", specific.width, self.geometry.width, fallback.width),
-            height: resolve(key, "height", specific.height, self.geometry.height, fallback.height),
-            track_height: resolve(
-                key,
-                "track_height",
-                specific.track_height,
-                self.geometry.track_height,
-                fallback.track_height,
-            ),
-            thumb_size: thumb,
-        }
-    }
-}
-
-/// The same resolved geometry is consumed by paint paths and inspectors.
-#[derive(Clone, Debug)]
-pub struct ResolvedTabsGeometry {
-    pub list_gap: ResolvedMetric,
-    pub list_padding: ResolvedMetric,
-    pub indicator_height: ResolvedMetric,
-}
-
-geometry::inherit_geometry!(
-    TabsStylesheet,
-    variants,
-    [list_gap, list_padding, indicator_height, accessory_size, accessory_gap]
-);
-
-impl TabsStylesheet {
-    /// Accessory glyph size and gap in pixels, with variant and SDK inheritance.
-    pub fn accessory_metrics(&self, variant: &str) -> (f32, f32) {
-        let baseline = &CommonStylesheet::sdk_default().tabs.geometry;
-        let specific = self.variants.get(variant);
-        (
-            specific
-                .and_then(|v| v.accessory_size)
-                .or(self.geometry.accessory_size)
-                .or(baseline.accessory_size)
-                .unwrap_or_default(),
-            specific
-                .and_then(|v| v.accessory_gap)
-                .or(self.geometry.accessory_gap)
-                .or(baseline.accessory_gap)
-                .unwrap_or_default(),
-        )
-    }
-    /// Resolve variant, general, then supplied look-token/SDK fallback values.
-    pub fn resolve_geometry(&self, variant: &str, fallback: ResolvedTabsGeometry) -> ResolvedTabsGeometry {
-        let specific = self.variants.get(variant);
-        let resolve = |field: &str, general: Option<f32>, specific: Option<f32>, fallback: ResolvedMetric| {
-            if let Some(value) = specific {
-                ResolvedMetric::authored(value, format!("common.tabs.variants.{variant}.{field}"))
-            } else if let Some(value) = general {
-                ResolvedMetric::authored(value, format!("common.tabs.geometry.{field}"))
-            } else {
-                fallback
-            }
-        };
-        ResolvedTabsGeometry {
-            list_gap: resolve("list_gap", self.geometry.list_gap, specific.and_then(|v| v.list_gap), fallback.list_gap),
-            list_padding: resolve(
-                "list_padding",
-                self.geometry.list_padding,
-                specific.and_then(|v| v.list_padding),
-                fallback.list_padding,
-            ),
-            indicator_height: resolve(
-                "indicator_height",
-                self.geometry.indicator_height,
-                specific.and_then(|v| v.indicator_height),
-                fallback.indicator_height,
-            ),
-        }
-    }
-}
-
 impl CommonStylesheet {
+    /// Construct the bundled SDK stylesheet using native control definitions.
+    pub fn native_default() -> Self {
+        let mut sheet = Self {
+            motion: MotionStylesheet::native_default(),
+            radio: RadioStylesheet::native_default(),
+            progress: ProgressStylesheet::native_default(),
+            stepper: StepperStylesheet::native_default(),
+            scrollbar: ScrollbarStylesheet::native_default(),
+            tooltip: TooltipStylesheet::native_default(),
+            floating_menu: FloatingMenuStylesheet::native_default(),
+            context_menu: ContextMenuStylesheet::native_default(),
+            control_group: ControlGroupStylesheet::native_default(),
+            dock_splitter: DockSplitterStylesheet::native_default(),
+            resizable_panels: ResizablePanelsStylesheet::native_default(),
+            overlay_window: OverlayWindowStylesheet::native_default(),
+            sidebar: SidebarStylesheet::native_default(),
+            tree_view: TreeViewStylesheet::native_default(),
+            accordion: AccordionStylesheet::native_default(),
+            table: TableStylesheet::native_default(),
+            selector: SelectorStylesheet::native_default(),
+            pager: PagerStylesheet::native_default(),
+            popup_menu: PopupMenuStylesheet::native_default(),
+            popover: PopoverStylesheet::native_default(),
+            slide_panel: SlidePanelStylesheet::native_default(),
+            radio_group: RadioGroupStylesheet::native_default(),
+            autocomplete: AutocompleteStylesheet::native_default(),
+            combobox: ComboBoxStylesheet::native_default(),
+            search_selector: SearchSelectorStylesheet::native_default(),
+            textfield: TextFieldStylesheet::native_default(),
+            textarea: TextAreaStylesheet::native_default(),
+            split_view: SplitViewStylesheet::native_default(),
+            tabs: TabsStylesheet::native_default(),
+            shell: ShellStylesheet {
+                geometry: ShellGeometryStylesheet {
+                    fullscreen_left_padding: Some(12.0),
+                    height: Some(34.0),
+                    macos_left_padding: Some(80.0),
+                    left_padding: Some(12.0),
+                    traffic_light_inset: Some(9.0),
+                    icon_size: Some(16.0),
+                    border_width: Some(1.0),
+                },
+                ..Default::default()
+            },
+            shared: SharedStylesheet {
+                geometry: SharedGeometryStylesheet {
+                    popup_viewport_height: Some(220.0),
+                    popup_row_height: Some(28.0),
+                    menu_row_height: Some(27.0),
+                    menu_row_gap: Some(4.0),
+                    compact_textfield_height: Some(22.0),
+                    compact_textfield_padding_y: Some(2.0),
+                    textarea_resize_icon_size: Some(10.0),
+                    textarea_resize_inset: Some(3.0),
+                    textarea_resize_hit_size: Some(12.0),
+                    textarea_scrollbar_width: Some(12.0),
+                    textarea_scrollbar_inset: Some(2.0),
+                    scrollbar_width: Some(12.0),
+                    composition_underline_width: Some(1.0),
+                    label_baseline_sm: Some(0.5),
+                    label_baseline_md: Some(1.0),
+                    label_baseline_lg: Some(1.5),
+                    drag_offset: Some(12.0),
+                    drag_preview_width: Some(220.0),
+                    drag_padding_x: Some(12.0),
+                    drag_padding_y: Some(8.0),
+                    drag_border_width: Some(1.0),
+                    drag_marker_width: Some(2.0),
+                    split_sidebar_width: Some(280.0),
+                    split_sidebar_min_width: Some(220.0),
+                    split_sidebar_max_width: Some(420.0),
+                    selection_scrollbar_width: Some(16.0),
+                    textarea_resize_opacity: Some(0.75),
+                    wide_middle_gap: Some(24.0),
+                    wide_side_min_width: Some(240.0),
+                    wide_side_preferred_width: Some(280.0),
+                    wide_middle_min_width: Some(435.0),
+                    wide_middle_max_width: Some(435.0),
+                    form_field_gap: Some(4.0),
+                    page_size_trigger_width: Some(64.0),
+                    popup_icon_size: Some(16.0),
+                },
+                ..Default::default()
+            },
+            row_limits: RowLimitsStylesheet(HashMap::from([
+                ("autocomplete".into(), RowLimits { min: Some(7), max: Some(14) }),
+                ("combobox".into(), RowLimits { min: Some(1), max: Some(7) }),
+                ("search_selector".into(), RowLimits { min: Some(1), max: Some(7) }),
+                ("selection_panel".into(), RowLimits { min: Some(1), max: Some(7) }),
+                ("pager".into(), RowLimits { min: Some(5), max: Some(7) }),
+            ])),
+            font_features: FontFeaturesStylesheet(HashMap::from([(
+                "sidebar_section".into(),
+                vec![("smcp".into(), 1)],
+            )])),
+            icons: IconsStylesheet::native_default(),
+            ..Default::default()
+        };
+        define_sdk_slider(&mut sheet);
+        define_sdk_switch(&mut sheet);
+        define_sdk_checkbox(&mut sheet);
+        use PaletteRole::*;
+        for (family, roles) in [
+            (
+                "button",
+                &[
+                    AppForeground,
+                    AppMutedForeground,
+                    BorderDefault,
+                    FocusRing,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StateHoverBackground,
+                    StatePressedBackground,
+                    StateSelectedBackground,
+                    StateSelectedForeground,
+                    SurfaceSubtleBackground,
+                ][..],
+            ),
+            (
+                "control_group",
+                &[AppMutedForeground, BorderDefault, StateDisabledBackground, SurfaceSubtleBackground][..],
+            ),
+            (
+                "radio_button",
+                &[
+                    AppForeground,
+                    FocusRing,
+                    FormInputBackground,
+                    FormInputBorder,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StateHoverBackground,
+                    StatePressedBackground,
+                    StateSelectedBackground,
+                    StateSelectedForeground,
+                ][..],
+            ),
+            (
+                "table",
+                &[
+                    AppForeground,
+                    AppMutedForeground,
+                    DataAccent1,
+                    FocusRing,
+                    FormInputBackground,
+                    FormInputBorder,
+                    FormInputInvalidBorder,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StatePressedBackground,
+                    SurfaceFloatingBackground,
+                    SurfaceFloatingForeground,
+                    SurfaceSubtleBackground,
+                    SurfaceSubtleForeground,
+                ][..],
+            ),
+            (
+                "tree_view",
+                &[
+                    AppForeground,
+                    NavigationHoverBackground,
+                    NavigationMutedForeground,
+                    NavigationSelectedBackground,
+                    NavigationSelectedForeground,
+                    StateDisabledForeground,
+                    StatePressedBackground,
+                ][..],
+            ),
+            ("dock_splitter", &[BorderDefault, StateDisabledForeground, StateSelectedBackground][..]),
+            (
+                "resizable_panels",
+                &[BorderDefault, BorderStrong, StateDisabledBackground, StateDisabledForeground, StateHoverBackground]
+                    [..],
+            ),
+            (
+                "scrollbar",
+                &[
+                    BorderDefault,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StateHoverBackground,
+                    StatePressedBackground,
+                    SurfaceSubtleBackground,
+                ][..],
+            ),
+            ("split_view", &[BorderDefault, BorderStrong, StateDisabledBackground, StateDisabledForeground][..]),
+            (
+                "accordion",
+                &[
+                    AppForeground,
+                    NavigationBorder,
+                    NavigationHoverBackground,
+                    NavigationMutedForeground,
+                    StateDisabledForeground,
+                    StatePressedBackground,
+                ][..],
+            ),
+            (
+                "pager",
+                &[
+                    AppForeground,
+                    AppMutedForeground,
+                    FormInputBorder,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StateHoverBackground,
+                    StateSelectedBackground,
+                    StateSelectedForeground,
+                    SurfacePanelBackground,
+                ][..],
+            ),
+            (
+                "sidebar",
+                &[
+                    FocusRing,
+                    NavigationForeground,
+                    NavigationHoverBackground,
+                    NavigationMutedForeground,
+                    NavigationSelectedBackground,
+                    NavigationSelectedForeground,
+                    StateDisabledForeground,
+                    StatePressedBackground,
+                ][..],
+            ),
+            (
+                "stepper",
+                &[
+                    BorderDefault,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StateSelectedBackground,
+                    SurfaceSubtleBackground,
+                    SurfaceSubtleForeground,
+                ][..],
+            ),
+            (
+                "tabs",
+                &[
+                    AppForeground,
+                    FocusRing,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StatePressedBackground,
+                    StateSelectedBackground,
+                ][..],
+            ),
+            (
+                "context_menu",
+                &[
+                    AppBackground,
+                    AppForeground,
+                    BorderDefault,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StateHoverBackground,
+                    StatePressedBackground,
+                ][..],
+            ),
+            (
+                "floating_menu",
+                &[
+                    DataPositive,
+                    StateDisabledForeground,
+                    StateHoverBackground,
+                    StateHoverForeground,
+                    SurfaceFloatingBackground,
+                    SurfaceFloatingBorder,
+                    SurfaceFloatingForeground,
+                ][..],
+            ),
+            ("overlay_window", &[SurfaceFloatingBackground, SurfaceFloatingBorder, SurfaceFloatingForeground][..]),
+            (
+                "popup_menu",
+                &[
+                    AppBackground,
+                    AppForeground,
+                    BorderDefault,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StateHoverBackground,
+                    StatePressedBackground,
+                    SurfaceSubtleBackground,
+                ][..],
+            ),
+            (
+                "progress",
+                &[StateDisabledBackground, StateDisabledForeground, StateSelectedBackground, SurfaceSubtleBackground][..],
+            ),
+            (
+                "selector",
+                &[
+                    AppBackground,
+                    AppForeground,
+                    AppMutedForeground,
+                    BorderDefault,
+                    FocusRing,
+                    FormInputInvalidBorder,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StateHoverBackground,
+                    StatePressedBackground,
+                ][..],
+            ),
+            (
+                "textarea",
+                &[
+                    FormInputBackground,
+                    FormInputBorder,
+                    FormInputForeground,
+                    FormInputInvalidBorder,
+                    FormInputPlaceholder,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StateSelectedBackground,
+                    StateSelectedForeground,
+                ][..],
+            ),
+            (
+                "textfield",
+                &[
+                    FormInputBackground,
+                    FormInputBorder,
+                    FormInputForeground,
+                    FormInputInvalidBorder,
+                    FormInputPlaceholder,
+                    StateDisabledBackground,
+                    StateDisabledForeground,
+                    StateSelectedBackground,
+                    StateSelectedForeground,
+                ][..],
+            ),
+            ("tooltip", &[SurfaceFloatingBackground, SurfaceFloatingForeground][..]),
+            ("autocomplete", &[FormInputForeground, StateSelectedBackground, SurfaceFloatingForeground][..]),
+            ("toolbar", &[BorderDefault, StateDisabledBackground, SurfaceSubtleBackground][..]),
+            (
+                "shell",
+                &[
+                    ShellBackground,
+                    ShellForeground,
+                    ShellBorder,
+                    ShellHoverBackground,
+                    ShellActiveBackground,
+                    ShellCloseHoverBackground,
+                    ShellCloseActiveBackground,
+                    ShellCloseForeground,
+                ][..],
+            ),
+            (
+                "drag_drop",
+                &[SurfaceFloatingBackground, SurfaceFloatingForeground, FocusRing, FormInputInvalidBorder][..],
+            ),
+        ] {
+            sheet.recipes.0.insert(family.into(), roles.iter().map(|role| (*role, *role)).collect());
+        }
+        sheet
+    }
+
     /// Resolve validated layers over the SDK baseline, in order. Look-specific
     /// roots are ignored. Programmatic edits precede explicit control overrides.
     pub fn resolve_layers(layers: &[&str]) -> anyhow::Result<Self> {
-        let mut document: toml::Value = toml::from_str(DEFAULT_STYLE_TOML)?;
+        let mut document = toml::Value::Table(toml::map::Map::from_iter([(
+            "common".into(),
+            toml::Value::try_from(Self::sdk_default())?,
+        )]));
         for source in layers {
             Self::parse(source)?;
             let authored: toml::Value = toml::from_str(source)?;
@@ -560,9 +549,9 @@ impl CommonStylesheet {
     ///     controls::progress::{DefaultProgressTheme, ProgressTheme},
     ///     theme::{ControlSize, ThemeMode, stylesheet::CommonStylesheet},
     /// };
-    /// let sheet = CommonStylesheet::resolve_layers(&[
-    ///     "[common.progress.sizes.md]\ntrack_height = 9",
-    /// ])?;
+    /// let sheet = CommonStylesheet::sdk_default().clone().with(|sheet| {
+    ///     sheet.progress.sizes.entry("md".into()).or_default().track_height = Some(9.0);
+    /// });
     /// let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde)?;
     /// let theme = DefaultProgressTheme::new(tokens);
     /// assert_eq!(theme.resolve(true, ControlSize::Md).track_height, 9.0);
@@ -583,9 +572,7 @@ impl CommonStylesheet {
     /// an empty geometry/motion overlay with inherited token data.
     pub fn sdk_default() -> &'static Self {
         static DEFAULT: std::sync::OnceLock<CommonStylesheet> = std::sync::OnceLock::new();
-        // A corrupt packaged asset settles motion safely. Tests require the
-        // embedded file to parse and define every role, preventing silent drift.
-        DEFAULT.get_or_init(|| Self::parse(DEFAULT_STYLE_TOML).unwrap_or_default())
+        DEFAULT.get_or_init(Self::native_default)
     }
 
     /// Parse a complete look stylesheet. Look-owned root sections are ignored.
@@ -598,12 +585,12 @@ impl CommonStylesheet {
         }
         toml::from_str::<Document>(source)
             .map(|document| document.common)
-            .map_err(|err| anyhow::anyhow!("parse common style.toml: {err}"))
+            .map_err(|err| anyhow::anyhow!("parse common stylesheet: {err}"))
     }
 }
 
 impl CommonStylesheet {
-    /// Shared helper dimensions resolved from this layer over the embedded asset.
+    /// Shared helper dimensions resolved from this layer over the native SDK baseline.
     pub fn shared_geometry(&self) -> ResolvedSharedGeometry {
         self.shared
             .clone()
@@ -615,6 +602,20 @@ impl CommonStylesheet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::theme::provenance::ResolvedMetric;
+
+    #[test]
+    fn external_adapter_preserves_the_complete_native_baseline() {
+        assert_eq!(&CommonStylesheet::resolve_layers(&[]).unwrap(), CommonStylesheet::sdk_default());
+        let native = CommonStylesheet::sdk_default().clone().with(|sheet| {
+            sheet.slider.geometry.width = Some(0.0);
+            sheet.font_features.0.insert("sidebar_section".into(), Vec::new());
+            sheet.tokens.elevation.light.menu.layers.clear();
+        });
+        let source = toml::to_string(&native).unwrap();
+        let restored: CommonStylesheet = toml::from_str(&source).unwrap();
+        assert_eq!(restored, native);
+    }
 
     #[test]
     fn obsolete_motion_keys_are_rejected() {
@@ -742,5 +743,96 @@ gap = 7
         let other = config.tabs.resolve_geometry("other", fallback);
         assert_eq!(other.list_gap.value_px, 7.0);
         assert_eq!(other.indicator_height.value_px, 3.0);
+    }
+
+    #[test]
+    fn slider_overlay_general_geometry_overrides_inherited_sizes() {
+        for width in [120.0, 0.0] {
+            let mut target = SliderStylesheet::native_default();
+            target.size("sm", |size| {
+                size.width(260.0).dimensions(24.0, 4.0, 12.0);
+            });
+            target.size("md", |size| {
+                size.width(260.0).dimensions(32.0, 6.0, 16.0);
+            });
+            let mut layer = SliderStylesheet::default();
+            layer.width(width).size("md", |size| {
+                size.width(180.0);
+            });
+
+            layer.apply_to(&mut target);
+
+            assert_eq!(target.authored_geometry("sm").width, Some(width));
+            assert_eq!(target.authored_geometry("md").width, Some(180.0));
+            assert_eq!(target.authored_geometry("sm").height, Some(24.0));
+            assert_eq!(target.authored_geometry("md").thumb_size, Some(16.0));
+            assert_eq!(target.geometry.dial_size, Some(200.0));
+        }
+    }
+
+    #[test]
+    fn slider_builder_methods_configure_geometry_and_sizes_fluently() {
+        let mut sheet = CommonStylesheet::default();
+        sheet
+            .slider
+            .width(120.0)
+            .height_floor_scale(0.5)
+            .thumb_scale(0.5)
+            .size("1", |m| {
+                m.dimensions(16.0, 4.0, 12.0);
+            })
+            .size("2", |m| {
+                m.dimensions(20.0, 6.0, 16.0);
+            });
+
+        assert_eq!(sheet.slider.geometry.width, Some(120.0));
+        assert_eq!(sheet.slider.geometry.height_floor_scale, Some(0.5));
+        let size1 = sheet.slider.sizes.get("1").unwrap();
+        assert_eq!(size1.height, Some(16.0));
+        assert_eq!(size1.track_height, Some(4.0));
+        assert_eq!(size1.thumb_size, Some(12.0));
+
+        let sheet = CommonStylesheet::default().with(|s| {
+            s.slider.size("3", |m| {
+                m.dimensions(24.0, 8.0, 20.0);
+            });
+        });
+        assert_eq!(sheet.slider.sizes.get("3").unwrap().height, Some(24.0));
+    }
+
+    #[test]
+    fn switch_builder_methods_configure_geometry_and_sizes_fluently() {
+        let mut sheet = CommonStylesheet::default();
+        sheet.switch.track_padding(1.0).gap(8.0).size("1", |m| {
+            m.dimensions(28.0, 16.0, 14.0);
+        });
+
+        assert_eq!(sheet.switch.geometry.track_padding, Some(1.0));
+        assert_eq!(sheet.switch.geometry.gap, Some(8.0));
+        let size1 = sheet.switch.sizes.get("1").unwrap();
+        assert_eq!(size1.track_width, Some(28.0));
+        assert_eq!(size1.track_height, Some(16.0));
+        assert_eq!(size1.thumb_size, Some(14.0));
+
+        let sheet = CommonStylesheet::default().with(|s| {
+            s.switch.size("sm", |m| {
+                m.scales(32.0 / 28.0, 13.0 / 28.0, 9.0 / 28.0);
+            });
+        });
+        assert_eq!(sheet.switch.sizes.get("sm").unwrap().track_width_scale, Some(32.0 / 28.0));
+    }
+
+    #[test]
+    fn checkbox_builder_methods_configure_geometry_and_sizes_fluently() {
+        let mut sheet = CommonStylesheet::default();
+        sheet.checkbox.disabled_opacity(0.56).gap(8.0).size("1", |m| {
+            m.indicator_size(14.0).glyph_size(9.0);
+        });
+
+        assert_eq!(sheet.checkbox.geometry.disabled_opacity, Some(0.56));
+        assert_eq!(sheet.checkbox.geometry.gap, Some(8.0));
+        let size1 = sheet.checkbox.sizes.get("1").unwrap();
+        assert_eq!(size1.indicator_size, Some(14.0));
+        assert_eq!(size1.glyph_size, Some(9.0));
     }
 }

@@ -3,54 +3,38 @@ use serde::Deserialize;
 
 use super::selector::interaction_layer_key;
 
-mod typography;
-pub use typography::*;
-mod button;
-pub use button::*;
-mod progress;
-pub use progress::*;
-mod stepper;
-pub use stepper::*;
-mod card;
-pub use card::*;
-mod badge;
-pub use badge::*;
-mod split_view;
-pub use split_view::*;
-mod control_group;
-pub use control_group::*;
-mod checkbox;
-pub use checkbox::*;
-mod radio;
-pub use radio::*;
-mod switch;
-pub use switch::*;
-mod slider;
-pub use slider::*;
-mod scrollbar;
-pub use scrollbar::*;
-mod accordion;
-pub use accordion::*;
-mod resizable_panels;
-pub use resizable_panels::*;
-mod listbox;
-pub use listbox::*;
-mod table;
-pub use table::*;
-mod floating_menu;
-pub use floating_menu::*;
-mod tabs;
-pub use tabs::*;
-mod tree_view;
-pub use tree_view::*;
-mod sidebar;
-pub use sidebar::*;
-mod textfield;
-pub use textfield::*;
-mod autocomplete;
-pub use autocomplete::*;
+pub use crate::controls::typography::{TypographyStylesheet, TypographyRule};
+pub use crate::controls::button::{ButtonStylesheet, ButtonMetricsRule, ButtonElevationRule, ButtonColorRule};
+pub use crate::controls::toggle::ToggleStylesheet;
+pub use crate::controls::progress::{ProgressStylesheet, ProgressMetricsRule, ProgressColorRule};
+pub use crate::controls::stepper::{StepperStylesheet, StepperMetricsRule};
+pub use crate::controls::card::{CardStylesheet, CardColorRule};
+pub use crate::elements::badge::{BadgeStylesheet, BadgeColorRule};
+pub use crate::controls::split_view::{SplitViewStylesheet, SplitViewColorRule};
+pub use crate::controls::control_group::{ControlGroupStylesheet, ControlGroupListColorRule};
+pub use crate::controls::checkbox::{CheckboxStylesheet, CheckboxColorRule};
+pub use crate::controls::radio::{RadioStylesheet, RadioColorRule};
+pub use crate::controls::switch::{SwitchStylesheet, SwitchMetricsRule, SwitchColorRule};
+pub use crate::controls::slider::{SliderStylesheet, SliderMetricsRule, SliderColorRule};
+pub use crate::controls::scrollbar::{ScrollbarStylesheet, ScrollbarMetricsRule, ScrollbarColorRule};
+pub use crate::controls::accordion::{AccordionStylesheet, AccordionTriggerColorRule, AccordionContentColorRule};
+pub use crate::controls::resizable_panels::{ResizablePanelsStylesheet, ResizablePanelsColorRule};
+pub use crate::controls::listbox::{ListboxStylesheet, ListboxListColorRule, ListboxRowColorRule};
+pub use crate::controls::table::{TableStylesheet, TableSurfaceColorRule, TableRowColorRule};
+pub use crate::controls::floating_menu::{
+    FloatingMenuStylesheet, FloatingMenuSurfaceElevationRule, FloatingMenuSurfaceColorRule,
+    FloatingMenuTriggerColorRule,
+};
+pub use crate::controls::tabs::{TabsStylesheet, TabsListColorRule, TabsItemColorRule};
+pub use crate::controls::tree_view::{TreeViewStylesheet, TreeViewRowColorRule};
+pub use crate::controls::sidebar::{
+    SidebarStylesheet, SidebarMetricsRule, SidebarContainerColorRule, SidebarSectionColorRule, SidebarBranchColorRule,
+    SidebarItemColorRule,
+};
+pub use crate::controls::textfield::{TextfieldStylesheet, TextfieldElevationRule, TextfieldColorRule};
+pub use crate::controls::autocomplete::{AutocompleteStylesheet, AutocompleteChromeColorRule};
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct StylesheetConfig {
     #[serde(default)]
     pub common: gpui_luma::theme::stylesheet::CommonStylesheet,
@@ -105,10 +89,41 @@ pub struct StylesheetConfig {
 }
 
 impl StylesheetConfig {
+    /// Construct bundled control definitions directly in Rust.
+    pub fn native_default() -> Self {
+        Self {
+            common: super::native_shadcn_common_stylesheet(),
+            typography: TypographyStylesheet::native_default(),
+            button: ButtonStylesheet::native_default(),
+            toggle: ToggleStylesheet::native_default(),
+            checkbox: super::native_shadcn_checkbox(),
+            radio: RadioStylesheet::native_default(),
+            switch: super::native_shadcn_switch(),
+            slider: super::native_shadcn_slider(),
+            scrollbar: ScrollbarStylesheet::native_default(),
+            accordion: AccordionStylesheet::native_default(),
+            resizable_panels: ResizablePanelsStylesheet::native_default(),
+            listbox: ListboxStylesheet::native_default(),
+            table: TableStylesheet::native_default(),
+            floating_menu: FloatingMenuStylesheet::native_default(),
+            tabs: TabsStylesheet::native_default(),
+            tree_view: TreeViewStylesheet::native_default(),
+            sidebar: SidebarStylesheet::native_default(),
+            textfield: TextfieldStylesheet::native_default(),
+            autocomplete: AutocompleteStylesheet::native_default(),
+            progress: ProgressStylesheet::native_default(),
+            stepper: StepperStylesheet::native_default(),
+            card: CardStylesheet::native_default(),
+            badge: BadgeStylesheet::native_default(),
+            split_view: SplitViewStylesheet::native_default(),
+            control_group: ControlGroupStylesheet::native_default(),
+        }
+    }
+
     /// Parses stylesheet TOML without imposing an input-size limit.
     /// Applications own file access and any limits required for untrusted input.
     pub fn parse(source: &str) -> anyhow::Result<Self> {
-        let mut stylesheet: Self = toml::from_str(source).map_err(|err| anyhow::anyhow!("parse style.toml: {err}"))?;
+        let mut stylesheet: Self = toml::from_str(source).map_err(|err| anyhow::anyhow!("parse stylesheet: {err}"))?;
         stylesheet.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[source])?;
         Ok(stylesheet)
     }
@@ -138,13 +153,13 @@ pub(crate) fn matches_optional_str(selector: Option<&str>, value: &str) -> bool 
     selector.is_none_or(|expected| expected == value)
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct LayeredElevationRule {
     pub layer: Option<String>,
     pub shadow: String,
 }
 
-fn control_size_key(size: ControlSize) -> &'static str {
+pub(crate) fn control_size_key(size: ControlSize) -> &'static str {
     match size {
         ControlSize::Sm => "sm",
         ControlSize::Md => "md",

@@ -6,7 +6,7 @@ mod layout;
 mod model;
 mod segments;
 mod template;
-mod theme;
+pub(crate) mod theme;
 mod thumbs;
 
 pub use constraints::{clamp_and_snap_value, normalize_intervals, step_allowed_value};

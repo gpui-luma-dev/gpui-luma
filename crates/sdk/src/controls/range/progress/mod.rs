@@ -2,7 +2,7 @@ mod control;
 mod direction;
 mod model;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use direction::{ProgressDirection, ProgressOrientation, display_position};
 pub use model::{ProgressBuilder, ProgressModel, ProgressRenderModel};

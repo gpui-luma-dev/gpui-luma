@@ -356,3 +356,35 @@ mod tests {
         }
     }
 }
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_avatar_stylesheet() -> gpui_luma::theme::stylesheet::AvatarStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    AvatarStylesheet {
+        sizes: [
+            ("1", 24.0, 14.0, 12.0),
+            ("2", 32.0, 16.0, 14.0),
+            ("3", 40.0, 18.0, 16.0),
+            ("4", 48.0, 20.0, 18.0),
+            ("5", 64.0, 24.0, 24.0),
+            ("6", 80.0, 28.0, 28.0),
+            ("7", 96.0, 28.0, 28.0),
+            ("8", 128.0, 35.0, 35.0),
+            ("9", 160.0, 60.0, 60.0),
+        ]
+        .into_iter()
+        .map(|(key, diameter, font, two)| {
+            (
+                key.into(),
+                AvatarGeometryStylesheet {
+                    diameter: Some(diameter),
+                    font_size: Some(font),
+                    two_letter_font_size: Some(two),
+                    ..Default::default()
+                },
+            )
+        })
+        .collect(),
+        ..Default::default()
+    }
+}

@@ -1,4 +1,4 @@
-//! HSLA stylesheet ingress, shared by compiled defaults and runtime loading.
+//! HSLA ingress for external stylesheets.
 use palette::{Hsla, Srgba, convert::FromColorUnclamped};
 
 /// Normalize authored colors to the source-color persistence representation.
@@ -64,33 +64,32 @@ mod tests {
 
     #[test]
     fn packaged_palette_is_monochrome_including_shell_and_data_roles() {
-        fn check(value: &toml::Value, path: &str) {
-            match value {
-                toml::Value::String(source) => {
-                    let [red, green, blue, _] = parse(source).unwrap();
-                    assert!((red - green).abs() < 1e-6 && (green - blue).abs() < 1e-6, "chromatic default: {path}");
+        fn check(value: &toml::Value) {
+            if let Some(components) = value.get("components").and_then(toml::Value::as_array) {
+                assert_eq!(components[0], components[1]);
+                assert_eq!(components[1], components[2]);
+            } else if let Some(table) = value.as_table() {
+                for value in table.values() {
+                    check(value);
                 }
-                toml::Value::Table(table) => {
-                    for (key, value) in table {
-                        check(value, &format!("{path}.{key}"));
-                    }
-                }
-                _ => panic!("unexpected palette value at {path}"),
             }
         }
-        let document: toml::Value = toml::from_str(include_str!("../../../assets/style.toml")).unwrap();
-        check(&document["common"]["tokens"]["palette"], "palette");
+        let palettes = &super::super::TokenStylesheet::default().palette;
+        check(&toml::Value::try_from(palettes).unwrap());
     }
 
     #[test]
     fn title_bar_keeps_dark_shell_in_both_modes() {
-        let document: toml::Value = toml::from_str(include_str!("../../../assets/style.toml")).unwrap();
-        let palette = &document["common"]["tokens"]["palette"];
-        assert_eq!(palette["light"]["shell"], palette["dark"]["shell"]);
-        let [background, _, _, _] = parse(palette["dark"]["shell"]["background"].as_str().unwrap()).unwrap();
-        let [foreground, _, _, _] = parse(palette["dark"]["shell"]["foreground"].as_str().unwrap()).unwrap();
-        assert!(background < 0.15);
-        assert_eq!(foreground, 1.0);
+        let palettes = super::super::TokenStylesheet::default().palette;
+        assert_eq!(palettes.light.shell, palettes.dark.shell);
+        let palette = crate::theme::ThemeTokens::from_source(
+            super::super::TokenStylesheet::default().source(crate::theme::ThemeMode::Dark),
+            crate::color::GamutMapping::Clip,
+        )
+        .unwrap()
+        .palette;
+        assert!(palette.shell.background.l < 0.15);
+        assert_eq!(palette.shell.foreground.l, 1.0);
     }
 
     #[test]

@@ -263,3 +263,12 @@ impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
         self.as_ref().toolbar_textfield(id)
     }
 }
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_toolbar_stylesheet() -> gpui_luma::theme::stylesheet::ToolbarStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    ToolbarStylesheet {
+        geometry: ToolbarGeometryStylesheet { padding_x: Some(6.0), padding_y: Some(4.0), ..Default::default() },
+        ..Default::default()
+    }
+}

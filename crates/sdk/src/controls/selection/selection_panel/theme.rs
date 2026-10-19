@@ -66,3 +66,25 @@ impl SelectionPanelLook {
         self
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    SelectionPanelStylesheet,
+    SelectionPanelGeometryStylesheet,
+    SelectionPanelGeometry,
+    ResolvedSelectionPanelGeometry,
+    "selection_panel",
+    [
+        padding,
+        min_width,
+        item_height,
+        item_padding_x,
+        item_gap,
+        item_icon_size,
+        font_size,
+        line_height,
+        border_width,
+        radius,
+        item_radius
+    ],
+    unit[disabled_opacity]
+);

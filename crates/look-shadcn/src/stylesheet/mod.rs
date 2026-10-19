@@ -1,4 +1,4 @@
-mod config;
+pub(crate) mod config;
 mod find;
 mod metadata;
 mod resolve;
@@ -29,12 +29,46 @@ pub use resolve::{
 
 use std::sync::OnceLock;
 
-const EMBEDDED_STYLE_TOML: &str = include_str!("../../assets/style.toml");
-
 fn embedded() -> &'static StylesheetConfig {
     static STYLESHEET: OnceLock<StylesheetConfig> = OnceLock::new();
-    STYLESHEET.get_or_init(|| StylesheetConfig::parse(EMBEDDED_STYLE_TOML).expect("embedded style.toml should parse"))
+    STYLESHEET.get_or_init(|| {
+        let mut config = StylesheetConfig::native_default();
+        define_shadcn_slider(&mut config);
+        define_shadcn_switch(&mut config);
+        define_shadcn_checkbox(&mut config);
+        config
+    })
 }
+
+/// Construct the complete Shadcn common overrides using native definitions.
+pub fn native_shadcn_common_stylesheet() -> gpui_luma::theme::stylesheet::CommonStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    let mut motion = CommonStylesheet::sdk_default().motion.clone();
+    motion.tabs.content = Some(TransitionSpec::Timed { duration_ms: 300, easing: gpui_luma::motion::Easing::OutCubic });
+    CommonStylesheet {
+        motion,
+        slider: native_shadcn_common_slider(),
+        switch: native_shadcn_common_switch(),
+        tabs: crate::controls::tabs::native_tabs_stylesheet(),
+        button: crate::controls::button::native_button_stylesheet(),
+        toggle: crate::controls::toggle::native_toggle_stylesheet(),
+        scrollbar: crate::controls::scrollbar::native_scrollbar_stylesheet(),
+        progress: crate::controls::progress::native_progress_stylesheet(),
+        stepper: crate::controls::stepper::native_stepper_stylesheet(),
+        tooltip: crate::tooltip::native_tooltip_stylesheet(),
+        toolbar: crate::controls::toolbar_item::native_toolbar_stylesheet(),
+        sidebar: crate::controls::sidebar::native_sidebar_stylesheet(),
+        context_menu: crate::controls::context_menu::native_context_menu_stylesheet(),
+        overlay_window: crate::controls::overlay_window::native_overlay_window_stylesheet(),
+        pager: crate::controls::pager::native_pager_stylesheet(),
+        ..Default::default()
+    }
+    .with_sdk_defaults()
+}
+
+pub use crate::controls::slider::{native_shadcn_common_slider, native_shadcn_slider, define_shadcn_slider};
+pub use crate::controls::switch::{native_shadcn_common_switch, native_shadcn_switch, define_shadcn_switch};
+pub use crate::controls::checkbox::{native_shadcn_checkbox, define_shadcn_checkbox};
 
 #[cfg(test)]
 mod tests {
@@ -130,5 +164,70 @@ mod tests {
                 + embedded_stylesheet().split_view.color_rules.len()
                 + embedded_stylesheet().control_group.list.color_rules.len()
         );
+    }
+
+    #[test]
+    fn independent_control_assembly_matches_bundled_styles() {
+        use gpui_luma::theme::stylesheet::{define_sdk_checkbox, define_sdk_slider, define_sdk_switch};
+        let original = StylesheetConfig::native_default();
+        // Assemble the controls independently from an empty sheet.
+        let mut native = StylesheetConfig::default();
+        define_sdk_slider(&mut native.common);
+        define_sdk_switch(&mut native.common);
+        define_sdk_checkbox(&mut native.common);
+        define_shadcn_slider(&mut native);
+        define_shadcn_switch(&mut native);
+        define_shadcn_checkbox(&mut native);
+        assert_eq!(native.common.slider, original.common.slider);
+        assert_eq!(native.common.switch, original.common.switch);
+        assert_eq!(native.common.checkbox, original.common.checkbox);
+        assert_eq!(native.slider, original.slider);
+        assert_eq!(native.switch, original.switch);
+        assert_eq!(native.checkbox, original.checkbox);
+        assert_eq!(native.common.motion.slider, original.common.motion.slider);
+        assert_eq!(native.common.motion.switch, original.common.motion.switch);
+        assert_eq!(native.common.motion.checkbox, original.common.motion.checkbox);
+        for family in ["slider", "switch", "checkbox"] {
+            assert_eq!(native.common.recipes.0.get(family), original.common.recipes.0.get(family));
+        }
+
+        let look = crate::ShadcnLook::built_in();
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            look.set_mode(mode);
+            let tokens = look.mode_tokens();
+            for style in [crate::controls::ShadcnButtonStyle::Primary, crate::controls::ShadcnButtonStyle::Secondary] {
+                for size in [
+                    gpui_luma::theme::ControlSize::Sm,
+                    gpui_luma::theme::ControlSize::Md,
+                    gpui_luma::theme::ControlSize::Lg,
+                ] {
+                    for bits in 0..32 {
+                        let state = gpui_luma::theme::InteractionState {
+                            hovered: bits & 1 != 0,
+                            pressed: bits & 2 != 0,
+                            focused: bits & 4 != 0,
+                            disabled: bits & 8 != 0,
+                            invalid: bits & 16 != 0,
+                        };
+                        use gpui_luma::controls::slider::SliderThumbSize;
+                        for thumb in
+                            [None, Some(SliderThumbSize::Sm), Some(SliderThumbSize::Md), Some(SliderThumbSize::Lg)]
+                        {
+                            let old = crate::controls::slider::slider_look_with_stylesheet(
+                                &tokens, &original, mode, style, size, thumb, state,
+                            );
+                            let new = crate::controls::slider::slider_look_with_stylesheet(
+                                &tokens, &native, mode, style, size, thumb, state,
+                            );
+                            assert_eq!(
+                                format!("{new:?}"),
+                                format!("{old:?}"),
+                                "{mode:?} {style:?} {size:?} {thumb:?} {state:?}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
     }
 }

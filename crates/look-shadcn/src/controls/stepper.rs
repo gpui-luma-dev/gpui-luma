@@ -1,5 +1,9 @@
 //! Stepper — accent track + accent-foreground fill (same color elements as progress).
 
+use crate::stylesheet::config::control_size_key;
+use serde::Deserialize;
+use std::collections::HashMap;
+
 use gpui_luma::controls::stepper::StepperLook;
 use gpui_luma::theme::{ControlSize, InteractionState};
 
@@ -207,5 +211,40 @@ mod tests {
         let large = stepper_look(&mode, true, gpui_luma::theme::ControlSize::Lg);
 
         assert!(small.step_badge_size < large.step_badge_size);
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
+pub struct StepperStylesheet {
+    #[serde(default)]
+    pub metrics: HashMap<String, StepperMetricsRule>,
+}
+
+impl StepperStylesheet {
+    /// Bundled stepper sizes are supplied by the common stylesheet.
+    pub fn native_default() -> Self {
+        Self::default()
+    }
+
+    pub fn metrics_for_size(&self, size: ControlSize) -> Option<&StepperMetricsRule> {
+        self.metrics.get(control_size_key(size))
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
+pub struct StepperMetricsRule {
+    pub step_badge_size: f32,
+    pub track_thickness: f32,
+}
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_stepper_stylesheet() -> gpui_luma::theme::stylesheet::StepperStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    StepperStylesheet {
+        sizes: ["sm", "md", "lg"]
+            .into_iter()
+            .map(|key| (key.into(), StepperGeometryStylesheet::default()))
+            .collect(),
+        ..Default::default()
     }
 }

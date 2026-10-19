@@ -1,5 +1,7 @@
 //! Standard Radix radio groups backed by SDK selection and keyboard navigation.
 
+use std::collections::HashMap;
+
 use std::sync::Arc;
 use gpui::{Context, SharedString, div, px, prelude::*};
 use gpui_luma::controls::button::ButtonRenderModel;
@@ -204,5 +206,18 @@ impl<T: ControlGroupItemLike + 'static> RadioGroup<T> {
         };
         callbacks.bind(&control, cx);
         control
+    }
+}
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_radio_group_stylesheet() -> gpui_luma::theme::stylesheet::RadioGroupStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    use HashMap;
+    RadioGroupStylesheet {
+        sizes: HashMap::from([(
+            "horizontal".into(),
+            RadioGroupGeometryStylesheet { gap: Some(8.0), ..Default::default() },
+        )]),
+        ..Default::default()
     }
 }

@@ -9,6 +9,10 @@
 //! Hover and pressed do not recolor the track or thumb (shadcn Switch has no hover
 //! surface).
 
+use crate::stylesheet::config::{LayeredElevationRule, control_size_key, matches_optional_bool};
+use serde::Deserialize;
+use std::collections::HashMap;
+
 use gpui_luma::controls::switch::{SwitchPalette, SwitchScale};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeMode};
 
@@ -627,4 +631,118 @@ mod tests {
         assert_eq!(focused.track_border, fallback);
         assert_eq!(unfocused.track_border, fallback);
     }
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
+pub struct SwitchStylesheet {
+    /// Switch geometry keyed by `sm` / `md` / `lg`. All variants share these metrics.
+    #[serde(default)]
+    pub metrics: HashMap<String, SwitchMetricsRule>,
+    #[serde(default)]
+    pub elevation_rules: Vec<LayeredElevationRule>,
+    #[serde(default)]
+    pub color_rules: Vec<SwitchColorRule>,
+}
+
+impl SwitchStylesheet {
+    pub fn elevation_rule_for_layer(&self, layer: InteractionLayer) -> Option<&LayeredElevationRule> {
+        if layer == InteractionLayer::Disabled {
+            return self.elevation_rules.iter().find(|rule| rule.layer.as_deref() == Some("disabled"));
+        }
+        self.elevation_rules.iter().find(|rule| rule.layer.is_none())
+    }
+
+    pub fn find_color_rule(&self, on: bool, disabled: bool) -> Option<&SwitchColorRule> {
+        self.color_rules
+            .iter()
+            .find(|rule| matches_optional_bool(rule.disabled, disabled) && matches_optional_bool(rule.on, on))
+    }
+
+    pub fn metrics_for_size(&self, size: ControlSize) -> Option<&SwitchMetricsRule> {
+        self.metrics.get(control_size_key(size))
+    }
+
+    pub fn metrics_for_style(
+        &self,
+        _style: crate::controls::ShadcnButtonStyle,
+        size: ControlSize,
+    ) -> Option<&SwitchMetricsRule> {
+        self.metrics_for_size(size)
+    }
+}
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
+pub struct SwitchMetricsRule {
+    pub width: f32,
+    pub height: f32,
+    pub thumb_size: f32,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct SwitchColorRule {
+    pub on: Option<bool>,
+    pub disabled: Option<bool>,
+    pub track_background: String,
+    pub thumb_background: String,
+    pub thumb_border: String,
+    pub label_color: String,
+}
+
+/// Construct Shadcn switch size overrides without parsing bundled data.
+pub fn native_shadcn_common_switch() -> gpui_luma::theme::stylesheet::SwitchStylesheet {
+    let mut switch = gpui_luma::theme::stylesheet::SwitchStylesheet::default();
+    switch
+        .track_padding(2.0)
+        .size("sm", |m| {
+            m.dimensions(32.0, 13.0, 9.0);
+        })
+        .size("md", |m| {
+            m.dimensions(40.0, 18.0, 14.0);
+        })
+        .size("lg", |m| {
+            m.dimensions(48.0, 24.0, 20.0);
+        });
+    switch
+}
+
+/// Construct Shadcn switch rules, preserving disabled-first matching order.
+pub fn native_shadcn_switch() -> SwitchStylesheet {
+    SwitchStylesheet {
+        metrics: Default::default(),
+        elevation_rules: vec![
+            LayeredElevationRule { layer: None, shadow: "shadow-sm".into() },
+            LayeredElevationRule { layer: Some("disabled".into()), shadow: "none".into() },
+        ],
+        color_rules: vec![
+            SwitchColorRule {
+                on: None,
+                disabled: Some(true),
+                track_background: "muted".into(),
+                thumb_background: "muted-foreground".into(),
+                thumb_border: "muted".into(),
+                label_color: "muted-foreground".into(),
+            },
+            SwitchColorRule {
+                on: Some(true),
+                disabled: Some(false),
+                track_background: "@action_default".into(),
+                thumb_background: "@action_foreground".into(),
+                thumb_border: "@action_foreground".into(),
+                label_color: "foreground".into(),
+            },
+            SwitchColorRule {
+                on: Some(false),
+                disabled: Some(false),
+                track_background: "input".into(),
+                thumb_background: "background".into(),
+                thumb_border: "border".into(),
+                label_color: "foreground".into(),
+            },
+        ],
+    }
+}
+
+/// Install native Shadcn switch overrides over the SDK baseline.
+pub fn define_shadcn_switch(config: &mut StylesheetConfig) {
+    native_shadcn_common_switch().apply_to(&mut config.common.switch);
+    config.switch = native_shadcn_switch();
 }

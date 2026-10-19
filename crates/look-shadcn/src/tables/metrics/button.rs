@@ -61,7 +61,7 @@ pub fn resolve_button_metrics_with_stylesheet(
     let stylesheet_metric = |field: &str, value_px| ResolvedMetric {
         value_px,
         source: if legacy.is_some() {
-            MetricSource::Derived { note: format!("style.toml [{family}.metrics.{size_key}].{field}") }
+            MetricSource::Derived { note: format!("stylesheet [{family}.metrics.{size_key}].{field}") }
         } else {
             let metric = match field {
                 "padding_horizontal" => spacing_control_metric(catalog, size, SpacingField::PaddingX, value_px),
@@ -77,7 +77,7 @@ pub fn resolve_button_metrics_with_stylesheet(
         icon_size: if legacy.is_some() {
             ResolvedMetric {
                 value_px: look.icon_size,
-                source: MetricSource::Constant { label: format!("style.toml [{family}.metrics.{size_key}].icon_size") },
+                source: MetricSource::Constant { label: format!("stylesheet [{family}.metrics.{size_key}].icon_size") },
             }
         } else {
             super::helpers::derived_metric("role icon size from box scale or label typography", look.icon_size)
@@ -141,7 +141,7 @@ pub fn resolve_button_metrics_with_stylesheet(
             .filter(|token| crate::stylesheet::resolve_stylesheet_metric(token, metrics, size).is_some())
         {
             table.radius = super::helpers::derived_metric(
-                format!("style.toml · {family}.tokens.{size_key}.corner_radius → {token}"),
+                format!("stylesheet · {family}.tokens.{size_key}.corner_radius → {token}"),
                 look.radius,
             );
         }

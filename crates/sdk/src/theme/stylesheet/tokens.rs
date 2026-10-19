@@ -1,9 +1,9 @@
-//! Shared vanilla token data, inherited field by field from the embedded asset.
-use serde::{Deserialize, Deserializer};
+//! Native vanilla token defaults and field-by-field external token overrides.
+use serde::{Deserialize, Deserializer, Serialize};
 use crate::theme::{LumaElevation, LumaPalette, LumaThemeMode, LumaTypography, MetricTokens, ThemeMode};
 
 /// Complete shared tokens. Sparse authored tables inherit the SDK baseline.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct TokenStylesheet {
     pub metrics: MetricTokens,
     pub typography: LumaTypography,
@@ -11,14 +11,14 @@ pub struct TokenStylesheet {
     pub elevation: ElevationStylesheet,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct PaletteStylesheet {
     pub light: LumaPalette,
     pub dark: LumaPalette,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ElevationStylesheet {
     pub light: LumaElevation,
@@ -59,8 +59,7 @@ impl<'de> Deserialize<'de> for TokenStylesheet {
             elevation: ElevationStylesheet,
         }
         let authored = toml::Value::deserialize(deserializer)?;
-        let baseline: toml::Value = toml::from_str(super::DEFAULT_STYLE_TOML).map_err(serde::de::Error::custom)?;
-        let mut tokens = baseline["common"]["tokens"].clone();
+        let mut tokens = toml::Value::try_from(Self::default()).map_err(serde::de::Error::custom)?;
         overlay(&mut tokens, authored);
         super::math::normalize(&mut tokens).map_err(serde::de::Error::custom)?;
         for group in ["palette", "elevation"] {
@@ -77,9 +76,14 @@ impl<'de> Deserialize<'de> for TokenStylesheet {
 }
 
 /// Tables inherit recursively; values and arrays replace their base, including
-/// zero, false and empty arrays. Motion transitions replace a complete role.
+/// zero, false and empty arrays. Motion transitions and tagged source colors
+/// replace complete values rather than inheriting their individual components.
 pub(super) fn overlay(base: &mut toml::Value, authored: toml::Value) {
-    if base.get("kind").is_some() || authored.get("kind").is_some() {
+    if base.get("kind").is_some()
+        || authored.get("kind").is_some()
+        || base.get("space").is_some()
+        || authored.get("space").is_some()
+    {
         *base = authored;
         return;
     }
@@ -118,14 +122,40 @@ mod tests {
     use crate::{color::GamutMapping, theme::stylesheet::CommonStylesheet};
 
     #[test]
-    fn compiled_defaults_match_the_public_runtime_schema() {
-        let parsed = CommonStylesheet::parse(super::super::DEFAULT_STYLE_TOML).unwrap();
-        assert_eq!(parsed.tokens, TokenStylesheet::default());
-        assert_eq!(parsed.tokens.metrics.control.md.height, 36.0);
-        assert_eq!(parsed.tokens.typography.text.label.weight, gpui::FontWeight::MEDIUM);
-        assert_eq!(parsed.tokens.elevation.dark.menu.layers.len(), 2);
+    fn native_defaults_produce_both_mode_snapshots() {
+        let native = TokenStylesheet::default();
+        assert_eq!(native.metrics.control.md.height, 36.0);
+        assert_eq!(native.typography.text.label.weight, gpui::FontWeight::MEDIUM);
+        assert_eq!(native.elevation.dark.menu.layers.len(), 2);
         for mode in [ThemeMode::Light, ThemeMode::Dark] {
-            parsed.theme_tokens(mode, GamutMapping::CssLocalMinde).unwrap();
+            for mapping in [GamutMapping::Clip, GamutMapping::CssLocalMinde] {
+                let source = native.source(mode);
+                let actual = crate::theme::ThemeTokens::from_source(source.clone(), mapping).unwrap();
+                assert_eq!(actual.palette.source(), &source.palette);
+                assert_eq!(actual.elevation.source(), &source.elevation);
+            }
+        }
+        let shell = &CommonStylesheet::sdk_default().shell.geometry;
+        assert_eq!(crate::shell::TITLE_BAR_HEIGHT.as_f32(), shell.height.unwrap());
+        let padding = if cfg!(target_os = "macos") {
+            shell.macos_left_padding
+        } else {
+            shell.left_padding
+        };
+        assert_eq!(crate::shell::TITLE_BAR_LEFT_PADDING.as_f32(), padding.unwrap());
+    }
+
+    #[test]
+    fn native_tokens_round_trip_through_the_external_format_adapter() {
+        let native = TokenStylesheet::default();
+        let mut edited = native.clone();
+        edited.metrics.control.md.padding_x = 0.0;
+        edited.palette.light.app.background = crate::color::ColorValue::display_p3(1.15, -0.1, 0.2, 0.37);
+        edited.elevation.dark.menu.layers[0].color = crate::color::ColorValue::oklch(0.7, 0.4, 725.0, 0.25);
+        for tokens in [native, edited] {
+            let stored = toml::to_string(&tokens).unwrap();
+            let restored: TokenStylesheet = toml::from_str(&stored).unwrap();
+            assert_eq!(restored, tokens);
         }
     }
 
@@ -165,6 +195,9 @@ mod tests {
             "[common.tokens.typography.text.label]\nline_height = -1",
             "[common.tokens.palette.light.app]\nbackground = 'hsla(0, 0%, 0%, 2)'",
             "[common.tokens.palette.light.app]\nunknown = 1",
+            "[common.tokens.palette.light.app.background]\nspace = 'display-p3'",
+            "[common.tokens.palette.light.app.background]\ncomponents = [1, 0, 0, 1]",
+            "[common.tokens.palette.light.app.background]",
             "[common.tokens.elevation.dark.menu]\nlayers = [{ color = 'hsla(0, 0%, 0%, 1)', offset_x = 0, offset_y = 0, blur = -1, spread = 0, inset = false }]",
         ] {
             assert!(CommonStylesheet::parse(source).is_err(), "accepted {source}");

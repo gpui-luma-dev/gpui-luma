@@ -435,3 +435,25 @@ mod tests {
         assert_eq!(checkbox_scale_for(CheckboxSize::Two, Radius::Medium).indicator_size, 16.0);
     }
 }
+
+/// Constructs the native Radix checkbox definition in pure Rust without preloading TOML.
+pub fn native_radix_checkbox() -> gpui_luma::theme::stylesheet::CheckboxStylesheet {
+    let mut checkbox = gpui_luma::theme::stylesheet::CheckboxStylesheet::default();
+    checkbox
+        .gap(8.0)
+        .size("1", |m| {
+            m.indicator_size(14.0).glyph_size(9.0);
+        })
+        .size("2", |m| {
+            m.indicator_size(16.0).glyph_size(10.0);
+        })
+        .size("3", |m| {
+            m.indicator_size(20.0).glyph_size(12.0);
+        });
+    checkbox
+}
+
+/// Applies Radix checkbox geometry in Rust.
+pub(crate) fn apply_radix_checkbox_stylesheet(sheet: &mut gpui_luma::theme::stylesheet::CommonStylesheet) {
+    native_radix_checkbox().apply_to(&mut sheet.checkbox);
+}

@@ -1,9 +1,17 @@
 //! Shared default icon choices, with explicit SVG-path overrides.
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use crate::infra::icon::IconSource;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct StylesheetIcon(pub IconSource);
+impl Serialize for StylesheetIcon {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match &self.0 {
+            IconSource::Lucide(icon) => serializer.serialize_str(icon.name()),
+            IconSource::SvgPath(path) => serializer.serialize_str(&format!("svg:{path}")),
+        }
+    }
+}
 impl<'de> Deserialize<'de> for StylesheetIcon {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let name = String::deserialize(deserializer)?;
@@ -49,7 +57,7 @@ pub enum IconRole {
     DragHandle,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct IconsStylesheet {
     pub window_minimize: Option<StylesheetIcon>,
@@ -78,6 +86,36 @@ pub struct IconsStylesheet {
     pub drag_handle: Option<StylesheetIcon>,
 }
 impl IconsStylesheet {
+    /// Native SDK icon defaults, retaining the existing semantic roles.
+    pub fn native_default() -> Self {
+        use lucide_svg_static::Icon;
+        Self {
+            window_minimize: Some(StylesheetIcon(IconSource::Lucide(Icon::Minus))),
+            window_restore: Some(StylesheetIcon(IconSource::Lucide(Icon::Copy))),
+            window_maximize: Some(StylesheetIcon(IconSource::Lucide(Icon::Square))),
+            window_close: Some(StylesheetIcon(IconSource::Lucide(Icon::X))),
+            clear: Some(StylesheetIcon(IconSource::Lucide(Icon::X))),
+            search: Some(StylesheetIcon(IconSource::Lucide(Icon::Search))),
+            disclosure_expanded: Some(StylesheetIcon(IconSource::Lucide(Icon::ChevronDown))),
+            disclosure_collapsed: Some(StylesheetIcon(IconSource::Lucide(Icon::ChevronRight))),
+            menu_expanded: Some(StylesheetIcon(IconSource::Lucide(Icon::ChevronUp))),
+            menu_collapsed: Some(StylesheetIcon(IconSource::Lucide(Icon::ChevronDown))),
+            selected: Some(StylesheetIcon(IconSource::Lucide(Icon::Check))),
+            completed: Some(StylesheetIcon(IconSource::Lucide(Icon::Check))),
+            selector_trigger: Some(StylesheetIcon(IconSource::Lucide(Icon::ChevronsUpDown))),
+            pager_first: Some(StylesheetIcon(IconSource::Lucide(Icon::ChevronsLeft))),
+            pager_previous: Some(StylesheetIcon(IconSource::Lucide(Icon::ChevronLeft))),
+            pager_next: Some(StylesheetIcon(IconSource::Lucide(Icon::ChevronRight))),
+            pager_last: Some(StylesheetIcon(IconSource::Lucide(Icon::ChevronsRight))),
+            pager_gap: Some(StylesheetIcon(IconSource::Lucide(Icon::Ellipsis))),
+            textarea_resize: Some(StylesheetIcon(IconSource::Lucide(Icon::Scaling))),
+            folder_open: Some(StylesheetIcon(IconSource::Lucide(Icon::FolderOpen))),
+            folder: Some(StylesheetIcon(IconSource::Lucide(Icon::Folder))),
+            file: Some(StylesheetIcon(IconSource::Lucide(Icon::File))),
+            drag_handle: Some(StylesheetIcon(IconSource::Lucide(Icon::ListChevronsUpDown))),
+        }
+    }
+
     pub(super) fn with_baseline(mut self, baseline: &Self) -> Self {
         self.window_minimize = self.window_minimize.or_else(|| baseline.window_minimize.clone());
         self.window_restore = self.window_restore.or_else(|| baseline.window_restore.clone());

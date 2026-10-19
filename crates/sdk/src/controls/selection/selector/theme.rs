@@ -360,3 +360,33 @@ mod tests {
         assert_eq!(look.trigger_focus_border, look.trigger_border);
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    SelectorStylesheet,
+    SelectorGeometryStylesheet,
+    SelectorGeometry,
+    ResolvedSelectorGeometry,
+    "selector",
+    [
+        height,
+        padding_x,
+        padding_y,
+        gap,
+        icon_size,
+        font_size,
+        line_height,
+        radius,
+        menu_offset_y,
+        menu_offset_scale
+    ]
+);
+
+impl SelectorStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: SelectorGeometryStylesheet { menu_offset_scale: Some(1.0 / 2.0), ..Default::default() },
+            ..Default::default()
+        }
+    }
+}

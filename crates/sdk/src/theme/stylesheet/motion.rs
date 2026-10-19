@@ -1,13 +1,13 @@
 //! Serializable motion roles shared by vanilla SDK applications and looks.
 
 use std::time::Duration;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use crate::motion::{Easing, Transition};
 use crate::theme::MotionDefaults;
 
 /// A complete transition definition. Omission inherits; an authored definition
 /// replaces the whole role. Custom runtime definitions remain available in Rust.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum TransitionSpec {
     Timed {
@@ -49,7 +49,7 @@ impl TransitionSpec {
 macro_rules! profile {
     ($name:ident => $target:path { $($role:ident: $spec:ty),* $(,)? }) => {
         #[doc = "Optional stylesheet roles; omitted values retain the supplied defaults."]
-        #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+        #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
         #[serde(default, deny_unknown_fields)]
         pub struct $name { $(pub $role: $spec),* }
         impl $name {
@@ -150,7 +150,7 @@ profile!(SliderMotionStylesheet => crate::controls::slider::SliderMotion {
 });
 
 /// Progress has a settling value role and an independent looping period.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ProgressMotionStylesheet {
     pub value: Option<TransitionSpec>,
@@ -277,6 +277,74 @@ profile!(MotionStylesheet => MotionDefaults {
     tabs: TabsMotionStylesheet,
 });
 
+impl MotionStylesheet {
+    /// Native SDK motion definitions, preserving whole-role values.
+    pub fn native_default() -> Self {
+        let timed = TransitionSpec::Timed { duration_ms: 200, easing: Easing::OutCubic };
+        let presence = PresenceMotionStylesheet { enter: Some(timed.clone()), exit: Some(timed.clone()) };
+        let dismissal = PresenceMotionStylesheet { enter: Some(timed.clone()), exit: Some(TransitionSpec::Instant {}) };
+        Self {
+            transition: Some(timed.clone()),
+            tabs_overlay: presence.clone(),
+            slide_panel: SlidePanelMotionStylesheet {
+                presence: PresenceMotionStylesheet {
+                    enter: Some(TransitionSpec::Timed { duration_ms: 220, easing: Easing::OutCubic }),
+                    exit: Some(TransitionSpec::Timed { duration_ms: 220, easing: Easing::OutCubic }),
+                },
+            },
+            listbox: ListBoxMotionStylesheet { scroll: Some(timed.clone()), drop_layout: Some(timed.clone()) },
+            scroll_container: ScrollContainerMotionStylesheet { scroll: Some(timed.clone()) },
+            popover: PopoverMotionStylesheet { presence: presence.clone() },
+            checkbox: CheckboxMotionStylesheet::native_default(),
+            radio: RadioMotionStylesheet { state: Some(timed.clone()) },
+            toggle: ToggleMotionStylesheet { state: Some(timed.clone()) },
+            control_group: ControlGroupMotionStylesheet { selection: Some(timed.clone()) },
+            slider: SliderMotionStylesheet::native_default(),
+            progress: ProgressMotionStylesheet { value: Some(timed.clone()), period_ms: Some(1200) },
+            stepper: StepperMotionStylesheet { selection: Some(timed.clone()) },
+            accordion: AccordionMotionStylesheet { expansion: Some(timed.clone()), drop_layout: Some(timed.clone()) },
+            tree_view: TreeViewMotionStylesheet {
+                expansion: Some(timed.clone()),
+                position: Some(timed.clone()),
+                drop_layout: Some(timed.clone()),
+            },
+            sidebar: SidebarMotionStylesheet {
+                expansion: Some(timed.clone()),
+                popup: presence.clone(),
+                drop_layout: Some(timed.clone()),
+            },
+            split_view: SplitViewMotionStylesheet { extent: Some(timed.clone()) },
+            resizable_panels: ResizablePanelsMotionStylesheet { extent: Some(timed.clone()) },
+            popup_menu: PopupMenuMotionStylesheet {
+                presence,
+                highlight: Some(TransitionSpec::Timed { duration_ms: 180, easing: Easing::OutCubic }),
+                disclosure: Some(timed.clone()),
+                submenu: Some(timed.clone()),
+            },
+            context_menu: ContextMenuMotionStylesheet {
+                presence: dismissal.clone(),
+                submenu: dismissal.clone(),
+                disclosure: Some(timed.clone()),
+            },
+            selector: SelectorMotionStylesheet { presence: dismissal.clone() },
+            search_selector: SearchSelectorMotionStylesheet {
+                presence: dismissal.clone(),
+                disclosure: Some(timed.clone()),
+            },
+            autocomplete: AutocompleteMotionStylesheet { presence: dismissal.clone() },
+            combobox: ComboBoxMotionStylesheet { presence: dismissal },
+            table: TableMotionStylesheet { drop_layout: Some(timed.clone()) },
+            switch: SwitchMotionStylesheet::native_default(),
+            tabs: TabsMotionStylesheet {
+                indicator: Some(timed.clone()),
+                content: Some(TransitionSpec::Instant {}),
+                disclosure: Some(timed.clone()),
+                drop_layout: Some(timed),
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -284,7 +352,7 @@ mod tests {
 
     #[test]
     fn embedded_sdk_stylesheet_defines_every_role_and_is_cached() {
-        let sheet = CommonStylesheet::parse(super::super::DEFAULT_STYLE_TOML).unwrap();
+        let sheet = CommonStylesheet::sdk_default().clone();
         assert!(sheet.motion.is_complete(), "SDK stylesheet must author every motion role");
         assert_eq!(&sheet, CommonStylesheet::sdk_default());
         assert!(std::ptr::eq(CommonStylesheet::sdk_default(), CommonStylesheet::sdk_default()));

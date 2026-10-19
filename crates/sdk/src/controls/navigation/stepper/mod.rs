@@ -1,7 +1,7 @@
 mod control;
 mod model;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use model::{
     StepState, StepperBuilder, StepperContentRenderer, StepperItem, StepperLabelPlacement, StepperModel,

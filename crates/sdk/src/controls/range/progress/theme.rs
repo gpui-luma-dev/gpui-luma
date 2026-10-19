@@ -70,3 +70,46 @@ impl ProgressTheme for DefaultProgressTheme {
         }
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    ProgressStylesheet,
+    ProgressGeometryStylesheet,
+    ProgressGeometry,
+    ResolvedProgressGeometry,
+    "progress",
+    [track_height, size, stroke_width, thumb_size],
+    unit[indeterminate_fraction, shimmer_soft_opacity, shimmer_mid_opacity, shimmer_mid_offset, shimmer_mid_width, shimmer_core_offset, shimmer_core_width]
+);
+
+impl ProgressStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: ProgressGeometryStylesheet {
+                indeterminate_fraction: Some(0.28),
+                shimmer_soft_opacity: Some(0.35),
+                shimmer_mid_opacity: Some(0.85),
+                shimmer_mid_offset: Some(0.2),
+                shimmer_mid_width: Some(0.6),
+                shimmer_core_offset: Some(0.35),
+                shimmer_core_width: Some(0.3),
+                ..Default::default()
+            },
+            sizes: [("sm", 4.0, 48.0, 5.0, 12.0), ("md", 6.0, 64.0, 6.0, 16.0), ("lg", 8.0, 80.0, 8.0, 20.0)]
+                .into_iter()
+                .map(|(key, track, size, stroke, thumb)| {
+                    (
+                        key.into(),
+                        ProgressGeometryStylesheet {
+                            track_height: Some(track),
+                            size: Some(size),
+                            stroke_width: Some(stroke),
+                            thumb_size: Some(thumb),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}

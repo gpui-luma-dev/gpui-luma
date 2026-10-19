@@ -40,7 +40,7 @@ pub(crate) fn resolve_control_typography_with_stylesheet(
         let family = if toggle { "toggle" } else { "button" };
         let size_key = super::metrics::helpers::control_size_key(size);
         font_size_source =
-            TypographySource::Constant { label: format!("style.toml [{family}.metrics.{size_key}].font_size") };
+            TypographySource::Constant { label: format!("stylesheet [{family}.metrics.{size_key}].font_size") };
         if base_size > 0.0 {
             style.line_height = style.size * (style.line_height / base_size);
             line_height_source = TypographySource::Derived { note: "font_size × label line-height ratio".into() };
@@ -57,13 +57,13 @@ pub(crate) fn resolve_control_typography_with_stylesheet(
         style.size = font;
         style.line_height = font * ratio;
         font_size_source =
-            TypographySource::Constant { label: format!("style.toml · common.{family}.{font_path}.font_size") };
+            TypographySource::Constant { label: format!("stylesheet · common.{family}.{font_path}.font_size") };
         line_height_source = TypographySource::Derived { note: "font_size × label line-height ratio".into() };
     }
     if let Some(line) = line {
         style.line_height = line;
         line_height_source =
-            TypographySource::Constant { label: format!("style.toml · common.{family}.{line_path}.line_height") };
+            TypographySource::Constant { label: format!("stylesheet · common.{family}.{line_path}.line_height") };
     }
     ControlTypographyTable {
         style,

@@ -9,7 +9,7 @@
 
 mod model;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use model::{FloatingMenuActivateResult, FloatingMenuState, FloatingMenuStepDirection};
 pub use template::{

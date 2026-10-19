@@ -1,4 +1,4 @@
-mod theme;
+pub(crate) mod theme;
 
 pub use theme::{
     ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, DefaultButtonFamilyTheme,

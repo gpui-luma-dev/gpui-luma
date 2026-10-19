@@ -1,7 +1,7 @@
 mod control;
 mod model;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::{Scrollbar, ScrollbarDrag, ScrollbarEvent};
 pub use model::{

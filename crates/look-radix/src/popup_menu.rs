@@ -298,3 +298,12 @@ mod tests {
         assert_eq!(gray.background, accent.background);
     }
 }
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_popup_menu_stylesheet() -> gpui_luma::theme::stylesheet::PopupMenuStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    PopupMenuStylesheet {
+        geometry: PopupMenuGeometryStylesheet { font_size: Some(14.0), line_height: Some(20.0), ..Default::default() },
+        ..Default::default()
+    }
+}
