@@ -384,6 +384,8 @@ fn native_drop_animates_positions_after_lifecycle_completion() {
     let tabs = cx.update(|_, cx| page.read(cx).tabs.clone());
     tabs.update(cx, |tabs, cx| {
         tabs.set_motion_enabled(true, cx);
+        // Hold the first frame at zero regardless of CI commit/render time.
+        tabs.drop_layout_motion().elapse_for_test(Duration::ZERO);
     });
     cx.run_until_parked();
     let old = cx.debug_bounds("tab-drag-a").unwrap();
