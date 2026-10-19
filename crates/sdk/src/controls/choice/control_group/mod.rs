@@ -4,7 +4,7 @@ mod toggle_button_item_template;
 mod control;
 mod model;
 mod template;
-mod theme;
+pub(crate) mod theme;
 mod themed_template;
 
 pub use control::{ControlGroupControl, ControlGroupEvent};

@@ -4,7 +4,7 @@ mod control;
 /// Internal flush-list presentation engine (former `navigation_sidebar`).
 mod engine;
 mod model;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::{SidebarControl, SidebarEvent};
 pub use model::{

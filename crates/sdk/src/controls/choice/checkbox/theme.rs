@@ -1,3 +1,6 @@
+use crate::theme::stylesheet::{CheckboxMotionStylesheet, CommonStylesheet, PaletteRole, TransitionSpec};
+use std::collections::HashMap;
+
 use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla, SharedString};
@@ -167,4 +170,192 @@ impl CheckboxTheme for DefaultCheckboxTheme {
     fn scale(&self, size: ControlSize, scale_factor: f32) -> CheckboxScale {
         CheckboxScale::compute_with_stylesheet(size, &self.tokens.metrics, scale_factor, &self.tokens.stylesheet)
     }
+}
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    CheckboxStylesheet,
+    CheckboxGeometryStylesheet,
+    CheckboxGeometry,
+    ResolvedCheckboxGeometry,
+    "checkbox",
+    [
+        indicator_size,
+        indicator_scale,
+        indicator_radius,
+        glyph_size,
+        glyph_inset,
+        control_padding_x,
+        control_padding_y,
+        gap
+    ],
+    unit[disabled_opacity]
+);
+
+impl CheckboxStylesheet {
+    /// Construct the SDK checkbox geometry without parsing bundled data.
+    pub fn native_default() -> Self {
+        let mut checkbox = Self::default();
+        checkbox
+            .disabled_opacity(0.56)
+            .control_padding_x(0.0)
+            .control_padding_y(0.0)
+            .size("sm", |m| {
+                m.indicator(0.45, 2.0, 2.0);
+            })
+            .size("md", |m| {
+                m.indicator(0.5, 4.0, 3.0);
+            })
+            .size("lg", |m| {
+                m.indicator(0.55, 6.0, 4.0);
+            });
+        checkbox
+    }
+
+    /// Apply authored checkbox fields with the existing stylesheet precedence.
+    pub fn apply_to(&self, target: &mut Self) {
+        *target = self.clone().with_baseline(target);
+    }
+
+    pub fn disabled_opacity(&mut self, opacity: f32) -> &mut Self {
+        self.geometry.disabled_opacity = Some(opacity);
+        self
+    }
+
+    pub fn indicator_size(&mut self, size: f32) -> &mut Self {
+        self.geometry.indicator_size = Some(size);
+        self
+    }
+
+    pub fn indicator_scale(&mut self, scale: f32) -> &mut Self {
+        self.geometry.indicator_scale = Some(scale);
+        self
+    }
+
+    pub fn indicator_radius(&mut self, radius: f32) -> &mut Self {
+        self.geometry.indicator_radius = Some(radius);
+        self
+    }
+
+    pub fn glyph_size(&mut self, size: f32) -> &mut Self {
+        self.geometry.glyph_size = Some(size);
+        self
+    }
+
+    pub fn glyph_inset(&mut self, inset: f32) -> &mut Self {
+        self.geometry.glyph_inset = Some(inset);
+        self
+    }
+
+    pub fn control_padding_x(&mut self, padding: f32) -> &mut Self {
+        self.geometry.control_padding_x = Some(padding);
+        self
+    }
+
+    pub fn control_padding_y(&mut self, padding: f32) -> &mut Self {
+        self.geometry.control_padding_y = Some(padding);
+        self
+    }
+
+    pub fn gap(&mut self, gap: f32) -> &mut Self {
+        self.geometry.gap = Some(gap);
+        self
+    }
+
+    pub fn size(
+        &mut self,
+        key: impl Into<String>,
+        configure: impl FnOnce(&mut CheckboxGeometryStylesheet),
+    ) -> &mut Self {
+        let entry = self.sizes.entry(key.into()).or_default();
+        configure(entry);
+        self
+    }
+}
+
+impl CheckboxGeometryStylesheet {
+    pub fn disabled_opacity(&mut self, opacity: f32) -> &mut Self {
+        self.disabled_opacity = Some(opacity);
+        self
+    }
+
+    pub fn indicator_size(&mut self, size: f32) -> &mut Self {
+        self.indicator_size = Some(size);
+        self
+    }
+
+    pub fn indicator_scale(&mut self, scale: f32) -> &mut Self {
+        self.indicator_scale = Some(scale);
+        self
+    }
+
+    pub fn indicator_radius(&mut self, radius: f32) -> &mut Self {
+        self.indicator_radius = Some(radius);
+        self
+    }
+
+    pub fn glyph_size(&mut self, size: f32) -> &mut Self {
+        self.glyph_size = Some(size);
+        self
+    }
+
+    pub fn glyph_inset(&mut self, inset: f32) -> &mut Self {
+        self.glyph_inset = Some(inset);
+        self
+    }
+
+    pub fn control_padding_x(&mut self, padding: f32) -> &mut Self {
+        self.control_padding_x = Some(padding);
+        self
+    }
+
+    pub fn control_padding_y(&mut self, padding: f32) -> &mut Self {
+        self.control_padding_y = Some(padding);
+        self
+    }
+
+    pub fn gap(&mut self, gap: f32) -> &mut Self {
+        self.gap = Some(gap);
+        self
+    }
+
+    pub fn indicator(&mut self, scale: f32, radius: f32, glyph_inset: f32) -> &mut Self {
+        self.indicator_scale(scale);
+        self.indicator_radius(radius);
+        self.glyph_inset(glyph_inset);
+        self
+    }
+}
+
+impl CheckboxMotionStylesheet {
+    /// Construct the SDK checkbox motion without parsing bundled data.
+    pub fn native_default() -> Self {
+        Self { state: Some(TransitionSpec::Timed { duration_ms: 200, easing: crate::motion::Easing::OutCubic }) }
+    }
+}
+
+/// Construct SDK checkbox palette references without parsing bundled data.
+pub fn native_sdk_checkbox_recipes() -> HashMap<PaletteRole, PaletteRole> {
+    use PaletteRole::*;
+    [
+        AppForeground,
+        FocusRing,
+        FormInputBackground,
+        FormInputBorder,
+        StateDisabledBackground,
+        StateDisabledForeground,
+        StateHoverBackground,
+        StatePressedBackground,
+        StateSelectedBackground,
+        StateSelectedForeground,
+    ]
+    .into_iter()
+    .map(|role| (role, role))
+    .collect()
+}
+
+/// Install the native SDK checkbox baseline.
+pub fn define_sdk_checkbox(sheet: &mut CommonStylesheet) {
+    sheet.checkbox = CheckboxStylesheet::native_default();
+    sheet.motion.checkbox = CheckboxMotionStylesheet::native_default();
+    sheet.recipes.0.insert("checkbox".into(), native_sdk_checkbox_recipes());
 }

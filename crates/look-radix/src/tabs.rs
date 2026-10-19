@@ -1,5 +1,7 @@
 //! Radix tabs theme adapter.
 
+use std::collections::HashMap;
+
 use std::sync::Arc;
 
 use gpui::{FontWeight, Hsla, SharedString};
@@ -530,5 +532,24 @@ mod drag_tests {
             assert_eq!(drag.valid_marker, look.resolve_role(SemanticRole::Focus).hsla());
             assert_eq!(drag.invalid_marker, look.resolve_role(SemanticRole::Destructive).hsla());
         }
+    }
+}
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_tabs_stylesheet() -> gpui_luma::theme::stylesheet::TabsStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    use HashMap;
+    TabsStylesheet {
+        variants: HashMap::from([
+            (
+                "line".into(),
+                TabsGeometryStylesheet { list_gap: Some(0.0), list_padding: Some(0.0), ..Default::default() },
+            ),
+            (
+                "surface".into(),
+                TabsGeometryStylesheet { list_gap: Some(2.0), list_padding: Some(4.0), ..Default::default() },
+            ),
+        ]),
+        ..Default::default()
     }
 }

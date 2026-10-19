@@ -1,7 +1,7 @@
 mod control;
 mod model;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::OverlayWindowControl;
 pub use model::{

@@ -1,5 +1,7 @@
 //! Segmented presentation for the SDK radio group; selection stays SDK-owned.
 
+use std::collections::HashMap;
+
 use std::sync::Arc;
 use gpui::{IntoElement, div, prelude::*, px};
 use gpui_luma::controls::control_group::{ControlGroupItemHandlerExt, ControlGroupItemLike};
@@ -72,4 +74,22 @@ pub(crate) fn resolve_geometry(look: &Look) -> gpui_luma::theme::stylesheet::Res
             line_height: typography.line_height,
         },
     )
+}
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_segmented_stylesheet() -> gpui_luma::theme::stylesheet::SegmentedStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    use HashMap;
+    SegmentedStylesheet {
+        sizes: HashMap::from([(
+            "2".into(),
+            SegmentedGeometryStylesheet {
+                height: Some(32.0),
+                padding_x: Some(12.0),
+                font_size: Some(14.0),
+                line_height: Some(20.0),
+            },
+        )]),
+        ..Default::default()
+    }
 }

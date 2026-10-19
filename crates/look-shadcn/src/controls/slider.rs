@@ -10,6 +10,10 @@
 //! Track uses `border` rather than `muted` because many tweakcn light themes
 //! set `--muted` near white (e.g. 98% lightness), which disappears on card panels.
 
+use crate::stylesheet::config::{LayeredElevationRule, matches_optional_layer};
+use serde::Deserialize;
+use std::collections::HashMap;
+
 use gpui_luma::controls::slider::{SliderLook, SliderThumbSize};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
@@ -416,4 +420,130 @@ mod tests {
         assert_eq!(md_default.track_height, md_large.track_height);
         assert!(md_large.thumb_size > md_default.thumb_size);
     }
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
+pub struct SliderStylesheet {
+    #[serde(default)]
+    pub metrics: HashMap<String, SliderMetricsRule>,
+    #[serde(default)]
+    pub elevation_rules: Vec<LayeredElevationRule>,
+    #[serde(default)]
+    pub color_rules: Vec<SliderColorRule>,
+}
+
+impl SliderStylesheet {
+    pub fn find_color_rule(&self, style: &str, layer: InteractionLayer) -> Option<&SliderColorRule> {
+        self.color_rules.iter().find(|rule| {
+            rule.style.as_deref().is_none_or(|value| value == style)
+                && matches_optional_layer(rule.layer.as_deref(), layer)
+        })
+    }
+
+    pub fn elevation_rule_for_layer(&self, layer: InteractionLayer) -> Option<&LayeredElevationRule> {
+        if layer == InteractionLayer::Disabled {
+            return self.elevation_rules.iter().find(|rule| rule.layer.as_deref() == Some("disabled"));
+        }
+        self.elevation_rules.iter().find(|rule| rule.layer.is_none())
+    }
+
+    pub fn metrics_for_size(&self, size: ControlSize) -> Option<&SliderMetricsRule> {
+        let key = match size {
+            ControlSize::Sm => "sm",
+            ControlSize::Md => "md",
+            ControlSize::Lg => "lg",
+        };
+        self.metrics.get(key)
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct SliderMetricsRule {
+    pub width: f32,
+    pub height: f32,
+    pub track_height: f32,
+    pub thumb_size: f32,
+    pub radius: String,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct SliderColorRule {
+    pub style: Option<String>,
+    pub layer: Option<String>,
+    pub track_background: String,
+    pub fill_background: String,
+    pub thumb_background: String,
+    pub thumb_border: String,
+}
+
+/// Constructs the native Shadcn common slider sizes in pure Rust without preloading TOML.
+pub fn native_shadcn_common_slider() -> gpui_luma::theme::stylesheet::SliderStylesheet {
+    let mut slider = gpui_luma::theme::stylesheet::SliderStylesheet::default();
+    slider
+        .size("sm", |m| {
+            m.width(260.0).dimensions(24.0, 4.0, 12.0);
+        })
+        .size("md", |m| {
+            m.width(260.0).dimensions(32.0, 6.0, 16.0);
+        })
+        .size("lg", |m| {
+            m.width(260.0).dimensions(40.0, 8.0, 20.0);
+        });
+    slider
+}
+
+/// Constructs native Shadcn slider elevation and color rules in pure Rust without preloading TOML.
+pub fn native_shadcn_slider() -> SliderStylesheet {
+    let elevation_rules = vec![
+        LayeredElevationRule { layer: None, shadow: "shadow-sm".into() },
+        LayeredElevationRule { layer: Some("disabled".into()), shadow: "none".into() },
+    ];
+
+    let mut color_rules = Vec::with_capacity(8);
+    for (style, default_fill) in [("primary", "@action_default"), ("secondary", "@action_foreground")] {
+        color_rules.push(SliderColorRule {
+            style: Some(style.into()),
+            layer: Some("disabled".into()),
+            track_background: "border".into(),
+            fill_background: "muted-foreground".into(),
+            thumb_background: "first(background,card)".into(),
+            thumb_border: "muted".into(),
+        });
+        for (layer, fill) in [
+            ("default", default_fill),
+            (
+                "hover",
+                if style == "primary" {
+                    "@action_layer"
+                } else {
+                    default_fill
+                },
+            ),
+            (
+                "pressed",
+                if style == "primary" {
+                    "@action_layer"
+                } else {
+                    default_fill
+                },
+            ),
+        ] {
+            color_rules.push(SliderColorRule {
+                style: Some(style.into()),
+                layer: Some(layer.into()),
+                track_background: "border".into(),
+                fill_background: fill.into(),
+                thumb_background: "first(background,card)".into(),
+                thumb_border: default_fill.into(),
+            });
+        }
+    }
+
+    SliderStylesheet { metrics: HashMap::new(), elevation_rules, color_rules }
+}
+
+/// Programmatic definition of all Shadcn slider rules.
+pub fn define_shadcn_slider(config: &mut StylesheetConfig) {
+    native_shadcn_common_slider().apply_to(&mut config.common.slider);
+    config.slider = native_shadcn_slider();
 }

@@ -63,3 +63,30 @@ impl DockSplitterTheme for DefaultDockSplitterTheme {
         }
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    DockSplitterStylesheet,
+    DockSplitterGeometryStylesheet,
+    DockSplitterGeometry,
+    ResolvedDockSplitterGeometry,
+    "dock_splitter",
+    [hit_target, visible_line, thumb_width, thumb_height, thumb_radius],
+    unit[thumb_rest_opacity]
+);
+
+impl DockSplitterStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: DockSplitterGeometryStylesheet {
+                thumb_width: Some(4.0),
+                thumb_height: Some(36.0),
+                thumb_radius: Some(8.0),
+                thumb_rest_opacity: Some(0.4),
+                hit_target: Some(8.0),
+                visible_line: Some(1.0),
+            },
+            ..Default::default()
+        }
+    }
+}

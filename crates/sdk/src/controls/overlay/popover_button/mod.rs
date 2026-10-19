@@ -2,7 +2,7 @@
 
 mod control;
 mod model;
-mod panel;
+pub(crate) mod panel;
 
 pub use control::PopoverButton;
 pub use model::{

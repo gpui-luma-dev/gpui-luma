@@ -2,7 +2,7 @@ mod control;
 mod model;
 mod state;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::{TextArea, TextAreaDrag, TextAreaEvent};
 pub use model::{TextAreaBuilder, TextAreaLineMetric, TextAreaModel, TextAreaRenderModel, Validator};

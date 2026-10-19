@@ -75,7 +75,7 @@ mod model;
 mod paging;
 mod row;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::{TableControl, TableEvent, TableSelectionError, TableReorderError, TableRowDrop, TableRowDragEvent};
 pub use paging::{PagingTable, PagingTableControl, PagingTableBuilder};

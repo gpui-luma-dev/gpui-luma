@@ -11,7 +11,7 @@ mod model;
 mod projection;
 mod state;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::{
     TreeViewSubtreeState, CollapseNode, ExpandNode, SelectAllNodes, ClearSelectedNodes, TreeViewControl, TreeViewEvent,

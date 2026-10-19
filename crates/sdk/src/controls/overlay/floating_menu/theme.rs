@@ -175,3 +175,51 @@ mod tests {
         assert_eq!(look.item_icon_size, 17.0);
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    FloatingMenuStylesheet,
+    FloatingMenuGeometryStylesheet,
+    FloatingMenuGeometry,
+    ResolvedFloatingMenuGeometry,
+    "floating_menu",
+    [
+        border_width,
+        padding,
+        min_width,
+        item_height,
+        item_padding_x,
+        item_gap,
+        item_icon_size,
+        font_size,
+        line_height,
+        submenu_offset_x,
+        padding_scale,
+        item_height_scale,
+        item_padding_scale,
+        submenu_offset_scale,
+        separator_thickness,
+        separator_spacing,
+        separator_inset
+    ],
+    unit[disabled_opacity]
+);
+
+impl FloatingMenuStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: FloatingMenuGeometryStylesheet {
+                min_width: Some(180.0),
+                padding_scale: Some(0.5),
+                item_height_scale: Some(0.9),
+                item_padding_scale: Some(0.75),
+                submenu_offset_scale: Some(0.5),
+                disabled_opacity: Some(0.56),
+                separator_thickness: Some(1.0),
+                separator_inset: Some(0.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}

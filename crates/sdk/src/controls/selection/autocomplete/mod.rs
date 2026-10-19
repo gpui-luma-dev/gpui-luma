@@ -3,7 +3,7 @@ mod control;
 mod model;
 mod template;
 mod text_selection;
-mod theme;
+pub(crate) mod theme;
 
 pub use behavior::SelectionItem;
 pub use control::{Autocomplete, AutocompleteControl, AutocompleteEvent};

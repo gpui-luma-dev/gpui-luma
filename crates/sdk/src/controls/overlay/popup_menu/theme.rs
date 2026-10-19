@@ -316,3 +316,33 @@ menu_offset_y=0
         }
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    PopupMenuStylesheet,
+    PopupMenuGeometryStylesheet,
+    PopupMenuGeometry,
+    ResolvedPopupMenuGeometry,
+    "popup_menu",
+    [
+        height,
+        padding_x,
+        padding_y,
+        gap,
+        font_size,
+        line_height,
+        icon_size,
+        radius,
+        menu_offset_y,
+        menu_offset_scale
+    ]
+);
+
+impl PopupMenuStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: PopupMenuGeometryStylesheet { menu_offset_scale: Some(1.0 / 2.0), ..Default::default() },
+            ..Default::default()
+        }
+    }
+}

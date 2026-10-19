@@ -1,3 +1,5 @@
+use crate::theme::stylesheet::CommonStylesheet;
+
 use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
@@ -287,6 +289,74 @@ impl TableRowLook {
             padding_y: scale.padding_y,
             min_height: scale.min_height,
             label_baseline_shift: crate::theme::scales::label_baseline_shift(size, stylesheet),
+        }
+    }
+}
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    TableStylesheet,
+    TableGeometryStylesheet,
+    TableGeometry,
+    ResolvedTableGeometry,
+    "table",
+    [
+        row_divider_width,
+        padding_x,
+        padding_y,
+        padding_y_scale,
+        row_radius,
+        border_width,
+        header_divider_width,
+        header_padding_bottom_scale,
+        drag_offset,
+        drag_width,
+        drag_padding_x,
+        drag_padding_y,
+        drag_border_width,
+        drag_marker_width,
+        column_padding_x,
+        column_resize_hit_width,
+        column_resize_line_width,
+        column_resize_vertical_extension
+    ],
+    unit[row_hover_opacity, row_disabled_opacity, column_muted_opacity]
+);
+
+impl TableStylesheet {
+    /// Fills absent table fields from SDK defaults without copying unrelated families.
+    pub fn with_sdk_defaults(&self) -> Self {
+        self.clone().with_baseline(&CommonStylesheet::sdk_default().table)
+    }
+}
+
+impl TableStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: TableGeometryStylesheet {
+                row_divider_width: Some(1.0),
+                column_padding_x: Some(12.0),
+                column_muted_opacity: Some(0.65),
+                column_resize_hit_width: Some(10.0),
+                column_resize_line_width: Some(1.0),
+                column_resize_vertical_extension: Some(4.0),
+                drag_offset: Some(12.0),
+                drag_width: Some(220.0),
+                drag_padding_x: Some(12.0),
+                drag_padding_y: Some(8.0),
+                drag_border_width: Some(1.0),
+                drag_marker_width: Some(2.0),
+                border_width: Some(1.0),
+                header_divider_width: Some(1.0),
+                header_padding_bottom_scale: Some(3.0 / 4.0),
+                padding_x: Some(0.0),
+                padding_y_scale: Some(1.0 / 2.0),
+                row_radius: Some(0.0),
+                row_hover_opacity: Some(0.4),
+                row_disabled_opacity: Some(0.56),
+                ..Default::default()
+            },
+            ..Default::default()
         }
     }
 }

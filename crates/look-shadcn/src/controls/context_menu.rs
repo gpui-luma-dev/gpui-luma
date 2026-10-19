@@ -149,3 +149,12 @@ mod tests {
         assert_eq!(disabled.target_foreground, fallback);
     }
 }
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_context_menu_stylesheet() -> gpui_luma::theme::stylesheet::ContextMenuStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    ContextMenuStylesheet {
+        geometry: ContextMenuGeometryStylesheet { min_width: Some(200.0), ..Default::default() },
+        ..Default::default()
+    }
+}

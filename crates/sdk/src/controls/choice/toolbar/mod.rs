@@ -1,7 +1,7 @@
 mod control;
 mod model;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::{ToolbarControl, ToolbarEvent, ToolbarValue, horizontal_arrow_policy};
 pub use model::{

@@ -169,3 +169,40 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
         RadioScale::compute_with_stylesheet(size, &self.tokens.metrics, scale_factor, &self.tokens.stylesheet)
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    RadioStylesheet,
+    RadioGeometryStylesheet,
+    RadioGeometry,
+    ResolvedRadioGeometry,
+    "radio",
+    [indicator_size, indicator_scale, dot_size, dot_scale, control_padding_x, control_padding_y, gap],
+    unit[disabled_opacity]
+);
+
+impl RadioStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: RadioGeometryStylesheet {
+                disabled_opacity: Some(0.56),
+                control_padding_x: Some(0.0),
+                control_padding_y: Some(0.0),
+                ..Default::default()
+            },
+            sizes: [("sm", 0.45), ("md", 0.5), ("lg", 0.55)]
+                .into_iter()
+                .map(|(key, scale)| {
+                    (
+                        key.into(),
+                        RadioGeometryStylesheet {
+                            indicator_scale: Some(scale),
+                            dot_scale: Some(0.24),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}

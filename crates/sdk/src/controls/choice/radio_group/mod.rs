@@ -20,3 +20,30 @@ pub use template::{
 
 mod callback;
 pub use callback::RadioGroupEventExt;
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    RadioGroupStylesheet,
+    RadioGroupGeometryStylesheet,
+    RadioGroupGeometry,
+    ResolvedRadioGroupGeometry,
+    "radio_group",
+    [gap, item_gap],
+    unit[disabled_opacity]
+);
+
+impl RadioGroupStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: RadioGroupGeometryStylesheet {
+                item_gap: Some(8.0),
+                disabled_opacity: Some(0.56),
+                ..Default::default()
+            },
+            sizes: [("vertical", 8.0), ("horizontal", 12.0)]
+                .into_iter()
+                .map(|(key, gap)| (key.into(), RadioGroupGeometryStylesheet { gap: Some(gap), ..Default::default() }))
+                .collect(),
+        }
+    }
+}

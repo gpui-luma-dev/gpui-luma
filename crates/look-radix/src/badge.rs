@@ -206,3 +206,26 @@ mod tests {
         }
     }
 }
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_badge_stylesheet() -> gpui_luma::theme::stylesheet::BadgeStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    BadgeStylesheet {
+        sizes: [("1", 12.0, 16.0, 6.0, 2.0), ("2", 12.0, 16.0, 8.0, 4.0), ("3", 14.0, 20.0, 10.0, 4.0)]
+            .into_iter()
+            .map(|(key, font, line, x, y)| {
+                (
+                    key.into(),
+                    BadgeGeometryStylesheet {
+                        font_size: Some(font),
+                        line_height: Some(line),
+                        padding_x: Some(x),
+                        padding_y: Some(y),
+                        ..Default::default()
+                    },
+                )
+            })
+            .collect(),
+        ..Default::default()
+    }
+}

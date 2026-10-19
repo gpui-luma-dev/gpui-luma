@@ -40,7 +40,7 @@ mod control;
 mod item_template;
 mod model;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::{Selector, SelectorEvent};
 

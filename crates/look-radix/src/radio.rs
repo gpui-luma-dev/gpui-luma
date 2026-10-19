@@ -367,3 +367,24 @@ mod tests {
         assert_eq!(scale.dot_size, 6.4);
     }
 }
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_radio_stylesheet() -> gpui_luma::theme::stylesheet::RadioStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    RadioStylesheet {
+        geometry: RadioGeometryStylesheet { gap: Some(8.0), ..Default::default() },
+        sizes: [("1", 14.0, 5.6), ("2", 16.0, 6.4), ("3", 20.0, 8.0)]
+            .into_iter()
+            .map(|(key, indicator, dot)| {
+                (
+                    key.into(),
+                    RadioGeometryStylesheet {
+                        indicator_size: Some(indicator),
+                        dot_size: Some(dot),
+                        ..Default::default()
+                    },
+                )
+            })
+            .collect(),
+    }
+}

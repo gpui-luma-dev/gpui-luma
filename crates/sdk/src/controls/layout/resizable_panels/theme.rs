@@ -80,3 +80,43 @@ impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
         }
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    ResizablePanelsStylesheet,
+    ResizablePanelsGeometryStylesheet,
+    ResizablePanelsGeometry,
+    ResolvedResizablePanelsGeometry,
+    "resizable_panels",
+    [lane_width, hit_target, grip_cross_axis, grip_main_axis, grip_radius, border_width, divider_width],
+    unit[disabled_opacity]
+);
+
+impl ResizablePanelsStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: ResizablePanelsGeometryStylesheet {
+                border_width: Some(1.0),
+                divider_width: Some(1.0),
+                grip_radius: Some(8.0),
+                disabled_opacity: Some(0.45),
+                ..Default::default()
+            },
+            sizes: [("sm", 8.0, 12.0, 4.0, 36.0), ("md", 12.0, 14.0, 6.0, 40.0), ("lg", 18.0, 20.0, 8.0, 44.0)]
+                .into_iter()
+                .map(|(key, lane, hit, cross, main)| {
+                    (
+                        key.into(),
+                        ResizablePanelsGeometryStylesheet {
+                            lane_width: Some(lane),
+                            hit_target: Some(hit),
+                            grip_cross_axis: Some(cross),
+                            grip_main_axis: Some(main),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}

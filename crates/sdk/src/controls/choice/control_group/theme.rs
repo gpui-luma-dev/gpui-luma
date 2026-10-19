@@ -165,3 +165,31 @@ impl ControlGroupTheme for DefaultControlGroupTheme {
         }
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    ControlGroupStylesheet,
+    ControlGroupGeometryStylesheet,
+    ControlGroupGeometry,
+    ResolvedControlGroupGeometry,
+    "control_group",
+    [padding_x, padding_y, gap, radius, vertical_gap, border_width],
+    unit[disabled_opacity]
+);
+
+impl ControlGroupStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: ControlGroupGeometryStylesheet {
+                vertical_gap: Some(8.0),
+                border_width: Some(1.0),
+                disabled_opacity: Some(0.56),
+                padding_x: Some(6.0),
+                padding_y: Some(4.0),
+                gap: Some(6.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}

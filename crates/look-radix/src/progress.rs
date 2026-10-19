@@ -251,3 +251,17 @@ mod tests {
         }
     }
 }
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_progress_stylesheet() -> gpui_luma::theme::stylesheet::ProgressStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    ProgressStylesheet {
+        sizes: [("1", 4.0), ("2", 6.0), ("3", 8.0)]
+            .into_iter()
+            .map(|(key, height)| {
+                (key.into(), ProgressGeometryStylesheet { track_height: Some(height), ..Default::default() })
+            })
+            .collect(),
+        ..Default::default()
+    }
+}

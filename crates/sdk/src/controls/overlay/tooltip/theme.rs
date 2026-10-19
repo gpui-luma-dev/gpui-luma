@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use std::sync::Arc;
 use gpui::{BoxShadow, Hsla, SharedString};
 use crate::theme::ThemeTokens;
@@ -131,4 +133,58 @@ pub struct TooltipRenderModel {
     pub text_size: f32,
     pub line_height: f32,
     pub shadow: Vec<BoxShadow>,
+}
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    TooltipStylesheet,
+    TooltipGeometryStylesheet,
+    TooltipGeometry,
+    ResolvedTooltipGeometry,
+    "tooltip",
+    [
+        target_gap,
+        window_margin,
+        pointer_size,
+        pointer_inset,
+        padding,
+        padding_y,
+        max_width,
+        font_size,
+        line_height,
+        shortcut_gap,
+        shortcut_font_size
+    ],
+    unit[shortcut_opacity]
+);
+
+impl TooltipStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: TooltipGeometryStylesheet {
+                target_gap: Some(10.0),
+                window_margin: Some(8.0),
+                pointer_size: Some(6.0),
+                pointer_inset: Some(12.0),
+                shortcut_gap: Some(16.0),
+                shortcut_font_size: Some(12.0),
+                shortcut_opacity: Some(0.65),
+                padding: Some(12.0),
+                padding_y: Some(8.0),
+                max_width: Some(260.0),
+                font_size: Some(14.0),
+                line_height: Some(20.0),
+            },
+            sizes: HashMap::from([(
+                "compact".into(),
+                TooltipGeometryStylesheet {
+                    padding: Some(8.0),
+                    padding_y: Some(4.0),
+                    font_size: Some(12.0),
+                    line_height: Some(16.0),
+                    ..Default::default()
+                },
+            )]),
+        }
+    }
 }

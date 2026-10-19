@@ -220,3 +220,15 @@ mod tests {
         assert_eq!(normal.resolve_style().padding, 12.0);
     }
 }
+
+/// Native common geometry owned by this control.
+pub(crate) fn native_card_stylesheet() -> gpui_luma::theme::stylesheet::CardStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    CardStylesheet {
+        sizes: [("1", 12.0), ("2", 16.0), ("3", 24.0)]
+            .into_iter()
+            .map(|(key, padding)| (key.into(), CardGeometryStylesheet { padding: Some(padding), ..Default::default() }))
+            .collect(),
+        ..Default::default()
+    }
+}

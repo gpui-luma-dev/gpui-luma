@@ -101,3 +101,43 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
         self.tokens.metrics
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    ScrollbarStylesheet,
+    ScrollbarGeometryStylesheet,
+    ScrollbarGeometry,
+    ResolvedScrollbarGeometry,
+    "scrollbar",
+    [thickness, track_thickness, thumb_thickness, min_thumb_length, length_h, length_v],
+    unit[disabled_opacity, thumb_fraction]
+);
+
+impl ScrollbarStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: ScrollbarGeometryStylesheet {
+                thumb_fraction: Some(0.25),
+                disabled_opacity: Some(0.56),
+                ..Default::default()
+            },
+            sizes: [("sm", 10.0, 3.0, 6.0, 24.0), ("md", 12.0, 4.0, 8.0, 28.0), ("lg", 14.0, 5.0, 10.0, 32.0)]
+                .into_iter()
+                .map(|(key, thickness, track, thumb, min)| {
+                    (
+                        key.into(),
+                        ScrollbarGeometryStylesheet {
+                            thickness: Some(thickness),
+                            track_thickness: Some(track),
+                            thumb_thickness: Some(thumb),
+                            min_thumb_length: Some(min),
+                            length_h: Some(260.0),
+                            length_v: Some(180.0),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}

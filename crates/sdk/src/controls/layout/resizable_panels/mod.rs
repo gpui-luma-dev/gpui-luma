@@ -3,7 +3,7 @@ mod macros;
 mod math;
 mod model;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::{ResizablePanels, ResizablePanelsEvent, ResizablePanelsHandleDrag};
 pub use model::{

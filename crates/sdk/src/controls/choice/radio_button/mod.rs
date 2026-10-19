@@ -3,7 +3,7 @@ crate::motion_profile!(RadioMotion => radio {
 });
 
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use template::{ThemedRadioButtonTemplate, default_template as default_radio_button_template};
 pub use theme::{

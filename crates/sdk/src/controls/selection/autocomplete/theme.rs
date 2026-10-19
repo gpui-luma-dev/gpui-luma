@@ -92,3 +92,41 @@ mod stylesheet_tests {
         }
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    AutocompleteStylesheet,
+    AutocompleteGeometryStylesheet,
+    AutocompleteGeometry,
+    ResolvedAutocompleteGeometry,
+    "autocomplete",
+    [
+        gap,
+        status_gap,
+        clear_inset,
+        clear_width,
+        clear_icon_size,
+        status_font_size,
+        status_line_height,
+        trigger_width,
+        popup_extra_width
+    ]
+);
+
+impl AutocompleteStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: AutocompleteGeometryStylesheet {
+                gap: Some(10.0),
+                status_gap: Some(10.0),
+                clear_inset: Some(10.0),
+                clear_width: Some(18.0),
+                clear_icon_size: Some(12.0),
+                trigger_width: Some(240.0),
+                popup_extra_width: Some(24.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}

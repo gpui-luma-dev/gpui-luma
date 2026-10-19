@@ -52,7 +52,7 @@
 mod model;
 mod control;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use model::{TooltipSettings, Tooltip, TooltipPlacement, TooltipDismissal, TooltipEvent};
 pub use template::{TooltipTemplate, bubble};

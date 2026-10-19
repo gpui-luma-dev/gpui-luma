@@ -1,7 +1,7 @@
 mod control;
 mod model;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::{DockSplitter, DockSplitterDrag, DockSplitterEvent};
 pub use model::{

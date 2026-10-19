@@ -95,3 +95,61 @@ impl StepperTheme for DefaultStepperTheme {
         }
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    StepperStylesheet,
+    StepperGeometryStylesheet,
+    StepperGeometry,
+    ResolvedStepperGeometry,
+    "stepper",
+    [
+        step_badge_size,
+        track_thickness,
+        side_label_width,
+        label_width,
+        content_gap,
+        label_gap,
+        side_label_gap,
+        content_height,
+        font_size,
+        line_height,
+        glyph_scale,
+        number_scale,
+        border_width
+    ]
+);
+
+impl StepperStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: StepperGeometryStylesheet {
+                side_label_width: Some(120.0),
+                label_width: Some(48.0),
+                content_gap: Some(16.0),
+                label_gap: Some(6.0),
+                side_label_gap: Some(10.0),
+                content_height: Some(120.0),
+                font_size: Some(12.0),
+                line_height: Some(16.0),
+                glyph_scale: Some(0.45),
+                number_scale: Some(0.38),
+                border_width: Some(1.0),
+                ..Default::default()
+            },
+            sizes: [("sm", 24.0, 2.0), ("md", 32.0, 2.0), ("lg", 40.0, 3.0)]
+                .into_iter()
+                .map(|(key, badge, track)| {
+                    (
+                        key.into(),
+                        StepperGeometryStylesheet {
+                            step_badge_size: Some(badge),
+                            track_thickness: Some(track),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}

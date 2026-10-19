@@ -228,3 +228,47 @@ mod tests {
         assert_eq!(TreeViewScale::compute(ControlSize::Lg, &metrics, 1.0).chevron_size, 16.0);
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    TreeViewStylesheet,
+    TreeViewGeometryStylesheet,
+    TreeViewGeometry,
+    ResolvedTreeViewGeometry,
+    "tree_view",
+    [
+        row_height,
+        row_height_scale,
+        base_padding_x,
+        indentation_width,
+        inner_gap,
+        radius,
+        icon_size,
+        chevron_size,
+        chevron_inset,
+        preview_padding_x,
+        preview_padding_y, drag_marker_width, drag_insert_width, scrollbar_width
+    ],
+    unit[disabled_opacity, drag_opacity]
+);
+
+impl TreeViewStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: TreeViewGeometryStylesheet {
+                drag_marker_width: Some(1.0),
+                drag_insert_width: Some(2.0),
+                drag_opacity: Some(0.12),
+                scrollbar_width: Some(12.0),
+                disabled_opacity: Some(0.4),
+                preview_padding_x: Some(12.0),
+                preview_padding_y: Some(4.0),
+                row_height_scale: Some(0.85),
+                indentation_width: Some(16.0),
+                chevron_inset: Some(2.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}

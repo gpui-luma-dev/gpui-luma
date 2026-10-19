@@ -181,3 +181,43 @@ impl AccordionTheme for DefaultAccordionTheme {
         AccordionScale::compute_with_stylesheet(size, &self.tokens.metrics, scale_factor, &self.tokens.stylesheet)
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    AccordionStylesheet,
+    AccordionGeometryStylesheet,
+    AccordionGeometry,
+    ResolvedAccordionGeometry,
+    "accordion",
+    [
+        trigger_height,
+        padding_x,
+        padding_y,
+        content_padding_y,
+        content_padding_scale,
+        radius,
+        item_gap,
+        inner_gap,
+        icon_size,
+        chevron_size,
+        drag_handle_padding
+    ],
+    unit[disabled_opacity]
+);
+
+impl AccordionStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: AccordionGeometryStylesheet {
+                drag_handle_padding: Some(2.0),
+                disabled_opacity: Some(0.56),
+                content_padding_scale: Some(1.5),
+                item_gap: Some(0.0),
+                icon_size: Some(16.0),
+                chevron_size: Some(14.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}

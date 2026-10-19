@@ -17,3 +17,27 @@ pub use template::{
 };
 
 pub use model::SlidePanelMotion;
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    SlidePanelStylesheet,
+    SlidePanelGeometryStylesheet,
+    SlidePanelGeometry,
+    ResolvedSlidePanelGeometry,
+    "slide_panel",
+    [side_width, edge_height],
+    unit[edge_max_viewport_ratio]
+);
+
+impl SlidePanelStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: SlidePanelGeometryStylesheet {
+                side_width: Some(360.0),
+                edge_height: Some(420.0),
+                edge_max_viewport_ratio: Some(0.72),
+            },
+            ..Default::default()
+        }
+    }
+}

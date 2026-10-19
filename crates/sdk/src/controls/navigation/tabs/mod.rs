@@ -118,7 +118,7 @@ mod control;
 mod indicator;
 mod model;
 mod template;
-mod theme;
+pub(crate) mod theme;
 
 pub use control::{Tabs, TabsEvent};
 pub use content::TabsContent;

@@ -1,7 +1,9 @@
 # Shared stylesheet contract
 
-The SDK authors its appearance and motion baseline in Rust, in the existing
-`theme/stylesheet` and `theme/tokens` source files. SDK-only applications need no look crate.
+The SDK authors control-specific stylesheet types, geometry defaults and resolution
+beside each control, usually in its existing `theme.rs`. Shared tokens and motion
+profiles remain under `theme`; `theme::stylesheet` assembles the complete baseline
+and re-exports the control types at their existing public paths. SDK-only applications need no look crate.
 Shadcn and Radix inherit this data and author their own differences. The bundled
 SDK palette is monochrome in both light and dark modes, including focus, status,
 data accents and shell controls. A look or application can still author colors.
@@ -39,6 +41,18 @@ Clone the cached baseline for independent edits; `.with(|sheet| ...)` edits that
 copy. Direct field mutation does not clear inherited size-specific fields.
 The parsed common schema rejects unknown typed fields. Root sections belonging
 to a look are left for that look's parser.
+
+## Source organization
+
+Shadcn keeps each control's rule types, matching and native definitions in its
+existing control file; `stylesheet/config/mod.rs` assembles the configuration and
+retains shared rule helpers. Radix keeps common geometry defaults beside its
+control adapters. `look.rs` assembles those defaults, and its button rules remain
+in the adjacent `button_recipes.rs` module.
+
+Shared tokens, parsing, inheritance and cross-control assembly stay centralized.
+Moving a definition does not change its public import path, semantic property ID,
+precedence or snapshot behavior.
 
 ## Inheritance, validation and lifetime
 

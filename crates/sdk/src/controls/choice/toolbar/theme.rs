@@ -90,3 +90,12 @@ impl ToolbarTheme for DefaultToolbarTheme {
         look
     }
 }
+
+crate::theme::stylesheet::geometry::geometry_family!(
+    ToolbarStylesheet,
+    ToolbarGeometryStylesheet,
+    ToolbarGeometry,
+    ResolvedToolbarGeometry,
+    "toolbar",
+    [padding_x, padding_y, gap, border_width, separator_width]
+);
