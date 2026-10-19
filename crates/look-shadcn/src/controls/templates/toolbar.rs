@@ -24,8 +24,8 @@ impl ToolbarTheme for ShadcnToolbarTheme {
             },
         );
         ToolbarLook {
-            border_width: chrome.border_width.value_px,
-            separator_width: chrome.separator_width.value_px,
+            border_width: chrome.border_width,
+            separator_width: chrome.separator_width,
             background: colors.background.hsla(),
             border: colors.border.hsla(),
             separator: colors.separator.hsla(),

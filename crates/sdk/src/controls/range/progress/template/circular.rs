@@ -44,7 +44,7 @@ impl ProgressTemplate for CircularProgressTemplate {
         let stroke_width = px(look.stroke_width);
         let track_color = look.track_color;
         let progress_color = look.progress_color;
-        let sweep_fraction = look.geometry.indeterminate_fraction.value_px;
+        let sweep_fraction = look.geometry.indeterminate_fraction;
 
         let progress_canvas = canvas(
             |_, _, _| {},

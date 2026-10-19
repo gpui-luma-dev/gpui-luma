@@ -19,17 +19,17 @@ impl TooltipTheme for ShadcnTooltipTheme {
         );
         TooltipLook {
             placement: (&geometry).into(),
-            shortcut_gap: geometry.shortcut_gap.value_px,
-            shortcut_font_size: geometry.shortcut_font_size.value_px,
-            shortcut_opacity: geometry.shortcut_opacity.value_px,
+            shortcut_gap: geometry.shortcut_gap,
+            shortcut_font_size: geometry.shortcut_font_size,
+            shortcut_opacity: geometry.shortcut_opacity,
             background: self.0.color(ShadcnToken::Foreground),
             foreground: self.0.color(ShadcnToken::Background),
-            padding: geometry.padding.value_px,
-            padding_y: geometry.padding_y.value_px,
+            padding: geometry.padding,
+            padding_y: geometry.padding_y,
             radius: self.0.radius(ShadcnRadius::Md),
-            max_width: geometry.max_width.value_px,
-            text_size: geometry.font_size.value_px,
-            line_height: geometry.line_height.value_px,
+            max_width: geometry.max_width,
+            text_size: geometry.font_size,
+            line_height: geometry.line_height,
             shadow: Vec::new(),
         }
     }

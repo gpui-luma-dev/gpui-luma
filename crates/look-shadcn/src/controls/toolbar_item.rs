@@ -5,15 +5,27 @@
 
 use std::sync::Arc;
 
-use gpui::{Context, Focusable, Pixels, SharedString, div, px, prelude::*};
+use gpui::Context;
+use gpui::Focusable;
+use gpui::Pixels;
+use gpui::SharedString;
+use gpui::div;
+use gpui::px;
+use gpui::prelude::*;
 use gpui_luma::controls::button::ControlIcon;
 use gpui_luma::infra::menu_item::MenuItem;
 use gpui_luma::controls::selector::SelectorItem;
-use gpui_luma::controls::toolbar::{ToolbarItem, ToolbarItemSource, horizontal_arrow_policy};
+use gpui_luma::controls::toolbar::ToolbarItem;
+use gpui_luma::controls::toolbar::ToolbarItemSource;
+use gpui_luma::controls::toolbar::horizontal_arrow_policy;
 use gpui_luma::focus::EscapeFocus;
 
 use crate::look::ShadcnLook;
-use crate::{Button, PopupMenu, Selector, TextField, Toggle};
+use crate::Button;
+use crate::PopupMenu;
+use crate::Selector;
+use crate::TextField;
+use crate::Toggle;
 
 /// Default fixed width for toolbar-hosted search/text fields.
 const DEFAULT_TOOLBAR_TEXTFIELD_WIDTH: f32 = 140.0;
@@ -271,4 +283,47 @@ pub(crate) fn native_toolbar_stylesheet() -> gpui_luma::theme::stylesheet::Toolb
         geometry: ToolbarGeometryStylesheet { padding_x: Some(6.0), padding_y: Some(4.0), ..Default::default() },
         ..Default::default()
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct ToolbarMetricTable {
+    pub radius: crate::ResolvedMetric,
+    pub padding_x: crate::ResolvedMetric,
+    pub padding_y: crate::ResolvedMetric,
+    pub gap: crate::ResolvedMetric,
+    pub separator_height: crate::ResolvedMetric,
+}
+
+pub fn resolve_toolbar_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> ToolbarMetricTable {
+    use crate::tables::metrics::helpers::{control_size_key, derived_metric, scaffold_control_metric};
+
+    let ctx = crate::LookContext::new(mode, theme_mode, Default::default());
+    let metrics = ctx.metrics();
+    let control = metrics.for_size(size);
+    let size_key = control_size_key(size);
+
+    let mut table = ToolbarMetricTable {
+        radius: derived_metric("toolbar radius = radius.md", metrics.radius.md),
+        padding_x: derived_metric("toolbar padding x = 6px", 6.0),
+        padding_y: derived_metric("toolbar padding y = 4px", 4.0),
+        gap: derived_metric(format!("{size_key} toolbar gap = control gap"), control.gap),
+        separator_height: scaffold_control_metric(size_key, "height", control.height),
+    };
+    let geometry = mode.stylesheet().common.toolbar.inspect_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::ToolbarGeometry {
+            padding_x: table.padding_x.value_px,
+            padding_y: table.padding_y.value_px,
+            gap: table.gap.value_px,
+            ..Default::default()
+        },
+    );
+    table.padding_x = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_x, table.padding_x);
+    table.padding_y = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_y, table.padding_y);
+    table.gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.gap, table.gap);
+    table
 }

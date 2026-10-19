@@ -166,25 +166,20 @@ impl SplitViewTemplate for ThemedSplitViewTemplate {
                     .id("expand-separator")
                     .absolute()
                     .left(collapsed_expand_separator_left(model.effective_sidebar_width))
-                    .top(px(look.geometry.expand_inset_y.value_px))
-                    .bottom(px(look.geometry.expand_inset_y.value_px))
-                    .w(px(look.geometry.hitbox_width.value_px))
+                    .top(px(look.geometry.expand_inset_y))
+                    .bottom(px(look.geometry.expand_inset_y))
+                    .w(px(look.geometry.hitbox_width))
                     .on_hover(separator_hover)
                     .on_click(separator_click)
                     .cursor_e_resize()
-                    .child(render_separator_cue(
-                        look.geometry.expand_cue_left.value_px,
-                        cue_width,
-                        cue_color,
-                        &look.geometry,
-                    )),
+                    .child(render_separator_cue(look.geometry.expand_cue_left, cue_width, cue_color, &look.geometry)),
             )
         } else {
             let mut separator = div()
                 .id("separator")
                 .relative()
                 .h_full()
-                .w(px(look.geometry.hitbox_width.value_px))
+                .w(px(look.geometry.hitbox_width))
                 .flex_none()
                 .on_hover(separator_hover)
                 .on_click(separator_click)
@@ -192,7 +187,7 @@ impl SplitViewTemplate for ThemedSplitViewTemplate {
                 .when(resize_enabled, |this| this.cursor_col_resize())
                 .when(!resize_enabled, |this| this.cursor_pointer())
                 .child(render_separator_cue(
-                    centered_separator_cue_left(cue_width, look.geometry.hitbox_width.value_px),
+                    centered_separator_cue_left(cue_width, look.geometry.hitbox_width),
                     cue_width,
                     cue_color,
                     &look.geometry,
@@ -232,11 +227,11 @@ impl SplitViewTemplate for ThemedSplitViewTemplate {
     }
 }
 
-fn separator_cue_width(hovered: bool, geometry: &crate::theme::stylesheet::ResolvedSplitViewGeometry) -> f32 {
+fn separator_cue_width(hovered: bool, geometry: &crate::theme::stylesheet::SplitViewGeometry) -> f32 {
     if hovered {
-        geometry.cue_hovered_width.value_px
+        geometry.cue_hovered_width
     } else {
-        geometry.cue_width.value_px
+        geometry.cue_width
     }
 }
 
@@ -252,15 +247,15 @@ fn render_separator_cue(
     left: f32,
     width: f32,
     color: Option<Hsla>,
-    geometry: &crate::theme::stylesheet::ResolvedSplitViewGeometry,
+    geometry: &crate::theme::stylesheet::SplitViewGeometry,
 ) -> Div {
     let mut cue = div()
         .absolute()
         .left(px(left))
-        .top(px(geometry.cue_inset_y.value_px))
-        .bottom(px(geometry.cue_inset_y.value_px))
+        .top(px(geometry.cue_inset_y))
+        .bottom(px(geometry.cue_inset_y))
         .w(px(width))
-        .rounded(px(geometry.cue_radius.value_px));
+        .rounded(px(geometry.cue_radius));
 
     if let Some(color) = color {
         cue = cue.bg(color);

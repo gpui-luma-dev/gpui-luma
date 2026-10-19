@@ -74,7 +74,6 @@ impl CheckboxSize {
             .checkbox
             .resolve_geometry(self.as_str(), Default::default())
             .indicator_size
-            .value_px
     }
 
     /// Checkmark glyph box (`--checkbox-indicator-size`).
@@ -83,7 +82,6 @@ impl CheckboxSize {
             .checkbox
             .resolve_geometry(self.as_str(), Default::default())
             .glyph_size
-            .value_px
     }
 
     /// Multiplier applied to `--radius-1` for this size.
@@ -129,18 +127,18 @@ fn checkbox_scale_with_stylesheet(
             ..Default::default()
         },
     );
-    let box_size = geometry.indicator_size.value_px;
-    let glyph = geometry.glyph_size.value_px;
-    let indicator_radius = geometry.indicator_radius.value_px;
+    let box_size = geometry.indicator_size;
+    let glyph = geometry.glyph_size;
+    let indicator_radius = geometry.indicator_radius;
     CheckboxScale {
-        disabled_opacity: geometry.disabled_opacity.value_px,
+        disabled_opacity: geometry.disabled_opacity,
         control_radius: indicator_radius,
-        control_padding_x: geometry.control_padding_x.value_px,
-        control_padding_y: geometry.control_padding_y.value_px,
+        control_padding_x: geometry.control_padding_x,
+        control_padding_y: geometry.control_padding_y,
         indicator_size: box_size,
         indicator_radius,
         height: box_size,
-        gap: geometry.gap.value_px,
+        gap: geometry.gap,
         label_baseline_shift: 0.0,
         glyph_size: glyph,
     }

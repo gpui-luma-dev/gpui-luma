@@ -69,20 +69,20 @@ impl OverlayWindowTheme for OverlayWindowThemeAdapter {
                 radius: resolved.radius,
             },
         );
-        resolved.viewport_padding = geometry.viewport_padding.value_px;
-        resolved.window_margin = geometry.window_margin.value_px;
-        resolved.drag_header_height = geometry.drag_header_height.value_px;
-        resolved.border_width = geometry.border_width.value_px;
-        resolved.radius = geometry.radius.value_px;
-        resolved.padding = geometry.padding.value_px;
-        resolved.min_width = geometry.min_width.value_px;
-        resolved.max_width = geometry.max_width.value_px;
-        resolved.estimated_height = geometry.estimated_height.value_px;
+        resolved.viewport_padding = geometry.viewport_padding;
+        resolved.window_margin = geometry.window_margin;
+        resolved.drag_header_height = geometry.drag_header_height;
+        resolved.border_width = geometry.border_width;
+        resolved.radius = geometry.radius;
+        resolved.padding = geometry.padding;
+        resolved.min_width = geometry.min_width;
+        resolved.max_width = geometry.max_width;
+        resolved.estimated_height = geometry.estimated_height;
         if mode == OverlayWindowMode::Modal {
-            resolved.backdrop_background.a = geometry.backdrop_opacity.value_px;
+            resolved.backdrop_background.a = geometry.backdrop_opacity;
         }
-        resolved.body.size = geometry.font_size.value_px;
-        resolved.body.line_height = geometry.line_height.value_px;
+        resolved.body.size = geometry.font_size;
+        resolved.body.line_height = geometry.line_height;
         resolved
     }
 }

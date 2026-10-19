@@ -8,19 +8,27 @@
 //! | Disabled label    | `muted-foreground`            |
 //! | Disabled list bg  | `muted`                       |
 
-use crate::stylesheet::config::{EnabledColorRule, find_enabled_color_rule, matches_optional_bool, matches_optional_layer};
+use crate::stylesheet::config::EnabledColorRule;
+use crate::stylesheet::config::find_enabled_color_rule;
+use crate::stylesheet::config::matches_optional_bool;
+use crate::stylesheet::config::matches_optional_layer;
 use serde::Deserialize;
 
-use gpui_luma::controls::tabs::{TabsItemLook, TabsListLook};
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState};
+use gpui_luma::controls::tabs::TabsItemLook;
+use gpui_luma::controls::tabs::TabsListLook;
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionState;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{
-    StylesheetConfig, find_tabs_item_color_rule, find_tabs_list_color_rule, resolve_tabs_item_color_rule,
-    resolve_tabs_list_color_rule,
-};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_tabs_item_color_rule;
+use crate::stylesheet::find_tabs_list_color_rule;
+use crate::stylesheet::resolve_tabs_item_color_rule;
+use crate::stylesheet::resolve_tabs_list_color_rule;
 
 #[derive(Clone, Debug)]
 pub struct TabsListColorTable {
@@ -385,5 +393,105 @@ pub(crate) fn native_tabs_stylesheet() -> gpui_luma::theme::stylesheet::TabsStyl
     TabsStylesheet {
         geometry: TabsGeometryStylesheet { indicator_height: Some(3.0), ..Default::default() },
         ..Default::default()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TabsMetricTable {
+    pub list_radius: crate::ResolvedMetric,
+    pub list_gap: crate::ResolvedMetric,
+    pub list_padding: crate::ResolvedMetric,
+    pub item_padding_x: crate::ResolvedMetric,
+    pub item_height: crate::ResolvedMetric,
+    pub item_radius: crate::ResolvedMetric,
+    pub indicator_height: crate::ResolvedMetric,
+}
+
+pub(crate) fn resolve_common_tabs_geometry(
+    mode: &crate::ShadcnModeTokens,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    size: gpui_luma::theme::ControlSize,
+) -> gpui_luma::theme::stylesheet::ResolvedTabsGeometry {
+    use gpui_luma::theme::stylesheet::ResolvedTabsGeometry;
+    use crate::tables::metrics::helpers::spacing_control_metric;
+    let defaults = gpui_luma::controls::tabs::default_tabs_theme();
+    let default_list = defaults.resolve_list(true, size);
+    let default_item = defaults.resolve_item(true, gpui_luma::theme::InteractionState::default(), size);
+    stylesheet.common.tabs.inspect_geometry(
+        "default",
+        ResolvedTabsGeometry {
+            list_gap: {
+                let value = spacing_control_metric(
+                    &mode.catalog,
+                    size,
+                    crate::catalog::SpacingField::Gap,
+                    mode.metrics.gap(size),
+                );
+                let source = match value.source {
+                    crate::MetricSource::Derived { note } => {
+                        gpui_luma::theme::provenance::MetricSource::Derived { note }
+                    }
+                    crate::MetricSource::Scaffold { path } => {
+                        gpui_luma::theme::provenance::MetricSource::Scaffold { path }
+                    }
+                    crate::MetricSource::CssVar { token } => {
+                        gpui_luma::theme::provenance::MetricSource::Authored { key: token }
+                    }
+                    crate::MetricSource::Constant { label } => {
+                        gpui_luma::theme::provenance::MetricSource::Constant { label }
+                    }
+                };
+                gpui_luma::theme::provenance::ResolvedMetric::new(value.value_px, source)
+            },
+            list_padding: gpui_luma::theme::provenance::ResolvedMetric::constant(
+                default_list.padding,
+                "SDK tabs list padding",
+            ),
+            indicator_height: gpui_luma::theme::provenance::ResolvedMetric::constant(
+                default_item.indicator_height,
+                "SDK tabs indicator height",
+            ),
+        },
+    )
+}
+
+pub fn resolve_tabs_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> TabsMetricTable {
+    resolve_tabs_metrics_with_stylesheet(mode, mode.stylesheet(), theme_mode, size)
+}
+
+/// Inspect the same selected stylesheet that the tabs theme uses for painting.
+pub fn resolve_tabs_metrics_with_stylesheet(
+    mode: &crate::ShadcnModeTokens,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> TabsMetricTable {
+    use crate::tables::metrics::helpers::{derived_metric, radius_metric, spacing_control_metric};
+    use crate::catalog::SpacingField;
+
+    let ctx = crate::LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let catalog = ctx.catalog();
+    let list = crate::controls::tabs::tabs_list_look_with_stylesheet(mode, stylesheet, true, size);
+    let item = crate::controls::tabs::tabs_item_look_with_stylesheet(
+        mode,
+        stylesheet,
+        true,
+        gpui_luma::theme::InteractionState::default(),
+        size,
+    );
+    let geometry = resolve_common_tabs_geometry(mode, stylesheet, size);
+
+    TabsMetricTable {
+        list_radius: radius_metric(catalog, size, list.radius),
+        list_gap: crate::tables::metrics::helpers::inspect_shared_metric(geometry.list_gap),
+        list_padding: crate::tables::metrics::helpers::inspect_shared_metric(geometry.list_padding),
+        item_padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, item.padding_x),
+        item_height: derived_metric("label line_height + spacing.s2", item.height),
+        item_radius: radius_metric(catalog, size, item.radius),
+        indicator_height: crate::tables::metrics::helpers::inspect_shared_metric(geometry.indicator_height),
     }
 }

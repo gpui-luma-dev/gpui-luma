@@ -6,21 +6,27 @@
 //! | Checked  | `{style}`       | `{style}-foreground`   |
 //! | Disabled | `muted`         | `muted-foreground`     |
 
-use crate::stylesheet::config::{LayeredElevationRule, matches_optional_bool};
+use crate::stylesheet::config::LayeredElevationRule;
+use crate::stylesheet::config::matches_optional_bool;
 use serde::Deserialize;
 
 use gpui_luma::controls::checkbox::CheckboxPalette;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::ThemeMode;
 
 use crate::look_context::LookContext;
-use crate::provenance::{LookResolver, ResolvedColor};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
 use super::ShadcnButtonStyle;
 use super::choice_indicator::choice_indicator_color_layer;
 use crate::mode::ShadcnModeTokens;
 use crate::shadow::parse_shadow_token;
-use crate::stylesheet::{
-    StylesheetConfig, find_checkbox_color_rule, resolve_checkbox_color_rule, resolve_layered_elevation_shadow,
-};
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_checkbox_color_rule;
+use crate::stylesheet::resolve_checkbox_color_rule;
+use crate::stylesheet::resolve_layered_elevation_shadow;
 
 #[derive(Clone, Debug)]
 pub struct CheckboxColorTable {
@@ -196,7 +202,7 @@ pub(crate) fn checkbox_scale_with_stylesheet(
     use gpui_luma::controls::checkbox::CheckboxScale;
     use gpui_luma::theme::{snap_to_pixel, stylesheet::CheckboxGeometry};
     let mut scale = CheckboxScale::compute_with_stylesheet(size, ctx.metrics(), scale_factor, &stylesheet.common);
-    let mut geometry = stylesheet.common.checkbox.resolve_geometry(
+    let mut geometry = stylesheet.common.checkbox.inspect_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
         CheckboxGeometry {
             indicator_size: scale.indicator_size,
@@ -416,4 +422,69 @@ pub fn native_shadcn_checkbox() -> CheckboxStylesheet {
 /// Install native Shadcn checkbox overrides over the SDK baseline.
 pub fn define_shadcn_checkbox(config: &mut StylesheetConfig) {
     config.checkbox = native_shadcn_checkbox();
+}
+
+#[derive(Clone, Debug)]
+pub struct CheckboxMetricTable {
+    pub height: crate::ResolvedMetric,
+    pub gap: crate::ResolvedMetric,
+    pub indicator_size: crate::ResolvedMetric,
+    pub indicator_radius: crate::ResolvedMetric,
+    pub glyph_size: crate::ResolvedMetric,
+    pub control_radius: crate::ResolvedMetric,
+    pub border_width: crate::ResolvedMetric,
+    pub focus_ring_width: crate::ResolvedMetric,
+    pub focus_ring_offset: crate::ResolvedMetric,
+}
+
+pub fn resolve_checkbox_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> CheckboxMetricTable {
+    resolve_checkbox_metrics_with_stylesheet(mode, mode.stylesheet(), theme_mode, size)
+}
+
+pub(crate) fn resolve_checkbox_metrics_with_stylesheet(
+    mode: &crate::ShadcnModeTokens,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> CheckboxMetricTable {
+    use crate::catalog::SpacingField;
+    use crate::tables::metrics::helpers::{
+        border_width_metric, control_size_key, derived_metric, focus_ring_offset_metric, focus_ring_width_metric,
+        radius_metric, scaffold_control_metric, spacing_control_metric,
+    };
+
+    let ctx = crate::LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let metrics = ctx.metrics();
+    let catalog = ctx.catalog();
+    let (scale, geometry) = crate::controls::checkbox::checkbox_scale_with_stylesheet(&ctx, stylesheet, size, 1.0);
+    let authored = |metric: gpui_luma::theme::provenance::ResolvedMetric, fallback: crate::ResolvedMetric| {
+        if matches!(metric.source, gpui_luma::theme::provenance::MetricSource::Constant { .. }) {
+            fallback
+        } else {
+            crate::tables::metrics::helpers::inspect_shared_metric(metric)
+        }
+    };
+    let size_key = control_size_key(size);
+
+    CheckboxMetricTable {
+        height: scaffold_control_metric(size_key, "control_height", scale.height),
+        gap: authored(geometry.gap, spacing_control_metric(catalog, size, SpacingField::Gap, scale.gap)),
+        indicator_size: authored(
+            geometry.indicator_size,
+            derived_metric(format!("{size_key} CheckboxScale.indicator_size"), scale.indicator_size),
+        ),
+        indicator_radius: derived_metric(format!("{size_key} CheckboxScale.indicator_radius"), scale.indicator_radius),
+        glyph_size: authored(
+            geometry.glyph_size,
+            derived_metric(format!("{size_key} glyph = SDK indicator − inset"), scale.glyph_size),
+        ),
+        control_radius: radius_metric(catalog, size, scale.control_radius),
+        border_width: border_width_metric(metrics),
+        focus_ring_width: focus_ring_width_metric(metrics),
+        focus_ring_offset: focus_ring_offset_metric(metrics),
+    }
 }

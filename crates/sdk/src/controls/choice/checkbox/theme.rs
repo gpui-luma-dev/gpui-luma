@@ -266,7 +266,8 @@ impl CheckboxStylesheet {
         key: impl Into<String>,
         configure: impl FnOnce(&mut CheckboxGeometryStylesheet),
     ) -> &mut Self {
-        let entry = self.sizes.entry(key.into()).or_default();
+        let key = key.into();
+        let entry = self.sizes.get_or_default(key.as_str());
         configure(entry);
         self
     }

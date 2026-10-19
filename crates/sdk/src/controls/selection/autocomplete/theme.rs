@@ -61,8 +61,8 @@ pub(crate) fn default_autocomplete_look(tokens: &ThemeTokens, size: ControlSize)
             ..Default::default()
         },
     );
-    look.status_typography.size = geometry.status_font_size.value_px;
-    look.status_typography.line_height = geometry.status_line_height.value_px;
+    look.status_typography.size = geometry.status_font_size;
+    look.status_typography.line_height = geometry.status_line_height;
     look
 }
 

@@ -7,21 +7,27 @@
 //! | Hover | `border` (no change) |
 //! | Press | `border` (darkened)  |
 
-use crate::stylesheet::config::{control_size_key, matches_optional_bool, matches_optional_layer, matches_optional_str};
+use crate::stylesheet::config::control_size_key;
+use crate::stylesheet::config::matches_optional_bool;
+use crate::stylesheet::config::matches_optional_layer;
+use crate::stylesheet::config::matches_optional_str;
 use serde::Deserialize;
 use std::collections::HashMap;
 
 use gpui_luma::controls::scrollbar::ScrollbarLook;
 use gpui_luma::controls::scrollbar::ScrollbarOrientation;
 use gpui_luma::controls::scrollbar::ScrollbarStyle;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState};
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionState;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{
-    StylesheetConfig, find_scrollbar_color_rule, resolve_scrollbar_color_rule, resolve_scrollbar_metrics,
-};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_scrollbar_color_rule;
+use crate::stylesheet::resolve_scrollbar_color_rule;
 
 #[derive(Clone, Debug)]
 pub struct ScrollbarColorTable {
@@ -79,29 +85,23 @@ pub fn scrollbar_look(
         .scrollbar
         .resolve_geometry(size.stylesheet_key(), Default::default());
     let length = match orientation {
-        ScrollbarOrientation::Horizontal => baseline.length_h.value_px,
-        ScrollbarOrientation::Vertical => baseline.length_v.value_px,
+        ScrollbarOrientation::Horizontal => baseline.length_h,
+        ScrollbarOrientation::Vertical => baseline.length_v,
     };
     let stylesheet = mode.stylesheet();
     let (thickness, track_thickness, thumb_thickness, min_thumb_length) = stylesheet
         .scrollbar
         .metrics_for_size(size)
-        .map(resolve_scrollbar_metrics)
+        .map(crate::stylesheet::resolve_scrollbar_metrics)
         .map(|metrics| (metrics.thickness, metrics.track_thickness, metrics.thumb_thickness, metrics.min_thumb_length))
-        .unwrap_or((
-            baseline.thickness.value_px,
-            baseline.track_thickness.value_px,
-            baseline.thumb_thickness.value_px,
-            baseline.min_thumb_length.value_px,
-        ));
+        .unwrap_or((baseline.thickness, baseline.track_thickness, baseline.thumb_thickness, baseline.min_thumb_length));
     let mut look = ScrollbarLook {
         disabled_opacity: mode
             .stylesheet()
             .common
             .scrollbar
             .resolve_geometry(size.stylesheet_key(), Default::default())
-            .disabled_opacity
-            .value_px,
+            .disabled_opacity,
         track_background: colors.track_background.hsla(),
         thumb_background: colors.thumb_background.hsla(),
         length,
@@ -118,18 +118,18 @@ pub fn scrollbar_look(
             track_thickness: look.track_thickness,
             thumb_thickness: look.thumb_thickness,
             min_thumb_length: look.min_thumb_length,
-            length_h: baseline.length_h.value_px,
-            length_v: baseline.length_v.value_px,
+            length_h: baseline.length_h,
+            length_v: baseline.length_v,
             ..Default::default()
         },
     );
-    look.thickness = geometry.thickness.value_px;
-    look.track_thickness = geometry.track_thickness.value_px;
-    look.thumb_thickness = geometry.thumb_thickness.value_px;
-    look.min_thumb_length = geometry.min_thumb_length.value_px;
+    look.thickness = geometry.thickness;
+    look.track_thickness = geometry.track_thickness;
+    look.thumb_thickness = geometry.thumb_thickness;
+    look.min_thumb_length = geometry.min_thumb_length;
     look.length = match orientation {
-        ScrollbarOrientation::Horizontal => geometry.length_h.value_px,
-        ScrollbarOrientation::Vertical => geometry.length_v.value_px,
+        ScrollbarOrientation::Horizontal => geometry.length_h,
+        ScrollbarOrientation::Vertical => geometry.length_v,
     };
     look
 }
@@ -341,4 +341,75 @@ pub(crate) fn native_scrollbar_stylesheet() -> gpui_luma::theme::stylesheet::Scr
             .map(|key| (key.into(), ScrollbarGeometryStylesheet::default()))
             .collect(),
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct ScrollbarMetricTable {
+    pub length: crate::ResolvedMetric,
+    pub thickness: crate::ResolvedMetric,
+    pub track_thickness: crate::ResolvedMetric,
+    pub thumb_thickness: crate::ResolvedMetric,
+    pub min_thumb_length: crate::ResolvedMetric,
+    pub radius: crate::ResolvedMetric,
+}
+
+pub fn resolve_scrollbar_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    orientation: gpui_luma::controls::scrollbar::ScrollbarOrientation,
+    style: gpui_luma::controls::scrollbar::ScrollbarStyle,
+) -> ScrollbarMetricTable {
+    resolve_scrollbar_metrics_for_size(mode, theme_mode, orientation, style, gpui_luma::theme::ControlSize::Md)
+}
+
+/// Resolve the selected look's Scrollbar dimensions and their sources for a size.
+pub fn resolve_scrollbar_metrics_for_size(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    orientation: gpui_luma::controls::scrollbar::ScrollbarOrientation,
+    style: gpui_luma::controls::scrollbar::ScrollbarStyle,
+    size: gpui_luma::theme::ControlSize,
+) -> ScrollbarMetricTable {
+    use crate::tables::metrics::helpers::{derived_metric, pill_radius_metric};
+
+    let ctx = crate::LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let look =
+        crate::paint::scrollbar_look(mode, gpui_luma::theme::InteractionState::default(), orientation, size, style);
+    let catalog = ctx.catalog();
+
+    let mut table = ScrollbarMetricTable {
+        length: derived_metric("gallery scrollbar demo length", look.length),
+        thickness: derived_metric("scrollbar chrome thickness", look.thickness),
+        track_thickness: derived_metric("track hit target", look.track_thickness),
+        thumb_thickness: derived_metric("thumb visual size", look.thumb_thickness),
+        min_thumb_length: derived_metric("minimum draggable thumb", look.min_thumb_length),
+        radius: pill_radius_metric(catalog, look.radius),
+    };
+    let geometry = mode.stylesheet().common.scrollbar.inspect_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::ScrollbarGeometry {
+            thickness: table.thickness.value_px,
+            track_thickness: table.track_thickness.value_px,
+            thumb_thickness: table.thumb_thickness.value_px,
+            min_thumb_length: table.min_thumb_length.value_px,
+            length_h: table.length.value_px,
+            length_v: table.length.value_px,
+            ..Default::default()
+        },
+    );
+    table.thickness = crate::tables::metrics::helpers::prefer_shared_metric(geometry.thickness, table.thickness);
+    table.track_thickness =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.track_thickness, table.track_thickness);
+    table.thumb_thickness =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.thumb_thickness, table.thumb_thickness);
+    table.min_thumb_length =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.min_thumb_length, table.min_thumb_length);
+    table.length = crate::tables::metrics::helpers::prefer_shared_metric(
+        match orientation {
+            gpui_luma::controls::scrollbar::ScrollbarOrientation::Horizontal => geometry.length_h,
+            gpui_luma::controls::scrollbar::ScrollbarOrientation::Vertical => geometry.length_v,
+        },
+        table.length,
+    );
+    table
 }

@@ -58,15 +58,14 @@ impl AvatarSize {
             .avatar
             .resolve_geometry(self.as_str(), Default::default())
             .diameter
-            .value_px
     }
     fn font_size(self, two_letters: bool) -> f32 {
         let geometry =
             crate::look::embedded_common_stylesheet().avatar.resolve_geometry(self.as_str(), Default::default());
         if two_letters {
-            geometry.two_letter_font_size.value_px
+            geometry.two_letter_font_size
         } else {
-            geometry.font_size.value_px
+            geometry.font_size
         }
     }
     pub fn corner_radius(self, radius: Radius) -> f32 {
@@ -186,21 +185,20 @@ impl Avatar {
                 two_letter_font_size: self.size.font_size(true),
             },
         );
-        let icon_size =
-            if matches!(geometry.icon_size.source, gpui_luma::theme::provenance::MetricSource::Constant { .. }) {
-                geometry.diameter.value_px * 0.6
-            } else {
-                geometry.icon_size.value_px
-            };
-        let font_size = if matches!(&self.fallback, Fallback::Text(text) if text.chars().count() > 1) {
-            geometry.two_letter_font_size.value_px
+        let icon_size = if stylesheet.avatar.authored_geometry(self.size.as_str()).icon_size.is_none() {
+            geometry.diameter * 0.6
         } else {
-            geometry.font_size.value_px
+            geometry.icon_size
+        };
+        let font_size = if matches!(&self.fallback, Fallback::Text(text) if text.chars().count() > 1) {
+            geometry.two_letter_font_size
+        } else {
+            geometry.font_size
         };
         let mut style = AvatarStyle {
-            diameter: geometry.diameter.value_px,
+            diameter: geometry.diameter,
             radius: if self.radius == Radius::Full {
-                geometry.diameter.value_px / 2.0
+                geometry.diameter / 2.0
             } else {
                 self.size.corner_radius(self.radius)
             },

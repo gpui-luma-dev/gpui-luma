@@ -72,7 +72,7 @@ pub(crate) fn textarea_geometry(
     scale: &StandardBoxScale,
     typography: &gpui_luma::theme::LumaTextStyle,
 ) -> gpui_luma::theme::stylesheet::ResolvedTextAreaGeometry {
-    mode.stylesheet().common.textarea.resolve_geometry(
+    mode.stylesheet().common.textarea.inspect_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
         gpui_luma::theme::stylesheet::TextAreaGeometry {
             min_height: scale.height,

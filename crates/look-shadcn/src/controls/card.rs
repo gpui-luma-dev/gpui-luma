@@ -5,22 +5,41 @@ use serde::Deserialize;
 
 use std::sync::Arc;
 
-use gpui::{
-    AnyElement, App, AppContext, BoxShadow, Context, Div, Entity, Hsla, IntoElement, Render, SharedString, Stateful,
-    Window, div, prelude::*, px,
-};
-use gpui_luma::theme::{ControlSize, LumaTextStyle, observe_theme_revision};
+use gpui::AnyElement;
+use gpui::App;
+use gpui::AppContext;
+use gpui::BoxShadow;
+use gpui::Context;
+use gpui::Div;
+use gpui::Entity;
+use gpui::Hsla;
+use gpui::IntoElement;
+use gpui::Render;
+use gpui::SharedString;
+use gpui::Stateful;
+use gpui::Window;
+use gpui::div;
+use gpui::prelude::*;
+use gpui::px;
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::LumaTextStyle;
+use gpui_luma::theme::observe_theme_revision;
 
 use crate::look::ShadcnLook;
 use crate::look_context::LookContext;
 use crate::size::ShadcnSize;
-use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
+use crate::provenance::ColorSource;
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
 use crate::shadow::parse_shadow_token;
-use crate::stylesheet::{
-    StylesheetConfig, find_card_color_rule, find_card_elevation_rule, resolve_card_color_rule,
-    resolve_stylesheet_shadow_token,
-};
-use crate::tokens::{ShadcnFont, ShadcnTextRole, ShadcnTextSize};
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_card_color_rule;
+use crate::stylesheet::find_card_elevation_rule;
+use crate::stylesheet::resolve_card_color_rule;
+use crate::stylesheet::resolve_stylesheet_shadow_token;
+use crate::tokens::ShadcnFont;
+use crate::tokens::ShadcnTextRole;
+use crate::tokens::ShadcnTextSize;
 
 #[derive(Clone, Debug)]
 pub struct CardColorTable {
@@ -465,4 +484,62 @@ pub struct CardColorRule {
     pub foreground: String,
     pub muted_foreground: String,
     pub border: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct CardMetricTable {
+    pub padding: crate::ResolvedMetric,
+    pub section_gap: crate::ResolvedMetric,
+    pub header_gap: crate::ResolvedMetric,
+    pub body_gap: crate::ResolvedMetric,
+    pub radius: crate::ResolvedMetric,
+}
+
+pub fn resolve_card_metrics(look: &crate::ShadcnLook, size: gpui_luma::theme::ControlSize) -> CardMetricTable {
+    let theme_mode = look.mode();
+    let mode = look.mode_tokens();
+    let ctx = crate::LookContext::new(mode.as_ref(), theme_mode, Default::default());
+    let metrics = ctx.metrics();
+    let catalog = ctx.catalog();
+    let base_gap = metrics.gap(size);
+
+    let mut table = CardMetricTable {
+        padding: crate::tables::metrics::helpers::spacing_control_metric(
+            catalog,
+            size,
+            crate::catalog::SpacingField::PaddingX,
+            metrics.padding_x(size),
+        ),
+        section_gap: crate::tables::metrics::helpers::spacing_control_metric(
+            catalog,
+            size,
+            crate::catalog::SpacingField::Gap,
+            base_gap,
+        ),
+        header_gap: crate::tables::metrics::helpers::derived_metric(
+            "card header gap = max(gap / 2, 2px)",
+            (base_gap * 0.5).max(2.0),
+        ),
+        body_gap: crate::tables::metrics::helpers::spacing_control_metric(
+            catalog,
+            size,
+            crate::catalog::SpacingField::Gap,
+            base_gap,
+        ),
+        radius: crate::tables::metrics::helpers::radius_metric(catalog, size, look.radius(crate::ShadcnRadius::Lg)),
+    };
+    let geometry = mode.stylesheet().common.card.inspect_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::CardGeometry {
+            padding: table.padding.value_px,
+            section_gap: table.section_gap.value_px,
+            header_gap: table.header_gap.value_px,
+            body_gap: table.body_gap.value_px,
+        },
+    );
+    table.padding = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding, table.padding);
+    table.section_gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.section_gap, table.section_gap);
+    table.header_gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.header_gap, table.header_gap);
+    table.body_gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.body_gap, table.body_gap);
+    table
 }

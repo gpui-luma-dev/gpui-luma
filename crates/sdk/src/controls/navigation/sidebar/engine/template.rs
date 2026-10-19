@@ -193,7 +193,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
             .size_full()
             .flex()
             .flex_col()
-            .gap(px(theme.geometry().container_gap.value_px))
+            .gap(px(theme.geometry().container_gap))
             .text_color(self.theme.foreground());
 
         if model.collapsed {
@@ -227,7 +227,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                         &model.disclosure_icons,
                         cx,
                     )
-                    .pt(px(theme.geometry().footer_padding_top.value_px)),
+                    .pt(px(theme.geometry().footer_padding_top)),
                 );
             }
 
@@ -267,7 +267,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &model.disclosure_icons,
                     cx,
                 )
-                .pb(px(theme.geometry().header_padding_bottom.value_px)),
+                .pb(px(theme.geometry().header_padding_bottom)),
             );
         }
 
@@ -306,7 +306,7 @@ impl SidebarPanelTemplate for ThemedSidebarPanelTemplate {
                     &model.disclosure_icons,
                     cx,
                 )
-                .pt(px(theme.geometry().footer_padding_top.value_px)),
+                .pt(px(theme.geometry().footer_padding_top)),
             );
         }
 
@@ -329,8 +329,8 @@ fn render_title(title: Option<SharedString>, subtitle: Option<SharedString>, the
     let mut header = div()
         .flex()
         .flex_col()
-        .gap(px(theme.geometry().title_gap.value_px))
-        .pb(px(theme.geometry().title_padding_bottom.value_px));
+        .gap(px(theme.geometry().title_gap))
+        .pb(px(theme.geometry().title_padding_bottom));
 
     if let Some(title) = title {
         header = header.child(
@@ -350,7 +350,7 @@ fn render_title(title: Option<SharedString>, subtitle: Option<SharedString>, the
                 .text_size(px(subtitle_style.size))
                 .line_height(px(subtitle_style.line_height))
                 .font_weight(subtitle_style.weight)
-                .opacity(theme.geometry().subtitle_opacity.value_px)
+                .opacity(theme.geometry().subtitle_opacity)
                 .child(subtitle),
         );
     }
@@ -371,7 +371,7 @@ fn render_region(
     disclosure_icons: &DisclosureIcons,
     cx: &mut App,
 ) -> Div {
-    let mut region = div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(theme.geometry().region_gap.value_px));
+    let mut region = div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(theme.geometry().region_gap));
 
     for node in nodes {
         region = region.child(render_node(
@@ -404,7 +404,7 @@ fn render_collapsed_rail_region(
     disclosure_icons: &DisclosureIcons,
     cx: &mut App,
 ) -> Div {
-    let mut region = div().flex().flex_col().items_center().gap(px(theme.geometry().region_gap.value_px));
+    let mut region = div().flex().flex_col().items_center().gap(px(theme.geometry().region_gap));
 
     for node in nodes {
         region = region.child(render_collapsed_rail_node(
@@ -502,13 +502,12 @@ fn render_node(
         .min_w(px(0.0))
         .flex()
         .flex_col()
-        .gap(px(theme.geometry().region_gap.value_px))
+        .gap(px(theme.geometry().region_gap))
         .child(row);
 
     if !children.is_empty() {
         let height_report = children_height_reports.get(&id).cloned();
-        let mut children_region =
-            div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(theme.geometry().region_gap.value_px));
+        let mut children_region = div().w_full().min_w(px(0.0)).flex().flex_col().gap(px(theme.geometry().region_gap));
         for child in children {
             children_region = children_region.child(render_node(
                 child,
@@ -585,7 +584,7 @@ fn render_section_row(label: SharedString, theme: &Arc<dyn SidebarTheme>) -> Div
 
     div()
         .min_h(px(look.height))
-        .pt(px(theme.geometry().section_padding_top.value_px))
+        .pt(px(theme.geometry().section_padding_top))
         .text_size(px(look.typography.size))
         .line_height(px(look.typography.line_height))
         .font_weight(look.typography.weight)
@@ -654,7 +653,7 @@ fn render_item_row(
             &disclosure_icons,
             expansion_progress,
             look.icon_color,
-            theme.geometry().disclosure_icon_size.value_px,
+            theme.geometry().disclosure_icon_size,
         ));
     }
 
@@ -669,7 +668,7 @@ fn render_item_row(
     if state.enabled {
         row = row.cursor_pointer();
     } else {
-        row = row.opacity(theme.geometry().disabled_opacity.value_px);
+        row = row.opacity(theme.geometry().disabled_opacity);
     }
 
     let RowHandlers { hover, mouse_down, mouse_up, mouse_up_out, click, .. } = handlers;
@@ -756,11 +755,11 @@ fn render_collapsed_rail_node(
             div()
                 .absolute()
                 .left(px(rail_branch_indicator_left(look.height, &theme.geometry())))
-                .top(px(centered_icon_left(look.height, theme.geometry().rail_branch_indicator_size.value_px)))
+                .top(px(centered_icon_left(look.height, theme.geometry().rail_branch_indicator_size)))
                 .child(render_icon_source(
                     &disclosure_icons.collapsed,
                     look.icon_color,
-                    theme.geometry().rail_branch_indicator_size.value_px,
+                    theme.geometry().rail_branch_indicator_size,
                 )),
         );
     } else {
@@ -782,7 +781,7 @@ fn render_collapsed_rail_node(
     if state.enabled {
         row = row.cursor_pointer();
     } else {
-        row = row.opacity(theme.geometry().disabled_opacity.value_px);
+        row = row.opacity(theme.geometry().disabled_opacity);
     }
 
     let RowHandlers { bounds, hover, mouse_down, mouse_up, mouse_up_out, click } = handlers;
@@ -827,7 +826,7 @@ fn render_collapsed_rail_node(
 fn render_rail_submenu_overlay(
     submenu: RenderedRailSubmenu,
     look: FloatingMenuLook,
-    geometry: crate::theme::stylesheet::ResolvedSidebarGeometry,
+    geometry: crate::theme::stylesheet::SidebarGeometry,
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
     bounds_handler: Option<SidebarPanelBoundsHandler>,
@@ -844,9 +843,7 @@ fn render_rail_submenu_overlay(
     );
 
     let content_size = submenu.content_size.unwrap_or_default();
-    let offset = submenu
-        .presence
-        .adjust_offset(point(px(geometry.rail_submenu_offset_x.value_px), px(0.0)), content_size);
+    let offset = submenu.presence.adjust_offset(point(px(geometry.rail_submenu_offset_x), px(0.0)), content_size);
     let content = if let Some(bounds_handler) = bounds_handler {
         div()
             .on_mouse_down_out(move |event, window, cx| mouse_down_out(event, window, cx))
@@ -860,20 +857,19 @@ fn render_rail_submenu_overlay(
     };
 
     anchored()
-        .snap_to_window_with_margin(px(geometry.window_margin.value_px))
+        .snap_to_window_with_margin(px(geometry.window_margin))
         .anchor(Anchor::TopLeft)
         .position(point(submenu.parent_bounds.right(), submenu.parent_bounds.top()))
         .offset(offset)
         .child(content)
 }
 
-fn rail_branch_indicator_left(button_height: f32, geometry: &crate::theme::stylesheet::ResolvedSidebarGeometry) -> f32 {
-    button_height + geometry.rail_branch_overhang.value_px - geometry.rail_branch_indicator_size.value_px
+fn rail_branch_indicator_left(button_height: f32, geometry: &crate::theme::stylesheet::SidebarGeometry) -> f32 {
+    button_height + geometry.rail_branch_overhang - geometry.rail_branch_indicator_size
 }
 
-fn rail_branch_button_width(button_height: f32, geometry: &crate::theme::stylesheet::ResolvedSidebarGeometry) -> f32 {
-    button_height
-        .max(rail_branch_indicator_left(button_height, geometry) + geometry.rail_branch_indicator_size.value_px)
+fn rail_branch_button_width(button_height: f32, geometry: &crate::theme::stylesheet::SidebarGeometry) -> f32 {
+    button_height.max(rail_branch_indicator_left(button_height, geometry) + geometry.rail_branch_indicator_size)
 }
 
 fn centered_icon_left(button_height: f32, icon_size: f32) -> f32 {

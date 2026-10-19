@@ -14,17 +14,23 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 use gpui_luma::controls::floating_menu::FloatingMenuLook;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::ThemeMode;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{LookResolver, ResolvedColor};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
 use crate::shadow::parse_shadow_token;
-use crate::stylesheet::{
-    StylesheetConfig, find_floating_menu_surface_color_rule, find_floating_menu_surface_elevation_rule,
-    find_floating_menu_trigger_color_rule, resolve_floating_menu_surface_color_rule,
-    resolve_floating_menu_trigger_color_rule, resolve_stylesheet_shadow_token,
-};
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_floating_menu_surface_color_rule;
+use crate::stylesheet::find_floating_menu_surface_elevation_rule;
+use crate::stylesheet::find_floating_menu_trigger_color_rule;
+use crate::stylesheet::resolve_floating_menu_surface_color_rule;
+use crate::stylesheet::resolve_floating_menu_trigger_color_rule;
+use crate::stylesheet::resolve_stylesheet_shadow_token;
 
 #[derive(Clone, Debug)]
 pub struct FloatingMenuColorTable {
@@ -172,7 +178,7 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
         look.item_padding_x = metrics.padding_x(size) * rule.item_padding_x_factor;
         look.submenu_offset_x = metrics.gap(size) * rule.submenu_offset_x_factor;
     }
-    let geometry = mode.stylesheet().common.floating_menu.resolve_geometry(
+    let geometry = mode.stylesheet().common.floating_menu.inspect_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
         gpui_luma::theme::stylesheet::FloatingMenuGeometry {
             border_width: look.border_width,
@@ -412,4 +418,71 @@ pub struct FloatingMenuTriggerColorRule {
     pub layer: Option<String>,
     pub background: String,
     pub foreground: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct FloatingMenuMetricTable {
+    pub radius: crate::ResolvedMetric,
+    pub padding: crate::ResolvedMetric,
+    pub min_width: crate::ResolvedMetric,
+    pub item_height: crate::ResolvedMetric,
+    pub item_padding_x: crate::ResolvedMetric,
+    pub item_gap: crate::ResolvedMetric,
+    pub item_icon_size: crate::ResolvedMetric,
+    pub item_radius: crate::ResolvedMetric,
+    pub submenu_offset_x: crate::ResolvedMetric,
+}
+
+pub fn resolve_floating_menu_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> FloatingMenuMetricTable {
+    use crate::tables::metrics::helpers::{derived_metric, scaffold_control_metric, spacing_control_metric};
+    use crate::catalog::SpacingField;
+
+    let ctx = crate::LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let look = crate::paint::floating_menu_look(mode, theme_mode, size);
+    let catalog = ctx.catalog();
+
+    let mut table = FloatingMenuMetricTable {
+        radius: derived_metric("lg = --radius", look.radius),
+        padding: derived_metric("padding_y × 0.5", look.padding),
+        min_width: derived_metric("floating menu min width", look.min_width),
+        item_height: derived_metric("control_height × 0.9", look.item_height),
+        item_padding_x: derived_metric("padding_x × 0.75", look.item_padding_x),
+        item_gap: spacing_control_metric(catalog, size, SpacingField::Gap, look.item_gap),
+        item_icon_size: crate::tables::metrics::helpers::inspect_shared_metric(
+            crate::controls::button::resolve_family_geometry(&ctx, mode.stylesheet(), size, false, 1.0)
+                .0
+                .icon_size,
+        ),
+        item_radius: scaffold_control_metric("sm", "radius", look.item_radius),
+        submenu_offset_x: derived_metric("gap × 0.5", look.submenu_offset_x),
+    };
+    let geometry = mode.stylesheet().common.floating_menu.inspect_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::FloatingMenuGeometry {
+            padding: table.padding.value_px,
+            min_width: table.min_width.value_px,
+            item_height: table.item_height.value_px,
+            item_padding_x: table.item_padding_x.value_px,
+            item_gap: table.item_gap.value_px,
+            item_icon_size: table.item_icon_size.value_px,
+            submenu_offset_x: table.submenu_offset_x.value_px,
+            ..Default::default()
+        },
+    );
+    table.padding = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding, table.padding);
+    table.min_width = crate::tables::metrics::helpers::prefer_shared_metric(geometry.min_width, table.min_width);
+    table.item_height = crate::tables::metrics::helpers::prefer_shared_metric(geometry.item_height, table.item_height);
+    table.item_padding_x =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.item_padding_x, table.item_padding_x);
+    table.item_gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.item_gap, table.item_gap);
+    table.item_icon_size =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.item_icon_size, table.item_icon_size);
+    table.submenu_offset_x =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.submenu_offset_x, table.submenu_offset_x);
+
+    table
 }

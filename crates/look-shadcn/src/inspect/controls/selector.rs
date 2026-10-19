@@ -88,7 +88,7 @@ pub fn inspect_selector_metrics(
         crate::tables::metrics::helpers::prefer_shared_metric(geometry.icon_size, result.trigger.icon_size);
     result.trigger.radius =
         crate::tables::metrics::helpers::prefer_shared_metric(geometry.radius, result.trigger.radius);
-    let panel = mode.stylesheet().common.selector_list.resolve_geometry(
+    let panel = mode.stylesheet().common.selector_list.inspect_geometry(
         size.stylesheet_key(),
         gpui_luma::theme::stylesheet::SelectorListGeometry {
             padding: result.items_panel.padding.value_px,

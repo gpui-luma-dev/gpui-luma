@@ -162,16 +162,13 @@ impl SplitViewBuilder {
                 id: id.into(),
                 sidebar_width: px(crate::theme::stylesheet::CommonStylesheet::sdk_default()
                     .shared_geometry()
-                    .split_sidebar_width
-                    .value_px),
+                    .split_sidebar_width),
                 sidebar_min_width: px(crate::theme::stylesheet::CommonStylesheet::sdk_default()
                     .shared_geometry()
-                    .split_sidebar_min_width
-                    .value_px),
+                    .split_sidebar_min_width),
                 sidebar_max_width: px(crate::theme::stylesheet::CommonStylesheet::sdk_default()
                     .shared_geometry()
-                    .split_sidebar_max_width
-                    .value_px),
+                    .split_sidebar_max_width),
                 sidebar_collapsed_width: px(0.0),
                 collapsed: false,
                 motion_enabled: true,

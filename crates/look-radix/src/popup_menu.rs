@@ -92,8 +92,8 @@ impl PopupMenuTheme for PopupMenuThemeAdapter {
             trigger_border: border,
             trigger_shadow: None,
             trigger_typography: LumaTextStyle {
-                size: geometry.font_size.value_px,
-                line_height: geometry.line_height.value_px,
+                size: geometry.font_size,
+                line_height: geometry.line_height,
                 weight: FontWeight::MEDIUM,
             },
             floating_menu: floating_menu_look(&self.look, self.variant, self.tone),
@@ -123,10 +123,10 @@ impl PopupMenuTheme for PopupMenuThemeAdapter {
                 ..Default::default()
             },
         );
-        scale.height = geometry.height.value_px;
-        scale.padding_x = geometry.padding_x.value_px;
-        scale.padding_y = geometry.padding_y.value_px;
-        scale.gap = geometry.gap.value_px;
+        scale.height = geometry.height;
+        scale.padding_x = geometry.padding_x;
+        scale.padding_y = geometry.padding_y;
+        scale.gap = geometry.gap;
         let mut look = compose_popup_menu_look(&self.resolve(trigger_style, metrics, state), &scale).with_stylesheet(
             &self.look.common_stylesheet().popup_menu,
             metrics.size.stylesheet_key(),
@@ -212,20 +212,20 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
             ..Default::default()
         },
     );
-    resolved.border_width = geometry.border_width.value_px;
-    resolved.padding = geometry.padding.value_px;
-    resolved.min_width = geometry.min_width.value_px;
-    resolved.item_height = geometry.item_height.value_px;
-    resolved.item_padding_x = geometry.item_padding_x.value_px;
-    resolved.item_gap = geometry.item_gap.value_px;
-    resolved.item_icon_size = geometry.item_icon_size.value_px;
-    resolved.item_typography.size = geometry.font_size.value_px;
-    resolved.item_typography.line_height = geometry.line_height.value_px;
-    resolved.submenu_offset_x = geometry.submenu_offset_x.value_px;
-    resolved.separator_thickness = geometry.separator_thickness.value_px;
-    resolved.separator_spacing = geometry.separator_spacing.value_px;
-    resolved.separator_inset = geometry.separator_inset.value_px;
-    resolved.disabled_opacity = geometry.disabled_opacity.value_px;
+    resolved.border_width = geometry.border_width;
+    resolved.padding = geometry.padding;
+    resolved.min_width = geometry.min_width;
+    resolved.item_height = geometry.item_height;
+    resolved.item_padding_x = geometry.item_padding_x;
+    resolved.item_gap = geometry.item_gap;
+    resolved.item_icon_size = geometry.item_icon_size;
+    resolved.item_typography.size = geometry.font_size;
+    resolved.item_typography.line_height = geometry.line_height;
+    resolved.submenu_offset_x = geometry.submenu_offset_x;
+    resolved.separator_thickness = geometry.separator_thickness;
+    resolved.separator_spacing = geometry.separator_spacing;
+    resolved.separator_inset = geometry.separator_inset;
+    resolved.disabled_opacity = geometry.disabled_opacity;
 
     resolved
 }

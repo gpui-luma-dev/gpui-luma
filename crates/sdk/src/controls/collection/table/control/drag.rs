@@ -20,15 +20,15 @@ impl Render for RowPreview {
             div()
                 .debug_selector(|| "table-row-drag-preview".to_string())
                 .relative()
-                .left(self.offset.x + px(self.look.geometry.drag_offset.value_px))
-                .top(self.offset.y + px(self.look.geometry.drag_offset.value_px))
-                .w(px(self.look.geometry.drag_width.value_px))
-                .px(px(self.look.geometry.drag_padding_x.value_px))
-                .py(px(self.look.geometry.drag_padding_y.value_px))
+                .left(self.offset.x + px(self.look.geometry.drag_offset))
+                .top(self.offset.y + px(self.look.geometry.drag_offset))
+                .w(px(self.look.geometry.drag_width))
+                .px(px(self.look.geometry.drag_padding_x))
+                .py(px(self.look.geometry.drag_padding_y))
                 .rounded(px(self.look.radius))
                 .bg(self.look.background)
                 .text_color(self.look.foreground)
-                .border(px(self.look.geometry.drag_border_width.value_px))
+                .border(px(self.look.geometry.drag_border_width))
                 .border_color(self.look.valid_marker)
                 .truncate()
                 .child(self.label.clone()),
@@ -72,7 +72,7 @@ impl<T: 'static> TableControl<T> {
                     edge,
                     item_extent: px(0.0),
                     following_gap: px(0.0),
-                    marker_width: px(look.geometry.drag_marker_width.value_px),
+                    marker_width: px(look.geometry.drag_marker_width),
                 };
                 let owner = cx.entity().downgrade();
                 let highlight_before = before.clone();

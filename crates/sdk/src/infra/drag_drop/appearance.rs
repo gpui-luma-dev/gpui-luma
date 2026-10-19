@@ -4,7 +4,7 @@ use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct DragDropLook {
-    pub geometry: crate::theme::stylesheet::ResolvedSharedGeometry,
+    pub geometry: crate::theme::stylesheet::SharedGeometry,
     pub background: Hsla,
     pub foreground: Hsla,
     pub valid_marker: Hsla,
@@ -41,15 +41,15 @@ impl Render for DragPreview {
             div()
                 .debug_selector(move || selector.to_owned())
                 .relative()
-                .left(self.offset.x + px(self.look.geometry.drag_offset.value_px))
-                .top(self.offset.y + px(self.look.geometry.drag_offset.value_px))
-                .w(px(self.look.geometry.drag_preview_width.value_px))
-                .px(px(self.look.geometry.drag_padding_x.value_px))
-                .py(px(self.look.geometry.drag_padding_y.value_px))
+                .left(self.offset.x + px(self.look.geometry.drag_offset))
+                .top(self.offset.y + px(self.look.geometry.drag_offset))
+                .w(px(self.look.geometry.drag_preview_width))
+                .px(px(self.look.geometry.drag_padding_x))
+                .py(px(self.look.geometry.drag_padding_y))
                 .rounded(px(self.look.radius))
                 .bg(self.look.background)
                 .text_color(self.look.foreground)
-                .border(px(self.look.geometry.drag_border_width.value_px))
+                .border(px(self.look.geometry.drag_border_width))
                 .border_color(self.look.valid_marker)
                 .font_family(self.look.font_family.clone())
                 .text_size(px(self.look.typography.size))

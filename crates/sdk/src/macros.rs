@@ -474,7 +474,7 @@ macro_rules! form_field {
             .flex()
             .flex_col()
             .gap(::gpui::px(
-                $crate::theme::stylesheet::CommonStylesheet::sdk_default().shared_geometry().form_field_gap.value_px,
+                $crate::theme::stylesheet::CommonStylesheet::sdk_default().shared_geometry().form_field_gap,
             ))
             .child($crate::infra::field_label::field_label($label, $chrome.body_text))
             .child($control)

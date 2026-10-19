@@ -56,9 +56,9 @@ impl ListRowScale {
 pub(crate) fn label_baseline_shift(size: ControlSize, stylesheet: &crate::theme::stylesheet::CommonStylesheet) -> f32 {
     let geometry = stylesheet.shared_geometry();
     match size {
-        ControlSize::Sm => geometry.label_baseline_sm.value_px,
-        ControlSize::Md => geometry.label_baseline_md.value_px,
-        ControlSize::Lg => geometry.label_baseline_lg.value_px,
+        ControlSize::Sm => geometry.label_baseline_sm,
+        ControlSize::Md => geometry.label_baseline_md,
+        ControlSize::Lg => geometry.label_baseline_lg,
     }
 }
 

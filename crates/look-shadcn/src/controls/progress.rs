@@ -1,16 +1,23 @@
 //! Progress — accent track + accent-foreground fill.
 
-use crate::stylesheet::config::{EnabledColorRule, control_size_key, find_enabled_color_rule};
+use crate::stylesheet::config::EnabledColorRule;
+use crate::stylesheet::config::control_size_key;
+use crate::stylesheet::config::find_enabled_color_rule;
 use serde::Deserialize;
 use std::collections::HashMap;
 
 use gpui_luma::controls::progress::ProgressLook;
-use gpui_luma::theme::{ControlSize, InteractionState};
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionState;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
-use crate::stylesheet::{StylesheetConfig, find_progress_color_rule, resolve_progress_color_rule, resolve_progress_metrics};
+use crate::provenance::ColorSource;
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_progress_color_rule;
+use crate::stylesheet::resolve_progress_color_rule;
 
 #[derive(Clone, Debug)]
 pub struct ProgressColorTable {
@@ -51,18 +58,13 @@ pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) 
     let (size, stroke_width, track_height, thumb_size) = stylesheet
         .progress
         .metrics_for_size(size)
-        .map(resolve_progress_metrics)
+        .map(crate::stylesheet::resolve_progress_metrics)
         .map(|metrics| (metrics.size, metrics.stroke_width, metrics.track_height, metrics.thumb_size))
         .unwrap_or_else(|| {
             let baseline = gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default()
                 .progress
                 .resolve_geometry(size_key, Default::default());
-            (
-                baseline.size.value_px,
-                baseline.stroke_width.value_px,
-                baseline.track_height.value_px,
-                baseline.thumb_size.value_px,
-            )
+            (baseline.size, baseline.stroke_width, baseline.track_height, baseline.thumb_size)
         });
 
     let mut look = ProgressLook {
@@ -85,10 +87,10 @@ pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) 
             ..Default::default()
         },
     );
-    look.size = geometry.size.value_px;
-    look.stroke_width = geometry.stroke_width.value_px;
-    look.track_height = geometry.track_height.value_px;
-    look.thumb_size = geometry.thumb_size.value_px;
+    look.size = geometry.size;
+    look.stroke_width = geometry.stroke_width;
+    look.track_height = geometry.track_height;
+    look.thumb_size = geometry.thumb_size;
 
     look
 }
@@ -220,4 +222,55 @@ pub(crate) fn native_progress_stylesheet() -> gpui_luma::theme::stylesheet::Prog
             .collect(),
         ..Default::default()
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct ProgressMetricTable {
+    pub size: crate::ResolvedMetric,
+    pub stroke_width: crate::ResolvedMetric,
+    pub track_height: crate::ResolvedMetric,
+    pub thumb_size: crate::ResolvedMetric,
+}
+
+pub fn resolve_progress_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+) -> ProgressMetricTable {
+    resolve_progress_metrics_for_size(mode, theme_mode, gpui_luma::theme::ControlSize::Md)
+}
+
+/// Resolve the selected look's Progress dimensions and their sources for a size.
+pub fn resolve_progress_metrics_for_size(
+    mode: &crate::ShadcnModeTokens,
+    _theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> ProgressMetricTable {
+    use crate::tables::metrics::helpers::derived_metric;
+
+    let look = crate::paint::progress_look(mode, true, size);
+
+    let mut table = ProgressMetricTable {
+        size: derived_metric("progress ring diameter", look.size),
+        stroke_width: derived_metric("progress stroke width", look.stroke_width),
+        track_height: derived_metric("progress track height", look.track_height),
+        thumb_size: derived_metric("progress thumb size", look.thumb_size),
+    };
+    let geometry = mode.stylesheet().common.progress.inspect_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::ProgressGeometry {
+            size: table.size.value_px,
+            stroke_width: table.stroke_width.value_px,
+            track_height: table.track_height.value_px,
+            thumb_size: table.thumb_size.value_px,
+            ..Default::default()
+        },
+    );
+    table.size = crate::tables::metrics::helpers::prefer_shared_metric(geometry.size, table.size);
+    table.stroke_width =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.stroke_width, table.stroke_width);
+    table.track_height =
+        crate::tables::metrics::helpers::prefer_shared_metric(geometry.track_height, table.track_height);
+    table.thumb_size = crate::tables::metrics::helpers::prefer_shared_metric(geometry.thumb_size, table.thumb_size);
+
+    table
 }

@@ -399,9 +399,9 @@ fn shared_slider_geometry_preserves_all_sizes_styles_states_and_thumbs() {
 fn selected_slider_geometry_and_legacy_fallback_have_accurate_provenance() {
     use gpui_luma::controls::slider::SliderThumbSize;
     let mut stylesheet = crate::stylesheet::embedded_stylesheet().clone();
-    stylesheet.common.slider.sizes.get_mut("md").unwrap().width = Some(300.0);
-    stylesheet.common.slider.sizes.get_mut("md").unwrap().height = Some(36.0);
-    stylesheet.common.slider.sizes.get_mut("lg").unwrap().thumb_size = Some(25.0);
+    stylesheet.common.slider.sizes.md.width = Some(300.0);
+    stylesheet.common.slider.sizes.md.height = Some(36.0);
+    stylesheet.common.slider.sizes.lg.thumb_size = Some(25.0);
     let look = ShadcnLook::from_css_str_with_stylesheet(crate::FALLBACK_CSS, stylesheet).unwrap();
     let theme = look.slider_theme();
     let painted = theme.resolve(ControlSize::Md, Some(SliderThumbSize::Lg), Default::default());

@@ -52,14 +52,14 @@ impl ContextMenuTheme for ContextMenuThemeAdapter {
                 })
                 .hsla(),
             target_typography: LumaTextStyle {
-                size: geometry.font_size.value_px,
-                line_height: geometry.line_height.value_px,
+                size: geometry.font_size,
+                line_height: geometry.line_height,
                 weight: FontWeight::NORMAL,
             },
             target_radius: metrics.radius.md,
-            target_padding_x: geometry.padding_x.value_px,
-            target_padding_y: geometry.padding_y.value_px,
-            target_min_width: geometry.min_width.value_px,
+            target_padding_x: geometry.padding_x,
+            target_padding_y: geometry.padding_y,
+            target_min_width: geometry.min_width,
             floating_menu: crate::popup_menu::floating_menu_look(&self.look, self.variant, self.tone),
         }
     }

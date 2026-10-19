@@ -8,21 +8,28 @@
 //! | `ring`   | `@outline_layer` fill + `@action_layer` ring + `@action_foreground` dot |
 //! | `dot`    | `@outline_layer` fill + `border` ring + `@action_layer` dot |
 
-use crate::stylesheet::config::{LayeredElevationRule, matches_optional_bool, matches_optional_str};
+use crate::stylesheet::config::LayeredElevationRule;
+use crate::stylesheet::config::matches_optional_bool;
+use crate::stylesheet::config::matches_optional_str;
 use serde::Deserialize;
 
 use gpui_luma::controls::radio_button::RadioButtonPalette;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionLayer;
+use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::ThemeMode;
 
 use crate::look_context::LookContext;
-use crate::provenance::{LookResolver, ResolvedColor};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
 use super::ShadcnButtonStyle;
 use super::choice_indicator::choice_indicator_color_layer;
 use crate::mode::ShadcnModeTokens;
 use crate::shadow::parse_shadow_token;
-use crate::stylesheet::{
-    StylesheetConfig, find_radio_color_rule, resolve_layered_elevation_shadow, resolve_radio_color_rule,
-};
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_radio_color_rule;
+use crate::stylesheet::resolve_layered_elevation_shadow;
+use crate::stylesheet::resolve_radio_color_rule;
 
 #[derive(Clone, Debug)]
 pub struct RadioColorTable {
@@ -196,7 +203,7 @@ pub(crate) fn radio_scale_with_stylesheet(
     use gpui_luma::controls::radio_button::RadioScale;
     use gpui_luma::theme::{snap_to_pixel, stylesheet::RadioGeometry};
     let mut scale = RadioScale::compute_with_stylesheet(size, ctx.metrics(), scale_factor, &stylesheet.common);
-    let mut geometry = stylesheet.common.radio.resolve_geometry(
+    let mut geometry = stylesheet.common.radio.inspect_geometry(
         crate::tables::metrics::helpers::control_size_key(size),
         RadioGeometry {
             indicator_size: scale.indicator_size,
@@ -491,4 +498,67 @@ pub struct RadioColorRule {
     pub selection_ring: String,
     pub dot_color: String,
     pub label_color: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct RadioButtonMetricTable {
+    pub height: crate::ResolvedMetric,
+    pub gap: crate::ResolvedMetric,
+    pub indicator_size: crate::ResolvedMetric,
+    pub dot_size: crate::ResolvedMetric,
+    pub control_radius: crate::ResolvedMetric,
+    pub border_width: crate::ResolvedMetric,
+    pub focus_ring_width: crate::ResolvedMetric,
+    pub focus_ring_offset: crate::ResolvedMetric,
+}
+
+pub fn resolve_radio_button_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> RadioButtonMetricTable {
+    resolve_radio_button_metrics_with_stylesheet(mode, mode.stylesheet(), theme_mode, size)
+}
+
+pub(crate) fn resolve_radio_button_metrics_with_stylesheet(
+    mode: &crate::ShadcnModeTokens,
+    stylesheet: &crate::stylesheet::StylesheetConfig,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> RadioButtonMetricTable {
+    use crate::catalog::SpacingField;
+    use crate::tables::metrics::helpers::{
+        border_width_metric, control_size_key, derived_metric, focus_ring_offset_metric, focus_ring_width_metric,
+        radius_metric, scaffold_control_metric, spacing_control_metric,
+    };
+
+    let ctx = crate::LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let metrics = ctx.metrics();
+    let catalog = ctx.catalog();
+    let (scale, geometry) = crate::controls::radio::radio_scale_with_stylesheet(&ctx, stylesheet, size, 1.0);
+    let authored = |metric: gpui_luma::theme::provenance::ResolvedMetric, fallback: crate::ResolvedMetric| {
+        if matches!(metric.source, gpui_luma::theme::provenance::MetricSource::Constant { .. }) {
+            fallback
+        } else {
+            crate::tables::metrics::helpers::inspect_shared_metric(metric)
+        }
+    };
+    let size_key = control_size_key(size);
+
+    RadioButtonMetricTable {
+        height: scaffold_control_metric(size_key, "control_height", scale.height),
+        gap: authored(geometry.gap, spacing_control_metric(catalog, size, SpacingField::Gap, scale.gap)),
+        indicator_size: authored(
+            geometry.indicator_size,
+            derived_metric(format!("{size_key} RadioScale.indicator_size"), scale.indicator_size),
+        ),
+        dot_size: authored(
+            geometry.dot_size,
+            derived_metric(format!("{size_key} RadioScale.dot_size"), scale.dot_size),
+        ),
+        control_radius: radius_metric(catalog, size, scale.control_radius),
+        border_width: border_width_metric(metrics),
+        focus_ring_width: focus_ring_width_metric(metrics),
+        focus_ring_offset: focus_ring_offset_metric(metrics),
+    }
 }

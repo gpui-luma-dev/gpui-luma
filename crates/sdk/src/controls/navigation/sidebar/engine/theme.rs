@@ -35,7 +35,7 @@ pub trait SidebarTheme: Send + Sync {
     }
 
     /// Shared shell and row decoration used by the stock template.
-    fn geometry(&self) -> crate::theme::stylesheet::ResolvedSidebarGeometry {
+    fn geometry(&self) -> crate::theme::stylesheet::SidebarGeometry {
         crate::theme::stylesheet::CommonStylesheet::sdk_default()
             .sidebar
             .resolve_geometry("", Default::default())
@@ -97,10 +97,10 @@ impl DefaultSidebarTheme {
             icon_color: foreground,
             typography: typography.text.label,
             radius: metrics.radius(size),
-            height: self.geometry().engine_item_height.value_px,
-            padding_x: self.geometry().engine_item_padding_x.value_px,
+            height: self.geometry().engine_item_height,
+            padding_x: self.geometry().engine_item_padding_x,
             gap: size_metrics.gap,
-            icon_size: self.geometry().item_icon_size.value_px,
+            icon_size: self.geometry().item_icon_size,
         }
     }
 }
@@ -113,7 +113,7 @@ impl SidebarTheme for DefaultSidebarTheme {
         self.tokens.stylesheet.font_features.resolve("sidebar_section")
     }
 
-    fn geometry(&self) -> crate::theme::stylesheet::ResolvedSidebarGeometry {
+    fn geometry(&self) -> crate::theme::stylesheet::SidebarGeometry {
         self.tokens.stylesheet.sidebar.resolve_geometry("", Default::default())
     }
     fn resolve_drag(&self, size: ControlSize) -> crate::infra::drag_drop::DragDropLook {
@@ -133,7 +133,7 @@ impl SidebarTheme for DefaultSidebarTheme {
                 .navigation
                 .muted_foreground,
             typography: self.tokens.typography.text.caption,
-            height: self.geometry().engine_section_height.value_px,
+            height: self.geometry().engine_section_height,
         }
     }
 

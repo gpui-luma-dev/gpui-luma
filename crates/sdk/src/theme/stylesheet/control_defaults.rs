@@ -51,7 +51,7 @@ fn sparse_sheet_prepares_a_complete_sdk_theme_and_preserves_zero() {
     let theme = DefaultCheckboxTheme::new(tokens.clone());
     let scale = theme.scale(ControlSize::Md, 1.0);
     assert_eq!((scale.indicator_size, scale.glyph_size, scale.height), (0.0, 0.0, 54.0));
-    assert_eq!(tokens.stylesheet.progress.sizes["md"].size, Some(64.0));
+    assert_eq!(tokens.stylesheet.progress.sizes.md.size, Some(64.0));
     assert_eq!(RadioScale::compute(ControlSize::Md, &tokens.metrics, 1.0).indicator_size, 27.0);
 }
 
@@ -459,11 +459,11 @@ window_margin=0"])
     let scale = StandardBoxScale::compute(ControlSize::Md, &tokens.metrics, 1.0);
     let field =
         DefaultTextFieldTheme::new(tokens.clone()).resolve_look(Default::default(), true, ControlSize::Md, &scale);
-    assert_eq!(field.helper_geometry.compact_textfield_height.value_px, 31.0);
-    assert_eq!(field.helper_geometry.composition_underline_width.value_px, 0.0);
+    assert_eq!(field.helper_geometry.compact_textfield_height, 31.0);
+    assert_eq!(field.helper_geometry.composition_underline_width, 0.0);
     let area =
         DefaultTextAreaTheme::new(tokens.clone()).resolve_look(Default::default(), true, ControlSize::Md, &scale);
-    assert_eq!(area.helper_geometry.textarea_resize_icon_size.value_px, 17.0);
+    assert_eq!(area.helper_geometry.textarea_resize_icon_size, 17.0);
     assert_eq!(
         CheckboxScale::compute_with_stylesheet(ControlSize::Md, &tokens.metrics, 2.0, &sheet).label_baseline_shift,
         0.0

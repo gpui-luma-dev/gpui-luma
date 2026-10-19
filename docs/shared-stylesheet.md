@@ -42,10 +42,22 @@ copy. Direct field mutation does not clear inherited size-specific fields.
 The parsed common schema rejects unknown typed fields. Root sections belonging
 to a look are left for that look's parser.
 
+## Rust geometry values
+
+Standard geometry sizes use `ControlSizes<T>` with direct `sm`, `md`, and `lg`
+fields. For example, `sheet.progress.sizes.md.track_height = Some(9.0)` edits a
+sparse override. The `custom` entries retain look-specific sizes, including Radix
+numeric ranges and named compact presets; numeric names are not SDK aliases.
+
+Controls resolve sparse overrides into concrete geometry containing plain pixel
+values. Inspector projections are obtained separately through `inspect_geometry`;
+rendering does not need to read `ResolvedMetric.value_px`. Sparse fields remain
+optional so missing values inherit, while explicit zero remains an override.
+
 ## Source organization
 
-Shadcn keeps each control's rule types, matching and native definitions in its
-existing control file; `stylesheet/config/mod.rs` assembles the configuration and
+Shadcn keeps each control's rule types, matching, native definitions and metric
+inspection in its existing control file; `stylesheet/config/mod.rs` assembles the configuration and
 retains shared rule helpers. Radix keeps common geometry defaults beside its
 control adapters. `look.rs` assembles those defaults, and its button rules remain
 in the adjacent `button_recipes.rs` module.
@@ -181,7 +193,7 @@ use gpui_luma::{
     theme::{ControlSize, ThemeMode, stylesheet::CommonStylesheet},
 };
 let sheet = CommonStylesheet::sdk_default().clone().with(|sheet| {
-    sheet.progress.sizes.entry("md".into()).or_default().track_height = Some(9.0);
+    sheet.progress.sizes.md.track_height = Some(9.0);
 });
 let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde)?;
 let theme = DefaultProgressTheme::new(tokens);

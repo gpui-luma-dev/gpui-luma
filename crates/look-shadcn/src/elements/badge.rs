@@ -1,14 +1,25 @@
 use serde::Deserialize;
 
-use gpui::{Div, FontWeight, IntoElement, SharedString, div, px, prelude::*};
-use gpui_luma::infra::icon::{IconSource, lucide_icon};
+use gpui::Div;
+use gpui::FontWeight;
+use gpui::IntoElement;
+use gpui::SharedString;
+use gpui::div;
+use gpui::px;
+use gpui::prelude::*;
+use gpui_luma::infra::icon::IconSource;
+use gpui_luma::infra::icon::lucide_icon;
 use gpui_luma::theme::LumaTextStyle;
 
 use crate::look::ShadcnLook;
 use crate::size::ShadcnSize;
-use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
-use crate::stylesheet::{find_badge_color_rule, resolve_badge_color_rule};
-use crate::tokens::{ShadcnFont, ShadcnToken};
+use crate::provenance::ColorSource;
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
+use crate::stylesheet::find_badge_color_rule;
+use crate::stylesheet::resolve_badge_color_rule;
+use crate::tokens::ShadcnFont;
+use crate::tokens::ShadcnToken;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum BadgeVariant {
@@ -200,7 +211,7 @@ pub fn badge_look(theme: &ShadcnLook, variant: BadgeVariant, size: ShadcnSize) -
         typography,
         font_family: theme.font(ShadcnFont::Sans),
     };
-    let geometry = tokens.stylesheet().common.badge.resolve_geometry(
+    let geometry = tokens.stylesheet().common.badge.inspect_geometry(
         crate::tables::metrics::helpers::control_size_key(control_size),
         gpui_luma::theme::stylesheet::BadgeGeometry {
             padding_x: look.padding_x,
@@ -395,4 +406,75 @@ impl BadgeColorRule {
         self.style.as_deref().is_none_or(|value| value == "any" || value == style)
             && self.mode.as_deref().is_none_or(|value| value == "any" || value == mode)
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct BadgeMetricTable {
+    pub min_height: crate::ResolvedMetric,
+    pub padding_x: crate::ResolvedMetric,
+    pub padding_y: crate::ResolvedMetric,
+    pub gap: crate::ResolvedMetric,
+    pub icon_size: crate::ResolvedMetric,
+    pub radius: crate::ResolvedMetric,
+}
+
+pub fn resolve_badge_metrics(
+    mode: &crate::ShadcnModeTokens,
+    look: &crate::ShadcnLook,
+    variant: crate::BadgeVariant,
+    size: gpui_luma::theme::ControlSize,
+    _theme_mode: gpui_luma::theme::ThemeMode,
+) -> BadgeMetricTable {
+    let look = crate::badge_look(
+        look,
+        variant,
+        match size {
+            gpui_luma::theme::ControlSize::Sm => crate::ShadcnSize::Sm,
+            gpui_luma::theme::ControlSize::Md => crate::ShadcnSize::Md,
+            gpui_luma::theme::ControlSize::Lg => crate::ShadcnSize::Lg,
+        },
+    );
+
+    let mut table = BadgeMetricTable {
+        min_height: crate::tables::metrics::helpers::derived_metric("badge min height", look.min_height),
+        padding_x: crate::tables::metrics::helpers::spacing_control_metric(
+            &mode.catalog,
+            size,
+            crate::catalog::SpacingField::PaddingX,
+            look.padding_x,
+        ),
+        padding_y: crate::tables::metrics::helpers::derived_metric(
+            "badge vertical inset from typography",
+            look.padding_y,
+        ),
+        gap: crate::tables::metrics::helpers::spacing_control_metric(
+            &mode.catalog,
+            size,
+            crate::catalog::SpacingField::Gap,
+            look.gap,
+        ),
+        icon_size: crate::tables::metrics::helpers::derived_metric(
+            "badge icon size follows typography size",
+            look.icon_size,
+        ),
+        radius: crate::tables::metrics::helpers::pill_radius_metric(&mode.catalog, look.radius),
+    };
+    let geometry = mode.stylesheet().common.badge.inspect_geometry(
+        crate::tables::metrics::helpers::control_size_key(size),
+        gpui_luma::theme::stylesheet::BadgeGeometry {
+            min_height: table.min_height.value_px,
+            padding_x: table.padding_x.value_px,
+            padding_y: table.padding_y.value_px,
+            gap: table.gap.value_px,
+            icon_size: table.icon_size.value_px,
+            ..Default::default()
+        },
+    );
+    table.min_height = crate::tables::metrics::helpers::prefer_shared_metric(geometry.min_height, table.min_height);
+    table.padding_x = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_x, table.padding_x);
+    table.padding_y = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_y, table.padding_y);
+    table.gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.gap, table.gap);
+    table.icon_size = crate::tables::metrics::helpers::prefer_shared_metric(geometry.icon_size, table.icon_size);
+
+    table
 }

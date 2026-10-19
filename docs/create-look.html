@@ -39,7 +39,7 @@ fn action_button&lt;M: &#x27;static&gt;(cx: &amp;mut Context&lt;M&gt;) -&gt; Ent
 
 fn configured_progress_theme() -&gt; Result&lt;DefaultProgressTheme, Box&lt;dyn std::error::Error&gt;&gt; {
     let sheet = CommonStylesheet::sdk_default().clone().with(|sheet| {
-        sheet.progress.sizes.entry(&quot;md&quot;.into()).or_default().track_height = Some(9.0);
+        sheet.progress.sizes.md.track_height = Some(9.0);
     });
     let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde)?;
     let theme = DefaultProgressTheme::new(tokens);
@@ -56,7 +56,7 @@ fn configured_progress_theme() -&gt; Result&lt;DefaultProgressTheme, Box&lt;dyn 
             PaletteRole::StateSelectedBackground,
         );
         sheet.row_limits.0.entry(&quot;combobox&quot;.into()).or_default().max = Some(10);
-        sheet.switch.sizes.entry(&quot;sm&quot;.into()).or_default().track_width_scale = Some(32.0 / 28.0);
+        sheet.switch.sizes.sm.track_width_scale = Some(32.0 / 28.0);
     })
 }</code></pre></div>
 <p>Use floating-point expressions for ratios. Direct edits change the named fields; changing general geometry does not clear inherited size-specific values. Set the relevant size entries when needed. Explicit consumer icons, geometry and row limits override captured defaults. SDK themes capture snapshots; rebuild them after changing configuration. Motion keeps its existing independent snapshot policy.</p>

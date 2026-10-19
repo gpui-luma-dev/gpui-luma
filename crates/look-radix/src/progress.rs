@@ -66,7 +66,6 @@ fn height(size: ControlSize) -> f32 {
         .progress
         .resolve_geometry(crate::look::sdk_size_key(size), Default::default())
         .track_height
-        .value_px
 }
 /// Matches Radix's radius-factor and radius-thumb rules, capped at half the height.
 pub fn resolve_progress_radius(size: ControlSize, radius: Radius) -> f32 {
@@ -115,8 +114,7 @@ impl ProgressTheme for ProgressThemeAdapter {
                 crate::look::sdk_size_key(size),
                 gpui_luma::theme::stylesheet::ProgressGeometry { track_height: height(size), ..Default::default() },
             )
-            .track_height
-            .value_px;
+            .track_height;
         ProgressLook {
             geometry: self
                 .look

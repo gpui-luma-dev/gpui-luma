@@ -200,12 +200,12 @@ fn render_horizontal_shimmer(
     track_height: f32,
     track_radius: gpui::Pixels,
     color: Hsla,
-    geometry: &crate::theme::stylesheet::ResolvedProgressGeometry,
+    geometry: &crate::theme::stylesheet::ProgressGeometry,
 ) -> Div {
-    let fraction = geometry.indeterminate_fraction.value_px;
+    let fraction = geometry.indeterminate_fraction;
     let start = shimmer_band_start(phase, fraction);
-    let soft = with_alpha(color, geometry.shimmer_soft_opacity.value_px);
-    let mid = with_alpha(color, geometry.shimmer_mid_opacity.value_px);
+    let soft = with_alpha(color, geometry.shimmer_soft_opacity);
+    let mid = with_alpha(color, geometry.shimmer_mid_opacity);
 
     let band = |offset: f32, width: f32, fill: Hsla| {
         let node = div()
@@ -229,16 +229,8 @@ fn render_horizontal_shimmer(
         .h(px(track_height))
         .overflow_hidden()
         .child(band(start, fraction, soft))
-        .child(band(
-            start + fraction * geometry.shimmer_mid_offset.value_px,
-            fraction * geometry.shimmer_mid_width.value_px,
-            mid,
-        ))
-        .child(band(
-            start + fraction * geometry.shimmer_core_offset.value_px,
-            fraction * geometry.shimmer_core_width.value_px,
-            color,
-        ))
+        .child(band(start + fraction * geometry.shimmer_mid_offset, fraction * geometry.shimmer_mid_width, mid))
+        .child(band(start + fraction * geometry.shimmer_core_offset, fraction * geometry.shimmer_core_width, color))
 }
 
 fn render_vertical_shimmer(
@@ -248,12 +240,12 @@ fn render_vertical_shimmer(
     track_height: f32,
     track_radius: gpui::Pixels,
     color: Hsla,
-    geometry: &crate::theme::stylesheet::ResolvedProgressGeometry,
+    geometry: &crate::theme::stylesheet::ProgressGeometry,
 ) -> Div {
-    let fraction = geometry.indeterminate_fraction.value_px;
+    let fraction = geometry.indeterminate_fraction;
     let start = shimmer_band_start(phase, fraction);
-    let soft = with_alpha(color, geometry.shimmer_soft_opacity.value_px);
-    let mid = with_alpha(color, geometry.shimmer_mid_opacity.value_px);
+    let soft = with_alpha(color, geometry.shimmer_soft_opacity);
+    let mid = with_alpha(color, geometry.shimmer_mid_opacity);
 
     let band = |offset: f32, height: f32, fill: Hsla| {
         let node = div()
@@ -277,14 +269,6 @@ fn render_vertical_shimmer(
         .w(px(track_height))
         .overflow_hidden()
         .child(band(start, fraction, soft))
-        .child(band(
-            start + fraction * geometry.shimmer_mid_offset.value_px,
-            fraction * geometry.shimmer_mid_width.value_px,
-            mid,
-        ))
-        .child(band(
-            start + fraction * geometry.shimmer_core_offset.value_px,
-            fraction * geometry.shimmer_core_width.value_px,
-            color,
-        ))
+        .child(band(start + fraction * geometry.shimmer_mid_offset, fraction * geometry.shimmer_mid_width, mid))
+        .child(band(start + fraction * geometry.shimmer_core_offset, fraction * geometry.shimmer_core_width, color))
 }

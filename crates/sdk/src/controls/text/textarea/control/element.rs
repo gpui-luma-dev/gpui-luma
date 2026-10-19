@@ -253,7 +253,7 @@ impl gpui::Element for TextAreaElement {
                     (start < end).then_some((start, end))
                 };
                 let decoration_key = TextAreaDecorationKey {
-                    composition_underline_width: look.helper_geometry.composition_underline_width.value_px,
+                    composition_underline_width: look.helper_geometry.composition_underline_width,
                     line_index: line_ix,
                     selection: selection.and_then(local_range),
                     marked_range: input

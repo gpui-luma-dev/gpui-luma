@@ -34,7 +34,7 @@ line_height = 24
     .common;
     config.common.checkbox = common.checkbox;
     config.common.radio = common.radio;
-    config.common.button.sizes.insert("md".into(), common.button.sizes["md"].clone());
+    config.common.button.sizes.insert("md".into(), common.button.sizes.md.clone());
     for rule in &mut config.checkbox.color_rules {
         rule.indicator_background = "secondary".into();
         rule.checkmark_color = "secondary-foreground".into();

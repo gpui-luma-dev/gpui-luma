@@ -418,8 +418,8 @@ impl Render for AutocompleteControl {
             },
         );
         let mut status_typography = autocomplete_look.status_typography;
-        status_typography.size = geometry.status_font_size.value_px;
-        status_typography.line_height = geometry.status_line_height.value_px;
+        status_typography.size = geometry.status_font_size;
+        status_typography.line_height = geometry.status_line_height;
         let look = (self.model.popup_look_provider)(self.model.size);
         let selected_label = self
             .behavior
@@ -466,8 +466,7 @@ impl Render for AutocompleteControl {
             self.last_keyboard_event
         ));
 
-        let trigger_width =
-            self.trigger_bounds.map(|bounds| bounds.size.width).unwrap_or(px(geometry.trigger_width.value_px));
+        let trigger_width = self.trigger_bounds.map(|bounds| bounds.size.width).unwrap_or(px(geometry.trigger_width));
         let popup_width = {
             let mut text_font = font(".SystemUIFont");
             text_font.weight = look.item_typography.weight;
@@ -488,8 +487,7 @@ impl Render for AutocompleteControl {
                 .max_by(|a, b| a.as_f32().total_cmp(&b.as_f32()))
                 .unwrap_or(px(0.0));
 
-            let horizontal_chrome =
-                px((look.padding * 2.0) + (look.item_padding_x * 2.0) + geometry.popup_extra_width.value_px);
+            let horizontal_chrome = px((look.padding * 2.0) + (look.item_padding_x * 2.0) + geometry.popup_extra_width);
             trigger_width.max(max_label_width + horizontal_chrome)
         };
 

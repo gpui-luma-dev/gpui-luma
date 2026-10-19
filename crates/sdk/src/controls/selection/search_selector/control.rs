@@ -80,8 +80,8 @@ impl SearchSelectorControl {
         let model = builder.model;
         let enabled = model.enabled;
         let geometry = model.stylesheet.resolve_geometry(model.size.stylesheet_key(), Default::default());
-        let padding_reduction = geometry.search_padding_reduction.value_px;
-        let height_floor = geometry.search_input_height_floor.value_px;
+        let padding_reduction = geometry.search_padding_reduction;
+        let height_floor = geometry.search_input_height_floor;
 
         let popup_search_textfield = text_selection::new(format!("{}-popup-search", model.id))
             .placeholder(model.search_placeholder.clone())
@@ -739,8 +739,8 @@ impl Render for SearchSelectorControl {
             let placeholder_width = placeholder_line.width().as_f32();
 
             let textfield_side_padding = (textfield_look.padding_x * 2.0) + textfield_look.border_width;
-            let search_icon_width = geometry.search_icon_width.value_px + geometry.trigger_icon_extra_width.value_px;
-            let spacing = geometry.trigger_extra_gap.value_px;
+            let search_icon_width = geometry.search_icon_width + geometry.trigger_icon_extra_width;
+            let spacing = geometry.trigger_extra_gap;
 
             px(textfield_side_padding + placeholder_width + search_icon_width + spacing)
         };
@@ -785,7 +785,7 @@ impl Render for SearchSelectorControl {
                     window.viewport_size().height,
                     &look,
                     min_visible_rows,
-                    geometry.search_chrome_height.value_px,
+                    geometry.search_chrome_height,
                 )
             } else {
                 max_visible_rows
@@ -815,7 +815,7 @@ impl Render for SearchSelectorControl {
                     .items_template
                     .render(
                         &SearchSelectorItemsRenderModel {
-                            trailing_icon_size: geometry.trailing_icon_size.value_px,
+                            trailing_icon_size: geometry.trailing_icon_size,
                             menu_id: &list_id,
                             search_selector_id: &self.model.id,
                             items: &self.model.items,
@@ -835,7 +835,7 @@ impl Render for SearchSelectorControl {
 
             let panel_content = self.model.panel_template.render(
                 SearchSelectorPanelRenderModel {
-                    geometry: geometry.clone(),
+                    geometry,
                     id: &self.model.id,
                     items: &self.model.items,
                     visible_indices: &visible_indices,

@@ -137,14 +137,14 @@ impl Render for TextArea {
             }
         }
         let geometry = &look.helper_geometry;
-        let scrollbar_width = px(geometry.textarea_scrollbar_width.value_px);
+        let scrollbar_width = px(geometry.textarea_scrollbar_width);
         let resize_handle = div()
             .id("resize-handle")
             .absolute()
-            .right(px(geometry.textarea_resize_inset.value_px))
-            .bottom(px(geometry.textarea_resize_inset.value_px))
-            .w(px(geometry.textarea_resize_hit_size.value_px))
-            .h(px(geometry.textarea_resize_hit_size.value_px))
+            .right(px(geometry.textarea_resize_inset))
+            .bottom(px(geometry.textarea_resize_inset))
+            .w(px(geometry.textarea_resize_hit_size))
+            .h(px(geometry.textarea_resize_hit_size))
             .cursor_pointer()
             .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_resize_mouse_down))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_resize_mouse_up))
@@ -156,17 +156,17 @@ impl Render for TextArea {
             .on_drag_move(cx.listener(Self::handle_resize_drag_move))
             .child(
                 div()
-                    .size(px(geometry.textarea_resize_icon_size.value_px))
+                    .size(px(geometry.textarea_resize_icon_size))
                     .flex()
                     .items_center()
                     .justify_center()
-                    .text_size(px(geometry.textarea_resize_icon_size.value_px))
-                    .line_height(px(geometry.textarea_resize_icon_size.value_px))
-                    .text_color(look.border.opacity(geometry.textarea_resize_opacity.value_px))
+                    .text_size(px(geometry.textarea_resize_icon_size))
+                    .line_height(px(geometry.textarea_resize_icon_size))
+                    .text_color(look.border.opacity(geometry.textarea_resize_opacity))
                     .child(crate::infra::icon::render_icon_source(
                         &self.model.resize_handle_icon,
-                        look.border.opacity(geometry.textarea_resize_opacity.value_px),
-                        geometry.textarea_resize_icon_size.value_px,
+                        look.border.opacity(geometry.textarea_resize_opacity),
+                        geometry.textarea_resize_icon_size,
                     )),
             );
 
@@ -203,9 +203,9 @@ impl Render for TextArea {
                 root.child(
                     div()
                         .absolute()
-                        .top(px(geometry.textarea_scrollbar_inset.value_px))
-                        .right(px(geometry.textarea_scrollbar_inset.value_px))
-                        .bottom(px(geometry.textarea_scrollbar_inset.value_px))
+                        .top(px(geometry.textarea_scrollbar_inset))
+                        .right(px(geometry.textarea_scrollbar_inset))
+                        .bottom(px(geometry.textarea_scrollbar_inset))
                         .w(scrollbar_width)
                         .flex()
                         .justify_center()

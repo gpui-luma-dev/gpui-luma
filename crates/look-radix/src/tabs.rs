@@ -121,7 +121,7 @@ impl TabsStyle {
         let defaults = gpui_luma::controls::tabs::default_tabs_theme();
         let list = defaults.resolve_list(true, ControlSize::Md);
         let item = defaults.resolve_item(true, InteractionState::default(), ControlSize::Md);
-        let geometry = stylesheet.tabs.resolve_geometry(
+        let geometry = stylesheet.tabs.inspect_geometry(
             "line",
             gpui_luma::theme::stylesheet::ResolvedTabsGeometry {
                 list_gap: gpui_luma::theme::provenance::ResolvedMetric::constant(list.gap, "SDK tabs list gap"),
@@ -168,7 +168,7 @@ pub fn tabs_geometry(
     let defaults = gpui_luma::controls::tabs::default_tabs_theme();
     let list = defaults.resolve_list(true, size);
     let item = defaults.resolve_item(true, InteractionState::default(), size);
-    let mut geometry = look.common_stylesheet().tabs.resolve_geometry(
+    let mut geometry = look.common_stylesheet().tabs.inspect_geometry(
         if surface { "surface" } else { "line" },
         ResolvedTabsGeometry {
             list_gap: ResolvedMetric::constant(list.gap, "SDK tabs list gap"),

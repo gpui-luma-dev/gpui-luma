@@ -73,8 +73,8 @@ pub fn autocomplete_textbox_look(
         },
     );
     let mut status_typography = mode.typography.text.scale.sm;
-    status_typography.size = geometry.status_font_size.value_px;
-    status_typography.line_height = geometry.status_line_height.value_px;
+    status_typography.size = geometry.status_font_size;
+    status_typography.line_height = geometry.status_line_height;
     AutocompleteLook {
         status_typography,
         status_color: colors.status_color.hsla(),

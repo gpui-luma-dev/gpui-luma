@@ -63,7 +63,7 @@ pub struct SearchSelectorRenderModel {
     /// Captured shared default glyph choices.
     pub icons: crate::theme::stylesheet::IconsStylesheet,
     /// Captured and size-resolved affordance geometry.
-    pub geometry: crate::theme::stylesheet::ResolvedSearchSelectorGeometry,
+    pub geometry: crate::theme::stylesheet::SearchSelectorGeometry,
     pub id: SharedString,
     pub trigger_label: SharedString,
     pub trigger_label_is_placeholder: bool,
@@ -180,7 +180,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                     .child(
                         div()
                             .id("icon")
-                            .w(px(model.geometry.search_icon_width.value_px))
+                            .w(px(model.geometry.search_icon_width))
                             .flex()
                             .items_center()
                             .justify_center()
@@ -188,13 +188,13 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                             .child(crate::infra::icon::render_icon_source(
                                 &model.icons.resolve(crate::theme::stylesheet::IconRole::Search),
                                 trigger_look.trigger_icon,
-                                model.geometry.search_icon_size.value_px,
+                                model.geometry.search_icon_size,
                             )),
                     ),
             );
 
         if border.a > 0.0 {
-            trigger = trigger.border(px(model.geometry.border_width.value_px)).border_color(border);
+            trigger = trigger.border(px(model.geometry.border_width)).border_color(border);
         }
 
         let has_elevation = trigger_look.trigger_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty());

@@ -25,14 +25,14 @@ impl TooltipTheme for RadixTooltipTheme {
             },
         );
         resolved.placement = (&geometry).into();
-        resolved.shortcut_gap = geometry.shortcut_gap.value_px;
-        resolved.shortcut_font_size = geometry.shortcut_font_size.value_px;
-        resolved.shortcut_opacity = geometry.shortcut_opacity.value_px;
-        resolved.padding = geometry.padding.value_px;
-        resolved.padding_y = geometry.padding_y.value_px;
-        resolved.max_width = geometry.max_width.value_px;
-        resolved.text_size = geometry.font_size.value_px;
-        resolved.line_height = geometry.line_height.value_px;
+        resolved.shortcut_gap = geometry.shortcut_gap;
+        resolved.shortcut_font_size = geometry.shortcut_font_size;
+        resolved.shortcut_opacity = geometry.shortcut_opacity;
+        resolved.padding = geometry.padding;
+        resolved.padding_y = geometry.padding_y;
+        resolved.max_width = geometry.max_width;
+        resolved.text_size = geometry.font_size;
+        resolved.line_height = geometry.line_height;
         resolved
     }
 }

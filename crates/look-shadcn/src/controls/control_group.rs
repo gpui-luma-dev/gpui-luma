@@ -6,16 +6,21 @@
 //! | Disabled bg     | `muted-foreground`   |
 //! | Border          | `border`             |
 
-use crate::stylesheet::config::{EnabledColorRule, find_enabled_color_rule};
+use crate::stylesheet::config::EnabledColorRule;
+use crate::stylesheet::config::find_enabled_color_rule;
 use serde::Deserialize;
 
 use gpui_luma::controls::control_group::ControlGroupListLook;
-use gpui_luma::theme::{ControlSize, InteractionState};
+use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::InteractionState;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
-use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{StylesheetConfig, find_control_group_list_color_rule, resolve_control_group_list_color_rule};
+use crate::provenance::LookResolver;
+use crate::provenance::ResolvedColor;
+use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::find_control_group_list_color_rule;
+use crate::stylesheet::resolve_control_group_list_color_rule;
 
 #[derive(Clone, Debug)]
 pub struct ControlGroupListColorTable {
@@ -156,4 +161,47 @@ impl EnabledColorRule for ControlGroupListColorRule {
     fn enabled(&self) -> Option<bool> {
         self.enabled
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct ControlGroupMetricTable {
+    pub radius: crate::ResolvedMetric,
+    pub padding_x: crate::ResolvedMetric,
+    pub padding_y: crate::ResolvedMetric,
+    pub gap: crate::ResolvedMetric,
+}
+
+pub fn resolve_control_group_metrics(
+    mode: &crate::ShadcnModeTokens,
+    theme_mode: gpui_luma::theme::ThemeMode,
+    size: gpui_luma::theme::ControlSize,
+) -> ControlGroupMetricTable {
+    use crate::tables::metrics::helpers::{derived_metric, radius_metric};
+
+    let ctx = crate::LookContext::new(mode, theme_mode, gpui_luma::theme::InteractionState::default());
+    let catalog = ctx.catalog();
+    let look = crate::paint::control_group_list_look(mode, true);
+
+    let mut table = ControlGroupMetricTable {
+        radius: radius_metric(catalog, size, look.radius),
+        padding_x: derived_metric("control group padding x", look.padding_x),
+        padding_y: derived_metric("control group padding y", look.padding_y),
+        gap: derived_metric("control group gap", look.gap),
+    };
+    let geometry = mode.stylesheet().common.control_group.inspect_geometry(
+        "md",
+        gpui_luma::theme::stylesheet::ControlGroupGeometry {
+            padding_x: table.padding_x.value_px,
+            padding_y: table.padding_y.value_px,
+            gap: table.gap.value_px,
+            radius: table.radius.value_px,
+            ..Default::default()
+        },
+    );
+    table.padding_x = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_x, table.padding_x);
+    table.padding_y = crate::tables::metrics::helpers::prefer_shared_metric(geometry.padding_y, table.padding_y);
+    table.gap = crate::tables::metrics::helpers::prefer_shared_metric(geometry.gap, table.gap);
+    table.radius = crate::tables::metrics::helpers::prefer_shared_metric(geometry.radius, table.radius);
+
+    table
 }

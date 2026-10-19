@@ -23,7 +23,7 @@ pub struct TextFieldPalette {
 #[derive(Clone, Debug)]
 pub struct TextFieldLook {
     /// Helper chrome resolved through the selected common stylesheet.
-    pub helper_geometry: crate::theme::stylesheet::ResolvedSharedGeometry,
+    pub helper_geometry: crate::theme::stylesheet::SharedGeometry,
     /// Painted caret width and extra height in pixels.
     pub caret_width: f32,
     pub caret_height_extra: f32,

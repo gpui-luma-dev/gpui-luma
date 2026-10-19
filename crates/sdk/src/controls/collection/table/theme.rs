@@ -82,7 +82,7 @@ pub struct TableRowLook {
 #[derive(Clone, Debug)]
 pub struct TableDragLook {
     /// Captured, size-resolved preview and insertion feedback geometry.
-    pub geometry: crate::theme::stylesheet::ResolvedTableGeometry,
+    pub geometry: crate::theme::stylesheet::TableGeometry,
     pub background: Hsla,
     pub foreground: Hsla,
     pub valid_marker: Hsla,

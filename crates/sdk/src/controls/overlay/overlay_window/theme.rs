@@ -68,16 +68,16 @@ impl OverlayWindowTheme for DefaultOverlayWindowTheme {
         );
 
         OverlayWindowLook {
-            viewport_padding: geometry.viewport_padding.value_px,
-            window_margin: geometry.window_margin.value_px,
-            drag_header_height: geometry.drag_header_height.value_px,
+            viewport_padding: geometry.viewport_padding,
+            window_margin: geometry.window_margin,
+            drag_header_height: geometry.drag_header_height,
 
-            border_width: geometry.border_width.value_px,
+            border_width: geometry.border_width,
             background: palette.surface.floating.background,
             border: palette.surface.floating.border,
             foreground: palette.surface.floating.foreground,
             backdrop_background: if mode == OverlayWindowMode::Modal {
-                Hsla { a: geometry.backdrop_opacity.value_px, ..black() }
+                Hsla { a: geometry.backdrop_opacity, ..black() }
             } else {
                 Hsla { a: 0.0, ..black() }
             },
@@ -86,16 +86,12 @@ impl OverlayWindowTheme for DefaultOverlayWindowTheme {
             } else {
                 elevation.overlay_window.to_box_shadows()
             },
-            radius: geometry.radius.value_px,
-            padding: geometry.padding.value_px,
-            min_width: geometry.min_width.value_px,
-            max_width: geometry.max_width.value_px,
-            estimated_height: geometry.estimated_height.value_px,
-            body: LumaTextStyle {
-                size: geometry.font_size.value_px,
-                line_height: geometry.line_height.value_px,
-                ..typography.text.body
-            },
+            radius: geometry.radius,
+            padding: geometry.padding,
+            min_width: geometry.min_width,
+            max_width: geometry.max_width,
+            estimated_height: geometry.estimated_height,
+            body: LumaTextStyle { size: geometry.font_size, line_height: geometry.line_height, ..typography.text.body },
             font_family: typography.font.sans.family.clone().into(),
         }
     }

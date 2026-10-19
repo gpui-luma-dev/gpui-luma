@@ -17,20 +17,16 @@ pub fn callout(look: &Look, text: impl Into<SharedString>, icon: impl Into<Contr
     div()
         .flex()
         .items_center()
-        .gap(px(geometry.gap.value_px))
+        .gap(px(geometry.gap))
         .w_full()
         .rounded_lg()
-        .p(px(geometry.padding.value_px))
+        .p(px(geometry.padding))
         .bg(look.resolve_step(ScaleFamily::Color, 3).hsla())
-        .child(
-            div()
-                .flex_none()
-                .child(svg().path(path).size(px(geometry.icon_size.value_px)).text_color(foreground)),
-        )
-        .child(div().text_size(px(geometry.font_size.value_px)).text_color(foreground).child(text.into()))
+        .child(div().flex_none().child(svg().path(path).size(px(geometry.icon_size)).text_color(foreground)))
+        .child(div().text_size(px(geometry.font_size)).text_color(foreground).child(text.into()))
 }
 
-pub(crate) fn resolve_geometry(look: &Look) -> gpui_luma::theme::stylesheet::ResolvedCalloutGeometry {
+pub(crate) fn resolve_geometry(look: &Look) -> gpui_luma::theme::stylesheet::CalloutGeometry {
     let metrics = look.metrics();
     let typography = gpui_luma::theme::ThemeTokens::default().typography.text.label;
     look.common_stylesheet().callout.resolve_geometry(
