@@ -1,6 +1,6 @@
 //! Typed common dimensions for remaining control families.
 use std::collections::HashMap;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use super::{optional_length, optional_unit};
 use crate::theme::provenance::ResolvedMetric;
 
@@ -48,14 +48,14 @@ macro_rules! geometry_family {
 macro_rules! geometry_family_impl {
     ($stylesheet:ident, $authored:ident, $fallback:ident, $resolved:ident, $family:literal, [$(($field:ident, $validator:literal)),+ ,]) => {
         /// Common template dimensions, with semantic size keys supplied by each look.
-        #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+        #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
         #[serde(default, deny_unknown_fields)]
         pub struct $stylesheet {
             pub geometry: $authored,
             pub sizes: HashMap<String, $authored>,
         }
         /// Optional logical pixel values. Authored zero overrides the fallback.
-        #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+        #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
         #[serde(default, deny_unknown_fields)]
         pub struct $authored {
             $(#[serde(deserialize_with = $validator)] pub $field: Option<f32>,)+
@@ -763,6 +763,600 @@ impl TableStylesheet {
     /// Fills absent table fields from SDK defaults without copying unrelated families.
     pub fn with_sdk_defaults(&self) -> Self {
         self.clone().with_baseline(&super::CommonStylesheet::sdk_default().table)
+    }
+}
+
+impl RadioStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: RadioGeometryStylesheet {
+                disabled_opacity: Some(0.56),
+                control_padding_x: Some(0.0),
+                control_padding_y: Some(0.0),
+                ..Default::default()
+            },
+            sizes: [("sm", 0.45), ("md", 0.5), ("lg", 0.55)]
+                .into_iter()
+                .map(|(key, scale)| {
+                    (
+                        key.into(),
+                        RadioGeometryStylesheet {
+                            indicator_scale: Some(scale),
+                            dot_scale: Some(0.24),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
+impl ProgressStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: ProgressGeometryStylesheet {
+                indeterminate_fraction: Some(0.28),
+                shimmer_soft_opacity: Some(0.35),
+                shimmer_mid_opacity: Some(0.85),
+                shimmer_mid_offset: Some(0.2),
+                shimmer_mid_width: Some(0.6),
+                shimmer_core_offset: Some(0.35),
+                shimmer_core_width: Some(0.3),
+                ..Default::default()
+            },
+            sizes: [("sm", 4.0, 48.0, 5.0, 12.0), ("md", 6.0, 64.0, 6.0, 16.0), ("lg", 8.0, 80.0, 8.0, 20.0)]
+                .into_iter()
+                .map(|(key, track, size, stroke, thumb)| {
+                    (
+                        key.into(),
+                        ProgressGeometryStylesheet {
+                            track_height: Some(track),
+                            size: Some(size),
+                            stroke_width: Some(stroke),
+                            thumb_size: Some(thumb),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
+impl StepperStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: StepperGeometryStylesheet {
+                side_label_width: Some(120.0),
+                label_width: Some(48.0),
+                content_gap: Some(16.0),
+                label_gap: Some(6.0),
+                side_label_gap: Some(10.0),
+                content_height: Some(120.0),
+                font_size: Some(12.0),
+                line_height: Some(16.0),
+                glyph_scale: Some(0.45),
+                number_scale: Some(0.38),
+                border_width: Some(1.0),
+                ..Default::default()
+            },
+            sizes: [("sm", 24.0, 2.0), ("md", 32.0, 2.0), ("lg", 40.0, 3.0)]
+                .into_iter()
+                .map(|(key, badge, track)| {
+                    (
+                        key.into(),
+                        StepperGeometryStylesheet {
+                            step_badge_size: Some(badge),
+                            track_thickness: Some(track),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
+impl ScrollbarStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: ScrollbarGeometryStylesheet {
+                thumb_fraction: Some(0.25),
+                disabled_opacity: Some(0.56),
+                ..Default::default()
+            },
+            sizes: [("sm", 10.0, 3.0, 6.0, 24.0), ("md", 12.0, 4.0, 8.0, 28.0), ("lg", 14.0, 5.0, 10.0, 32.0)]
+                .into_iter()
+                .map(|(key, thickness, track, thumb, min)| {
+                    (
+                        key.into(),
+                        ScrollbarGeometryStylesheet {
+                            thickness: Some(thickness),
+                            track_thickness: Some(track),
+                            thumb_thickness: Some(thumb),
+                            min_thumb_length: Some(min),
+                            length_h: Some(260.0),
+                            length_v: Some(180.0),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
+impl TooltipStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: TooltipGeometryStylesheet {
+                target_gap: Some(10.0),
+                window_margin: Some(8.0),
+                pointer_size: Some(6.0),
+                pointer_inset: Some(12.0),
+                shortcut_gap: Some(16.0),
+                shortcut_font_size: Some(12.0),
+                shortcut_opacity: Some(0.65),
+                padding: Some(12.0),
+                padding_y: Some(8.0),
+                max_width: Some(260.0),
+                font_size: Some(14.0),
+                line_height: Some(20.0),
+            },
+            sizes: HashMap::from([(
+                "compact".into(),
+                TooltipGeometryStylesheet {
+                    padding: Some(8.0),
+                    padding_y: Some(4.0),
+                    font_size: Some(12.0),
+                    line_height: Some(16.0),
+                    ..Default::default()
+                },
+            )]),
+        }
+    }
+}
+
+impl FloatingMenuStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: FloatingMenuGeometryStylesheet {
+                min_width: Some(180.0),
+                padding_scale: Some(0.5),
+                item_height_scale: Some(0.9),
+                item_padding_scale: Some(0.75),
+                submenu_offset_scale: Some(0.5),
+                disabled_opacity: Some(0.56),
+                separator_thickness: Some(1.0),
+                separator_inset: Some(0.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl ContextMenuStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: ContextMenuGeometryStylesheet {
+                border_width: Some(1.0),
+                window_margin: Some(8.0),
+                disabled_opacity: Some(0.56),
+                min_width: Some(200.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl ControlGroupStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: ControlGroupGeometryStylesheet {
+                vertical_gap: Some(8.0),
+                border_width: Some(1.0),
+                disabled_opacity: Some(0.56),
+                padding_x: Some(6.0),
+                padding_y: Some(4.0),
+                gap: Some(6.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl DockSplitterStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: DockSplitterGeometryStylesheet {
+                thumb_width: Some(4.0),
+                thumb_height: Some(36.0),
+                thumb_radius: Some(8.0),
+                thumb_rest_opacity: Some(0.4),
+                hit_target: Some(8.0),
+                visible_line: Some(1.0),
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl ResizablePanelsStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: ResizablePanelsGeometryStylesheet {
+                border_width: Some(1.0),
+                divider_width: Some(1.0),
+                grip_radius: Some(8.0),
+                disabled_opacity: Some(0.45),
+                ..Default::default()
+            },
+            sizes: [("sm", 8.0, 12.0, 4.0, 36.0), ("md", 12.0, 14.0, 6.0, 40.0), ("lg", 18.0, 20.0, 8.0, 44.0)]
+                .into_iter()
+                .map(|(key, lane, hit, cross, main)| {
+                    (
+                        key.into(),
+                        ResizablePanelsGeometryStylesheet {
+                            lane_width: Some(lane),
+                            hit_target: Some(hit),
+                            grip_cross_axis: Some(cross),
+                            grip_main_axis: Some(main),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
+impl OverlayWindowStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: OverlayWindowGeometryStylesheet {
+                viewport_padding: Some(24.0),
+                window_margin: Some(12.0),
+                drag_header_height: Some(56.0),
+                border_width: Some(1.0),
+                backdrop_opacity: Some(0.44),
+                ..Default::default()
+            },
+            sizes: [("sm", 320.0, 440.0, 196.0), ("md", 400.0, 520.0, 228.0), ("lg", 480.0, 600.0, 264.0)]
+                .into_iter()
+                .map(|(key, min, max, height)| {
+                    (
+                        key.into(),
+                        OverlayWindowGeometryStylesheet {
+                            min_width: Some(min),
+                            max_width: Some(max),
+                            estimated_height: Some(height),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
+impl SidebarStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: SidebarGeometryStylesheet {
+                rail_branch_indicator_size: Some(18.0),
+                rail_branch_overhang: Some(10.0),
+                container_gap: Some(8.0),
+                region_gap: Some(4.0),
+                header_padding_bottom: Some(8.0),
+                footer_padding_top: Some(8.0),
+                title_gap: Some(2.0),
+                title_padding_bottom: Some(4.0),
+                section_padding_top: Some(8.0),
+                disclosure_icon_size: Some(14.0),
+                rail_submenu_offset_x: Some(12.0),
+                window_margin: Some(8.0),
+                engine_item_height: Some(30.0),
+                engine_section_height: Some(20.0),
+                engine_item_padding_x: Some(8.0),
+                subtitle_opacity: Some(0.72),
+                disabled_opacity: Some(0.56),
+                width_expanded: Some(256.0),
+                width_icon_rail: Some(48.0),
+                width_mobile: Some(288.0),
+                item_height: Some(32.0),
+                item_icon_size: Some(16.0),
+                rail_hit_width: Some(6.0),
+                popover_offset: Some(8.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl TreeViewStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: TreeViewGeometryStylesheet {
+                drag_marker_width: Some(1.0),
+                drag_insert_width: Some(2.0),
+                drag_opacity: Some(0.12),
+                scrollbar_width: Some(12.0),
+                disabled_opacity: Some(0.4),
+                preview_padding_x: Some(12.0),
+                preview_padding_y: Some(4.0),
+                row_height_scale: Some(0.85),
+                indentation_width: Some(16.0),
+                chevron_inset: Some(2.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl AccordionStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: AccordionGeometryStylesheet {
+                drag_handle_padding: Some(2.0),
+                disabled_opacity: Some(0.56),
+                content_padding_scale: Some(1.5),
+                item_gap: Some(0.0),
+                icon_size: Some(16.0),
+                chevron_size: Some(14.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl TableStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: TableGeometryStylesheet {
+                row_divider_width: Some(1.0),
+                column_padding_x: Some(12.0),
+                column_muted_opacity: Some(0.65),
+                column_resize_hit_width: Some(10.0),
+                column_resize_line_width: Some(1.0),
+                column_resize_vertical_extension: Some(4.0),
+                drag_offset: Some(12.0),
+                drag_width: Some(220.0),
+                drag_padding_x: Some(12.0),
+                drag_padding_y: Some(8.0),
+                drag_border_width: Some(1.0),
+                drag_marker_width: Some(2.0),
+                border_width: Some(1.0),
+                header_divider_width: Some(1.0),
+                header_padding_bottom_scale: Some(3.0 / 4.0),
+                padding_x: Some(0.0),
+                padding_y_scale: Some(1.0 / 2.0),
+                row_radius: Some(0.0),
+                row_hover_opacity: Some(0.4),
+                row_disabled_opacity: Some(0.56),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl SelectorStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: SelectorGeometryStylesheet { menu_offset_scale: Some(1.0 / 2.0), ..Default::default() },
+            ..Default::default()
+        }
+    }
+}
+
+impl PagerStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: PagerGeometryStylesheet {
+                gap_icon_size: Some(16.0),
+                border_width: Some(1.0),
+                page_size_label_gap: Some(8.0),
+                popup_offset_y: Some(4.0),
+                popup_gap: Some(2.0),
+                popup_padding: Some(4.0),
+                popup_item_padding_y: Some(4.0),
+                popup_item_radius_inset: Some(2.0),
+                padding_x_inset_scale: Some(1.0 / 2.0),
+                padding_y_gap_scale: Some(1.0 / 2.0),
+                button_extra_width_scale: Some(1.0),
+                disabled_opacity: Some(0.56),
+                ..Default::default()
+            },
+            sizes: HashMap::from([(
+                "minimal".into(),
+                PagerGeometryStylesheet { button_extra_width_scale: Some(0.0), ..Default::default() },
+            )]),
+        }
+    }
+}
+
+impl PopupMenuStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: PopupMenuGeometryStylesheet { menu_offset_scale: Some(1.0 / 2.0), ..Default::default() },
+            ..Default::default()
+        }
+    }
+}
+
+impl PopoverStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: PopoverGeometryStylesheet { window_margin: Some(8.0), ..Default::default() },
+            sizes: [("button", 0.0), ("panel", 4.0)]
+                .into_iter()
+                .map(|(key, offset)| {
+                    (key.into(), PopoverGeometryStylesheet { offset_y: Some(offset), ..Default::default() })
+                })
+                .collect(),
+        }
+    }
+}
+
+impl SlidePanelStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: SlidePanelGeometryStylesheet {
+                side_width: Some(360.0),
+                edge_height: Some(420.0),
+                edge_max_viewport_ratio: Some(0.72),
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl RadioGroupStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: RadioGroupGeometryStylesheet {
+                item_gap: Some(8.0),
+                disabled_opacity: Some(0.56),
+                ..Default::default()
+            },
+            sizes: [("vertical", 8.0), ("horizontal", 12.0)]
+                .into_iter()
+                .map(|(key, gap)| (key.into(), RadioGroupGeometryStylesheet { gap: Some(gap), ..Default::default() }))
+                .collect(),
+        }
+    }
+}
+
+impl AutocompleteStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: AutocompleteGeometryStylesheet {
+                gap: Some(10.0),
+                status_gap: Some(10.0),
+                clear_inset: Some(10.0),
+                clear_width: Some(18.0),
+                clear_icon_size: Some(12.0),
+                trigger_width: Some(240.0),
+                popup_extra_width: Some(24.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl ComboBoxStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: ComboBoxGeometryStylesheet {
+                affordance_inset: Some(10.0),
+                affordance_width: Some(18.0),
+                affordance_icon_size: Some(12.0),
+                affordance_gap: Some(2.0),
+                trigger_extra_gap: Some(8.0),
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl SearchSelectorStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: SearchSelectorGeometryStylesheet {
+                border_width: Some(1.0),
+                search_icon_width: Some(18.0),
+                search_icon_size: Some(12.0),
+                trigger_icon_extra_width: Some(10.0),
+                trigger_extra_gap: Some(8.0),
+                search_padding: Some(8.0),
+                search_separator_height: Some(1.0),
+                search_padding_reduction: Some(3.0),
+                search_input_height_floor: Some(18.0),
+                search_chrome_height: Some(57.0),
+                trailing_icon_size: Some(14.0),
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl TextFieldStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: TextFieldGeometryStylesheet {
+                caret_width: Some(1.5),
+                caret_height_extra: Some(2.0),
+                disabled_opacity: Some(0.6),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl TextAreaStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: TextAreaGeometryStylesheet {
+                caret_width: Some(1.5),
+                caret_height_extra: Some(2.0),
+                disabled_opacity: Some(0.6),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl SplitViewStylesheet {
+    /// Native SDK geometry, equivalent to the retained stylesheet.
+    pub fn native_default() -> Self {
+        Self {
+            geometry: SplitViewGeometryStylesheet {
+                hitbox_width: Some(20.0),
+                expand_inset_y: Some(10.0),
+                expand_cue_left: Some(2.0),
+                cue_inset_y: Some(16.0),
+                cue_radius: Some(4.0),
+                cue_width: Some(4.0),
+                cue_hovered_width: Some(8.0),
+            },
+            ..Default::default()
+        }
     }
 }
 

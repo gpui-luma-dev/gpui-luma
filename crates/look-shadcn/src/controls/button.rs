@@ -291,7 +291,7 @@ pub(crate) fn resolve_family_geometry(
     if matches!(geometry.height.source, gpui_luma::theme::provenance::MetricSource::Constant { .. }) {
         if let Some(token) = height_source {
             geometry.height.source = gpui_luma::theme::provenance::MetricSource::Derived {
-                note: format!("style.toml · {family}.tokens.{key}.height → {token}"),
+                note: format!("stylesheet · {family}.tokens.{key}.height → {token}"),
             };
         }
     }

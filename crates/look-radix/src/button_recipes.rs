@@ -2,7 +2,7 @@
 use std::sync::OnceLock;
 use gpui::Hsla;
 use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use crate::{
     button::{ButtonVariant, Paint, ClassicButtonParams},
     look::Look,
@@ -11,7 +11,7 @@ use crate::{
 };
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(try_from = "String")]
 enum Color {
     Tone(u8),
@@ -21,6 +21,30 @@ enum Color {
     None,
     Background,
     Semantic(SemanticRole),
+}
+impl Serialize for Color {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let value = match self {
+            Self::Tone(step) => format!("tone.{step}"),
+            Self::Gray(step) => format!("gray.{step}"),
+            Self::Contrast => "contrast".into(),
+            Self::Transparent => "transparent".into(),
+            Self::None => "none".into(),
+            Self::Background => "background".into(),
+            Self::Semantic(role) => match role {
+                SemanticRole::Background => "role.background",
+                SemanticRole::Surface => "role.surface",
+                SemanticRole::Foreground => "role.foreground",
+                SemanticRole::PrimaryForeground => "role.primary_foreground",
+                SemanticRole::MutedForeground => "role.muted_foreground",
+                SemanticRole::Border => "role.border",
+                SemanticRole::Focus => "role.focus",
+                _ => return Err(serde::ser::Error::custom("unsupported recipe semantic role")),
+            }
+            .into(),
+        };
+        serializer.serialize_str(&value)
+    }
 }
 impl TryFrom<String> for Color {
     type Error = String;
@@ -50,7 +74,7 @@ impl TryFrom<String> for Color {
         })
     }
 }
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Rule {
     #[serde(default)]
@@ -70,7 +94,7 @@ pub(crate) struct Rule {
     background_delta: f32,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Recipes {
     pub classic: ClassicButtonParams,
@@ -78,11 +102,250 @@ pub(crate) struct Recipes {
 }
 pub(crate) fn embedded() -> &'static Recipes {
     static RECIPES: OnceLock<Recipes> = OnceLock::new();
-    RECIPES.get_or_init(|| {
-        // Embedded data is validated by tests. No panics in look/library code.
-        parse(include_str!("../assets/style.toml"))
-            .unwrap_or_else(|_| Recipes { classic: ClassicButtonParams::zero(), rules: Vec::new() })
-    })
+    RECIPES.get_or_init(Recipes::native_default)
+}
+
+impl Recipes {
+    /// Native bundled button definitions, retaining the ordered overrides.
+    fn native_default() -> Self {
+        let mut classic = ClassicButtonParams::zero();
+        classic.pressed_rim_lightness_scale = 0.5;
+        classic.pressed_rim_alpha_scale = 0.6;
+        classic.lightness_min = 0.02;
+        classic.lightness_max = 0.98;
+        classic.radius = 4.0;
+        classic.fill_top_delta = 0.0;
+        classic.fill_bottom_delta = 0.067;
+        classic.border_delta = -0.022;
+        classic.bevel_darken = 0.045;
+        classic.bevel_offset = 1.0;
+        classic.bevel_alpha = 1.0;
+        classic.rim_lighten = 0.3;
+        classic.rim_offset = 1.0;
+        classic.rim_alpha = 0.95;
+        classic.fade_offset = 4.0;
+        classic.fade_blur = 4.0;
+        classic.fade_spread = -2.0;
+        classic.fade_alpha = 0.35;
+        classic.drop_offset = 1.0;
+        classic.drop_blur = 2.0;
+        classic.drop_alpha = 0.08;
+        Self {
+            classic,
+            rules: vec![
+                Rule {
+                    background: Some(Color::Tone(9)),
+                    foreground: Some(Color::Contrast),
+                    border: Some(Color::Tone(9)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["soft".into()],
+                    selected: Some(false),
+                    background: Some(Color::Tone(3)),
+                    foreground: Some(Color::Tone(11)),
+                    border: Some(Color::Tone(3)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["surface".into()],
+                    selected: Some(false),
+                    background: Some(Color::Tone(2)),
+                    foreground: Some(Color::Tone(11)),
+                    border: Some(Color::Tone(7)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["outline".into()],
+                    selected: Some(false),
+                    background: Some(Color::Transparent),
+                    foreground: Some(Color::Semantic(SemanticRole::Foreground)),
+                    border: Some(Color::Semantic(SemanticRole::Border)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["ghost".into(), "ghost_quiet".into()],
+                    selected: Some(false),
+                    background: Some(Color::Transparent),
+                    foreground: Some(Color::Semantic(SemanticRole::Foreground)),
+                    border: Some(Color::None),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["classic".into(), "solid".into()],
+                    selected: Some(false),
+                    high_contrast: Some(true),
+                    background: Some(Color::Tone(12)),
+                    foreground: Some(Color::Gray(1)),
+                    border: Some(Color::Tone(12)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec![
+                        "soft".into(),
+                        "surface".into(),
+                        "outline".into(),
+                        "ghost".into(),
+                        "ghost_quiet".into(),
+                    ],
+                    selected: Some(false),
+                    high_contrast: Some(true),
+                    foreground: Some(Color::Tone(12)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["outline".into()],
+                    selected: Some(false),
+                    high_contrast: Some(true),
+                    border: Some(Color::Tone(11)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["solid".into(), "classic".into()],
+                    layer: Some("hovered".into()),
+                    high_contrast: Some(false),
+                    background: Some(Color::Tone(10)),
+                    ..Default::default()
+                },
+                Rule {
+                    selected: Some(true),
+                    layer: Some("hovered".into()),
+                    high_contrast: Some(false),
+                    background: Some(Color::Tone(10)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["solid".into(), "classic".into()],
+                    layer: Some("hovered".into()),
+                    high_contrast: Some(true),
+                    background: Some(Color::Tone(12)),
+                    background_delta: 0.04,
+                    ..Default::default()
+                },
+                Rule {
+                    selected: Some(true),
+                    layer: Some("hovered".into()),
+                    high_contrast: Some(true),
+                    background: Some(Color::Tone(12)),
+                    background_delta: 0.04,
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec![
+                        "soft".into(),
+                        "surface".into(),
+                        "outline".into(),
+                        "ghost".into(),
+                        "ghost_quiet".into(),
+                    ],
+                    selected: Some(false),
+                    layer: Some("hovered".into()),
+                    background: Some(Color::Tone(3)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["solid".into(), "classic".into()],
+                    layer: Some("pressed".into()),
+                    high_contrast: Some(false),
+                    background: Some(Color::Tone(10)),
+                    ..Default::default()
+                },
+                Rule {
+                    selected: Some(true),
+                    layer: Some("pressed".into()),
+                    high_contrast: Some(false),
+                    background: Some(Color::Tone(10)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["solid".into(), "classic".into()],
+                    layer: Some("pressed".into()),
+                    high_contrast: Some(true),
+                    background: Some(Color::Tone(12)),
+                    background_delta: -0.03,
+                    ..Default::default()
+                },
+                Rule {
+                    selected: Some(true),
+                    layer: Some("pressed".into()),
+                    high_contrast: Some(true),
+                    background: Some(Color::Tone(12)),
+                    background_delta: -0.03,
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec![
+                        "soft".into(),
+                        "surface".into(),
+                        "outline".into(),
+                        "ghost".into(),
+                        "ghost_quiet".into(),
+                    ],
+                    selected: Some(false),
+                    layer: Some("pressed".into()),
+                    background: Some(Color::Tone(4)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["surface".into()],
+                    selected: Some(false),
+                    layer: Some("hovered".into()),
+                    border: Some(Color::Tone(8)),
+                    ..Default::default()
+                },
+                Rule {
+                    layer: Some("disabled".into()),
+                    background: Some(Color::Semantic(SemanticRole::Surface)),
+                    foreground: Some(Color::Semantic(SemanticRole::MutedForeground)),
+                    border: Some(Color::Semantic(SemanticRole::Border)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["classic".into()],
+                    enabled: Some(true),
+                    border: Some(Color::Background),
+                    classic_edge: true,
+                    ..Default::default()
+                },
+                Rule { focused: Some(true), border: Some(Color::Semantic(SemanticRole::Focus)), ..Default::default() },
+                Rule {
+                    variants: vec!["page".into()],
+                    background: Some(Color::Transparent),
+                    foreground: Some(Color::Semantic(SemanticRole::MutedForeground)),
+                    border: Some(Color::None),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["page".into()],
+                    selected: Some(true),
+                    mode: Some("light".into()),
+                    background: Some(Color::Semantic(SemanticRole::Foreground)),
+                    foreground: Some(Color::Semantic(SemanticRole::Background)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["page".into()],
+                    selected: Some(true),
+                    mode: Some("dark".into()),
+                    background: Some(Color::Semantic(SemanticRole::PrimaryForeground)),
+                    foreground: Some(Color::Semantic(SemanticRole::Background)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["page".into()],
+                    layer: Some("disabled".into()),
+                    foreground: Some(Color::Semantic(SemanticRole::MutedForeground)),
+                    ..Default::default()
+                },
+                Rule {
+                    variants: vec!["ghost_quiet".into()],
+                    background: Some(Color::Transparent),
+                    border: Some(Color::None),
+                    ..Default::default()
+                },
+            ],
+        }
+    }
 }
 pub(crate) fn parse(source: &str) -> anyhow::Result<Recipes> {
     #[derive(Deserialize)]
@@ -455,7 +718,11 @@ mod tests {
 
     #[test]
     fn authored_recipes_preserve_every_legacy_variant_state_and_mode() {
-        parse(include_str!("../assets/style.toml")).unwrap();
+        let document = toml::Value::Table(toml::map::Map::from_iter([(
+            "button_recipes".into(),
+            toml::Value::try_from(embedded()).unwrap(),
+        )]));
+        assert_eq!(parse(&toml::to_string(&document).unwrap()).unwrap(), *embedded());
         let look = Look::built_in();
         for mode in [ThemeMode::Light, ThemeMode::Dark] {
             look.set_mode(mode);

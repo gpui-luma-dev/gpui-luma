@@ -1,6 +1,6 @@
 //! Radio button property mappings (tweakcn / shadcn):
 //!
-//! Indicator variants (per-style default in `style.toml` `[radio.indicator_defaults]`):
+//! Indicator variants (per-style default in `RadioStylesheet::native_default()`):
 //!
 //! | Variant | Selected look |
 //! |---------|----------------|

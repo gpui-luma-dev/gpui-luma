@@ -1,13 +1,13 @@
 //! Palette recipes reuse semantic tokens; state dispatch remains control behavior.
 use std::collections::HashMap;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use crate::theme::LumaPalette;
 use gpui::Hsla;
 
 macro_rules! palette_roles {
     ($($variant:ident => $name:literal => $($field:ident).+),+ $(,)?) => {
         /// A validated reference into the shared semantic palette.
-        #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash)]
+        #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Hash, Serialize)]
         pub enum PaletteRole {
             $(#[serde(rename = $name)] $variant,)+
         }
@@ -75,7 +75,7 @@ palette_roles! {
 
 /// Family-local semantic mappings. Keys and values use the same validated token
 /// references. This changes a recipe without copying concrete palette colors.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(transparent)]
 pub struct PaletteRecipes(pub HashMap<String, HashMap<PaletteRole, PaletteRole>>);
 
@@ -112,13 +112,13 @@ impl PaletteRecipes {
 
 /// Presentation row budgets; zero is retained in configuration and controls
 /// enforce at least one actual row when calculating a nonempty viewport.
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct RowLimits {
     pub min: Option<usize>,
     pub max: Option<usize>,
 }
-#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(transparent)]
 pub struct RowLimitsStylesheet(pub HashMap<String, RowLimits>);
 impl RowLimitsStylesheet {
@@ -139,7 +139,8 @@ impl RowLimitsStylesheet {
 }
 
 /// Named OpenType feature sets. Empty arrays deliberately clear an inherited set.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+#[serde(transparent)]
 pub struct FontFeaturesStylesheet(pub HashMap<String, Vec<(String, u32)>>);
 impl<'de> Deserialize<'de> for FontFeaturesStylesheet {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
@@ -193,7 +194,7 @@ mod tests {
 
     #[test]
     fn baseline_semantic_recipes_are_identity_for_every_family_and_mode() {
-        let sheet = CommonStylesheet::parse(super::super::DEFAULT_STYLE_TOML).unwrap();
+        let sheet = CommonStylesheet::sdk_default().clone();
         assert!(!sheet.recipes.0.is_empty());
         for mode in [ThemeMode::Light, ThemeMode::Dark] {
             let tokens = sheet.theme_tokens(mode, GamutMapping::CssLocalMinde).unwrap();

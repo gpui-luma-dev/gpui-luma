@@ -1,7 +1,7 @@
 # Shared stylesheet contract
 
-The SDK embeds `crates/sdk/assets/style.toml` as the authoritative vanilla
-appearance and motion baseline. SDK-only applications need no look crate.
+The SDK authors its appearance and motion baseline in Rust, in the existing
+`theme/stylesheet` and `theme/tokens` source files. SDK-only applications need no look crate.
 Shadcn and Radix inherit this data and author their own differences. The bundled
 SDK palette is monochrome in both light and dark modes, including focus, status,
 data accents and shell controls. A look or application can still author colors.
@@ -10,7 +10,7 @@ labels and grids follow SDK tokens.
 
 ## Ownership and public APIs
 
-`CommonStylesheet::sdk_default()` exposes the embedded baseline.
+`CommonStylesheet::sdk_default()` exposes the cached native baseline.
 `CommonStylesheet::resolve_layers(&[look, application])` overlays sparse documents.
 `sheet.theme_tokens(mode, mapping)` creates the existing public `ThemeTokens`
 with retained source colors, projected paint colors and a captured stylesheet.
@@ -33,8 +33,10 @@ templates; third-party looks use the same APIs.
 | Title-bar dimensions and platform insets | `common.shell.geometry` |
 | Typed animation roles | `common.motion` |
 
-Token default constructors and public title-bar constants are compiled from the
-asset at build time. They do not repeat authored numbers or colors in Rust.
+Token constructors and public title-bar constants are authored directly in Rust.
+Bundled SDK and look initialization require no TOML parsing or build generation.
+Clone the cached baseline for independent edits; `.with(|sheet| ...)` edits that
+copy. Direct field mutation does not clear inherited size-specific fields.
 The parsed common schema rejects unknown typed fields. Root sections belonging
 to a look are left for that look's parser.
 
@@ -73,34 +75,19 @@ panel-local icon pairs or a panel-local stylesheet take precedence.
 Motion keeps its existing separate snapshot and reduced-motion policy. An authored
 transition replaces the complete role; partial transitions are rejected.
 
-## Colors and arithmetic
+## Colors, arithmetic and external formats
 
-Author palette and shadow colors as `"hsla(h, s%, l%, a)"`: hue is degrees,
-saturation/lightness are percentages and alpha is 0–1.
+Bundled constructors use typed `ColorValue` values and ordinary floating-point
+arithmetic such as `32.0 / 28.0`. Source colors remain available alongside projected
+paint colors under the selected gamut-mapping policy.
 
-```toml
-[common.tokens.palette.light.app]
-foreground = "hsla(0, 0%, 11.18%, 1)"
-```
-
-Build-time and runtime loading use the same conversion. Explicit tagged
-`ColorValue` persistence remains available for other source color spaces; rendering
-uses the chosen gamut-mapping policy without discarding source colors.
-
-Numeric fields under `common` accept quoted `"math(...)"` expressions, evaluated
-once with `fasteval` before normal field validation:
-
-```toml
-[common.switch.sizes.sm]
-track_width_scale = "math(32 / 28)" # track width / control height
-track_height_scale = "math(13 / 28)"
-thumb_scale = "math(9 / 28)"
-```
-
-Division is real floating-point division. Literals, scientific notation,
-parentheses and `+ - * / % ^` are supported. Variables, token references and
-function calls are rejected. Malformed/nonfinite/out-of-f32 results fail with the
-field path. Plain numbers remain valid.
+External TOML remains supported by `CommonStylesheet::parse` and `resolve_layers`,
+Shadcn's `StylesheetConfig::parse`, and Radix's `Look::set_button_recipes`.
+These are format adapters; their baseline comes from the native Rust constructors.
+Sparse documents preserve zero/false/empty arrays and existing layer precedence.
+The adapters retain HSLA string conversion and `math(...)` evaluation for existing
+consumer input; bundled defaults use neither. Applications own file access and
+input-size limits. Invalid fields and references are rejected by the typed parser.
 
 ## Semantic state recipes
 
@@ -108,12 +95,14 @@ State dispatch remains control behavior: disabled > pressed > hovered > default,
 with independent focus/invalid signals. The tokens selected by those recipes are
 authored through validated `PaletteRole` references:
 
-```toml
-[common.recipes.button]
-"state.hover.background" = "state.selected.background"
-
-[common.recipes.checkbox]
-"state.selected.background" = "data.positive"
+```rust
+use gpui_luma::theme::stylesheet::{CommonStylesheet, PaletteRole};
+let sheet = CommonStylesheet::sdk_default().clone().with(|sheet| {
+    sheet.recipes.0.entry("button".into()).or_default().insert(
+        PaletteRole::StateHoverBackground,
+        PaletteRole::StateSelectedBackground,
+    );
+});
 ```
 
 A recipe maps a consumed semantic slot to a shared semantic source, rather than
@@ -128,9 +117,9 @@ selection during hover/press, while Sidebar permits transient hover/press paint.
 Disabled active Tabs suppress focus paint.
 
 Shadcn keeps its existing look-owned color/elevation rules and CSS token catalog.
-Radix authors ordered button state rules and Classic tuning under
-`button_recipes` in its look stylesheet. `Look::set_button_recipes(source)`
-loads sparse overrides over that embedded data; a supplied rules array replaces
+Radix authors ordered button state rules and Classic tuning in its existing
+`src/button_recipes.rs` Rust module. `Look::set_button_recipes(source)`
+loads sparse overrides over those native defaults; a supplied rules array replaces
 the ordered list. Matching rules run in order over variant, selected,
 high-contrast, mode, interaction-layer and enabled-focus axes. Colors reference
 tone/gray steps, contrast or semantic roles. Scale steps are validated in 1–12;
@@ -177,9 +166,9 @@ use gpui_luma::{
     controls::progress::{DefaultProgressTheme, ProgressTheme},
     theme::{ControlSize, ThemeMode, stylesheet::CommonStylesheet},
 };
-let sheet = CommonStylesheet::resolve_layers(&[
-    "[common.progress.sizes.md]\ntrack_height = 9",
-])?;
+let sheet = CommonStylesheet::sdk_default().clone().with(|sheet| {
+    sheet.progress.sizes.entry("md".into()).or_default().track_height = Some(9.0);
+});
 let tokens = sheet.theme_tokens(ThemeMode::Light, GamutMapping::CssLocalMinde)?;
 let theme = DefaultProgressTheme::new(tokens);
 assert_eq!(theme.resolve(true, ControlSize::Md).track_height, 9.0);
@@ -189,12 +178,14 @@ Use the same resolved common sheet in a custom look, create its theme factories,
 and attach existing SDK themed templates. Consumers keep SDK behavior, focus and
 events. See [Create a Look](create-look.html#baseline) for compiled examples.
 
-## Audit and retained Rust
+## Audit and native sources
 
 [The family inventory](sdk-style-inventory.md) covers all SDK controls and shared
 styling helpers. [The CSV](sdk-style-candidates.csv) preserves historical source
-expressions and their classification/rationale; line zero denotes a family-level
-summary. Superseded rows describe removed expressions, not current source.
+expressions and their classification/rationale; line zero denotes a family-level summary or a migrated native owner.
+Historical TOML expressions in the CSV are audit evidence, not active defaults.
+The old-versus-new parity checks passed before the bundled TOML files were removed;
+behavior, precedence, snapshot and external-format regression tests remain. Superseded rows describe removed expressions, not current source.
 `scripts/check_sdk_style_inventory.py` rejects unclassified entries.
 
 Rust retains resolution/validation, semantic state dispatch, transparency/empty

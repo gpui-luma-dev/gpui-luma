@@ -129,7 +129,7 @@ impl Transition {
 
 /// Existing cubic behavior plus linear interpolation. Further curves can be
 /// supplied through a custom definition without changing controls.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Deserialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Easing {
     Linear,

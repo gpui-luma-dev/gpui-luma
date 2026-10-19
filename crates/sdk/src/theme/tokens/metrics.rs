@@ -1,7 +1,7 @@
 use super::ControlSize;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct MetricTokens {
     /// Default whole-control disabled opacity; family recipes may override it.
@@ -14,7 +14,7 @@ pub struct MetricTokens {
     pub control: ControlMetricScale,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct SpacingTokens {
     #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
@@ -33,7 +33,7 @@ pub struct SpacingTokens {
     pub s6: f32,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct RadiusTokens {
     #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
@@ -50,7 +50,7 @@ pub struct RadiusTokens {
     pub pill: f32,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct BorderWidthTokens {
     #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
@@ -61,7 +61,7 @@ pub struct BorderWidthTokens {
     pub strong: f32,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct FocusMetricTokens {
     /// Visual gap between a control and its focus ring, in pixels.
@@ -73,7 +73,7 @@ pub struct FocusMetricTokens {
     pub offset: f32,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ControlMetricScale {
     pub sm: ControlMetricTokens,
@@ -81,7 +81,7 @@ pub struct ControlMetricScale {
     pub lg: ControlMetricTokens,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ControlMetricTokens {
     #[serde(deserialize_with = "crate::theme::stylesheet::required_length")]
@@ -102,7 +102,7 @@ pub struct ControlMetricTokens {
 
 impl Default for MetricTokens {
     fn default() -> Self {
-        include!(concat!(env!("OUT_DIR"), "/metrics.rs"))
+        Self::native_default()
     }
 }
 
@@ -113,6 +113,22 @@ impl ControlMetricTokens {
 }
 
 impl MetricTokens {
+    /// Construct the bundled SDK metrics without parsing theme data.
+    pub fn native_default() -> Self {
+        Self {
+            disabled_opacity: 0.56,
+            spacing: SpacingTokens { s0: 0.0, s1: 4.0, s2: 6.0, s3: 8.0, s4: 12.0, s5: 16.0, s6: 24.0 },
+            radius: RadiusTokens { none: 0.0, sm: 3.0, md: 6.0, lg: 8.0, xl: 12.0, pill: 999.0 },
+            border_width: BorderWidthTokens { hairline: 0.5, default: 1.0, strong: 2.0 },
+            focus: FocusMetricTokens { gap: 1.0, width: 1.0, offset: 0.0 },
+            control: ControlMetricScale {
+                sm: ControlMetricTokens::new(28.0, 10.0, 5.0, 6.0, 5.0, 14.0),
+                md: ControlMetricTokens::new(36.0, 14.0, 8.0, 8.0, 6.0, 16.0),
+                lg: ControlMetricTokens::new(44.0, 18.0, 10.0, 10.0, 8.0, 18.0),
+            },
+        }
+    }
+
     pub fn for_size(&self, size: ControlSize) -> ControlMetricTokens {
         match size {
             ControlSize::Sm => self.control.sm,

@@ -47,7 +47,7 @@ pub fn elevation_snapshot(
     InspectElevationSnapshot {
         property_rows: vec![
             InspectPropertyRow::new("applied", if elevation.applied { "yes" } else { "no" }, applied_source),
-            InspectPropertyRow::new("rule", elevation.rule_shadow.as_str(), "style.toml - elevation_rules"),
+            InspectPropertyRow::new("rule", elevation.rule_shadow.as_str(), "stylesheet - elevation_rules"),
             InspectPropertyRow::new("style", elevation.style_key.as_str(), style_source),
             InspectPropertyRow::new(
                 "token",

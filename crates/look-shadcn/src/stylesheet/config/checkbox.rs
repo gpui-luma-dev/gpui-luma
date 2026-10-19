@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 use super::{LayeredElevationRule, matches_optional_bool};
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct CheckboxStylesheet {
     #[serde(default)]
     pub elevation_rules: Vec<LayeredElevationRule>,
@@ -32,7 +32,7 @@ impl CheckboxStylesheet {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct CheckboxColorRule {
     pub layer: Option<String>,
     pub checked: Option<bool>,

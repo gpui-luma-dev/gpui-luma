@@ -7,7 +7,7 @@ use crate::controls::ShadcnButtonStyle;
 
 use super::{LayeredElevationRule, control_size_key, matches_optional_bool};
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct SwitchStylesheet {
     /// Switch geometry keyed by `sm` / `md` / `lg`. All variants share these metrics.
     #[serde(default)]
@@ -40,14 +40,14 @@ impl SwitchStylesheet {
         self.metrics_for_size(size)
     }
 }
-#[derive(Debug, Deserialize, Clone, Copy)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub struct SwitchMetricsRule {
     pub width: f32,
     pub height: f32,
     pub thumb_size: f32,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct SwitchColorRule {
     pub on: Option<bool>,
     pub disabled: Option<bool>,

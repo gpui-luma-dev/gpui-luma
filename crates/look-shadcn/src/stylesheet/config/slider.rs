@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use super::{LayeredElevationRule, matches_optional_layer};
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct SliderStylesheet {
     #[serde(default)]
     pub metrics: HashMap<String, SliderMetricsRule>,
@@ -40,7 +40,7 @@ impl SliderStylesheet {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct SliderMetricsRule {
     pub width: f32,
     pub height: f32,
@@ -49,7 +49,7 @@ pub struct SliderMetricsRule {
     pub radius: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct SliderColorRule {
     pub style: Option<String>,
     pub layer: Option<String>,

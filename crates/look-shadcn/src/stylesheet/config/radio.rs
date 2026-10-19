@@ -5,7 +5,7 @@ use crate::controls::ShadcnButtonStyle;
 
 use super::{LayeredElevationRule, matches_optional_bool, matches_optional_str};
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct RadioIndicatorDefaults {
     pub primary: Option<String>,
     pub secondary: Option<String>,
@@ -25,7 +25,7 @@ impl RadioIndicatorDefaults {
     }
 }
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct RadioStylesheet {
     #[serde(default)]
     pub indicator_defaults: RadioIndicatorDefaults,
@@ -36,6 +36,56 @@ pub struct RadioStylesheet {
 }
 
 impl RadioStylesheet {
+    /// Native bundled radio rules in matching order.
+    pub fn native_default() -> Self {
+        Self {
+            indicator_defaults: RadioIndicatorDefaults {
+                primary: Some("filled".into()),
+                secondary: Some("ring".into()),
+                outline: Some("ring".into()),
+                ghost: Some("ring".into()),
+            },
+            elevation_rules: vec![
+                LayeredElevationRule { layer: None, shadow: "shadow-xs".into() },
+                LayeredElevationRule { layer: Some("disabled".into()), shadow: "none".into() },
+            ],
+            color_rules: [
+                (Some("disabled"), None, None, "muted", "muted-foreground", "muted-foreground", "muted-foreground"),
+                (None, Some(false), None, "@outline_layer", "border", "foreground", "foreground"),
+                (
+                    None,
+                    Some(true),
+                    Some("filled"),
+                    "@action_layer",
+                    "@action_layer",
+                    "@action_foreground",
+                    "foreground",
+                ),
+                (
+                    None,
+                    Some(true),
+                    Some("ring"),
+                    "@outline_layer",
+                    "@action_layer",
+                    "@action_foreground",
+                    "foreground",
+                ),
+                (None, Some(true), Some("dot"), "@outline_layer", "border", "@action_layer", "foreground"),
+            ]
+            .into_iter()
+            .map(|(layer, selected, indicator, background, ring, dot, label)| RadioColorRule {
+                layer: layer.map(Into::into),
+                selected,
+                indicator: indicator.map(Into::into),
+                indicator_background: background.into(),
+                selection_ring: ring.into(),
+                dot_color: dot.into(),
+                label_color: label.into(),
+            })
+            .collect(),
+        }
+    }
+
     pub fn elevation_rule_for_layer(&self, layer: InteractionLayer) -> Option<&LayeredElevationRule> {
         if layer == InteractionLayer::Disabled {
             return self.elevation_rules.iter().find(|rule| rule.layer.as_deref() == Some("disabled"));
@@ -68,7 +118,7 @@ impl RadioStylesheet {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct RadioColorRule {
     pub layer: Option<String>,
     pub selected: Option<bool>,

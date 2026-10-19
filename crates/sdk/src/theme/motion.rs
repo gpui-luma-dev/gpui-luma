@@ -49,7 +49,7 @@ impl Default for MotionDefaults {
 }
 
 impl MotionDefaults {
-    /// Cached motion profiles compiled from the SDK-owned `assets/style.toml`.
+    /// Cached motion profiles constructed from the SDK-owned Rust defaults.
     /// Control profile defaults and looks share this baseline.
     pub fn vanilla() -> &'static Self {
         static DEFAULT: std::sync::OnceLock<MotionDefaults> = std::sync::OnceLock::new();

@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use super::{EnabledColorRule, control_size_key, find_enabled_color_rule};
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct ProgressStylesheet {
     #[serde(default)]
     pub metrics: HashMap<String, ProgressMetricsRule>,
@@ -14,6 +14,21 @@ pub struct ProgressStylesheet {
 }
 
 impl ProgressStylesheet {
+    /// Native bundled progress colors.
+    pub fn native_default() -> Self {
+        Self {
+            color_rules: [(true, "accent", "accent-foreground"), (false, "muted-foreground", "muted-foreground")]
+                .into_iter()
+                .map(|(enabled, track, progress)| ProgressColorRule {
+                    enabled: Some(enabled),
+                    track_color: track.into(),
+                    progress_color: progress.into(),
+                })
+                .collect(),
+            ..Default::default()
+        }
+    }
+
     pub fn metrics_for_size(&self, size: ControlSize) -> Option<&ProgressMetricsRule> {
         self.metrics.get(control_size_key(size))
     }
@@ -23,7 +38,7 @@ impl ProgressStylesheet {
     }
 }
 
-#[derive(Debug, Deserialize, Clone, Copy)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub struct ProgressMetricsRule {
     pub size: f32,
     pub stroke_width: f32,
@@ -41,7 +56,7 @@ fn default_progress_thumb_size() -> f32 {
     16.0
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct ProgressColorRule {
     pub enabled: Option<bool>,
     pub track_color: String,

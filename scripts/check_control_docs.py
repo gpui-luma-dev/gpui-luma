@@ -9,7 +9,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = {
-    "motion.html": [0, 2, 3, 4],
+    "motion.html": [0, 1, 2, 3, 4],
     "drag-drop.html": 0,
     "plot-interaction.html": 0,
     "plot-view-state.html": 0,
@@ -34,7 +34,7 @@ EXAMPLES = {
     "look-shadcn.html": 0,
     "architecture.html": 0,
     "looks.html": 0,
-    "create-look.html": [0, 1],
+    "create-look.html": [0, 1, 2],
     "accordion.html": [0, 1],
     "autocomplete.html": 0,
     "context-menu.html": 0,

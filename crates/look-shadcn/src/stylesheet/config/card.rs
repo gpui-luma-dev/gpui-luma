@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use super::floating_menu::FloatingMenuSurfaceElevationRule;
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct CardStylesheet {
     #[serde(default)]
     pub elevation_rules: Vec<FloatingMenuSurfaceElevationRule>,
@@ -11,6 +11,19 @@ pub struct CardStylesheet {
 }
 
 impl CardStylesheet {
+    /// Native bundled card surface.
+    pub fn native_default() -> Self {
+        Self {
+            elevation_rules: vec![FloatingMenuSurfaceElevationRule { shadow: "shadow-xs".into() }],
+            color_rule: Some(CardColorRule {
+                background: "card".into(),
+                foreground: "card-foreground".into(),
+                muted_foreground: "muted-foreground".into(),
+                border: "border".into(),
+            }),
+        }
+    }
+
     pub fn elevation_rule(&self) -> Option<&FloatingMenuSurfaceElevationRule> {
         self.elevation_rules.first()
     }
@@ -20,7 +33,7 @@ impl CardStylesheet {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct CardColorRule {
     pub background: String,
     pub foreground: String,

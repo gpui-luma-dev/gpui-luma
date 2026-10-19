@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use super::{EnabledColorRule, find_enabled_color_rule, matches_optional_layer};
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct TableStylesheet {
     #[serde(default)]
     pub surface: TableSurfaceStylesheet,
@@ -13,7 +13,56 @@ pub struct TableStylesheet {
     pub row: TableRowStylesheet,
 }
 
-#[derive(Debug, Deserialize, Clone, Default)]
+impl TableStylesheet {
+    /// Native bundled surface and row rules in priority order.
+    pub fn native_default() -> Self {
+        Self {
+            surface: TableSurfaceStylesheet {
+                metrics: HashMap::from([(
+                    "md".into(),
+                    TableSurfaceMetricsRule {
+                        padding_y_factor: 0.5,
+                        radius: "radius.md".into(),
+                        max_radius: Some("1rem".into()),
+                    },
+                )]),
+                color_rules: [(true, "background"), (false, "muted")]
+                    .into_iter()
+                    .map(|(enabled, background)| TableSurfaceColorRule {
+                        enabled: Some(enabled),
+                        background: background.into(),
+                        border: "input".into(),
+                        header_background: "muted".into(),
+                        header_label_color: "muted-foreground".into(),
+                    })
+                    .collect(),
+            },
+            row: TableRowStylesheet {
+                color_rules: [
+                    (Some(true), None, None, None, "transparent", "muted-foreground"),
+                    (None, Some(true), None, None, "muted", "foreground"),
+                    (None, None, Some(true), None, "muted", "foreground"),
+                    (None, None, None, Some("hover"), "@accent_whisper_40", "foreground"),
+                    (None, None, None, Some("pressed"), "@accent_whisper_pressed_40", "foreground"),
+                    (None, None, None, Some("default"), "transparent", "foreground"),
+                ]
+                .into_iter()
+                .map(|(disabled, selected, focused, layer, background, label)| TableRowColorRule {
+                    disabled,
+                    selected,
+                    focused,
+                    layer: layer.map(Into::into),
+                    background: background.into(),
+                    label_color: label.into(),
+                    divider: "border".into(),
+                })
+                .collect(),
+            },
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct TableSurfaceStylesheet {
     #[serde(default)]
     pub metrics: HashMap<String, TableSurfaceMetricsRule>,
@@ -36,7 +85,7 @@ impl TableSurfaceStylesheet {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct TableSurfaceMetricsRule {
     pub padding_y_factor: f32,
     pub radius: String,
@@ -44,7 +93,7 @@ pub struct TableSurfaceMetricsRule {
     pub max_radius: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct TableSurfaceColorRule {
     pub enabled: Option<bool>,
     pub background: String,
@@ -59,7 +108,7 @@ impl EnabledColorRule for TableSurfaceColorRule {
     }
 }
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct TableRowStylesheet {
     #[serde(default)]
     pub color_rules: Vec<TableRowColorRule>,
@@ -94,7 +143,7 @@ impl TableRowStylesheet {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct TableRowColorRule {
     pub disabled: Option<bool>,
     pub selected: Option<bool>,

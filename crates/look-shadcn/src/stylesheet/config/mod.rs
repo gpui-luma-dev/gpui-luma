@@ -50,7 +50,7 @@ pub use textfield::*;
 mod autocomplete;
 pub use autocomplete::*;
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct StylesheetConfig {
     #[serde(default)]
     pub common: gpui_luma::theme::stylesheet::CommonStylesheet,
@@ -105,10 +105,41 @@ pub struct StylesheetConfig {
 }
 
 impl StylesheetConfig {
+    /// Construct bundled control definitions directly in Rust.
+    pub fn native_default() -> Self {
+        Self {
+            common: super::native_shadcn_common_stylesheet(),
+            typography: TypographyStylesheet::native_default(),
+            button: ButtonStylesheet::native_default(),
+            toggle: ToggleStylesheet::native_default(),
+            checkbox: super::native_shadcn_checkbox(),
+            radio: RadioStylesheet::native_default(),
+            switch: super::native_shadcn_switch(),
+            slider: super::native_shadcn_slider(),
+            scrollbar: ScrollbarStylesheet::native_default(),
+            accordion: AccordionStylesheet::native_default(),
+            resizable_panels: ResizablePanelsStylesheet::native_default(),
+            listbox: ListboxStylesheet::native_default(),
+            table: TableStylesheet::native_default(),
+            floating_menu: FloatingMenuStylesheet::native_default(),
+            tabs: TabsStylesheet::native_default(),
+            tree_view: TreeViewStylesheet::native_default(),
+            sidebar: SidebarStylesheet::native_default(),
+            textfield: TextfieldStylesheet::native_default(),
+            autocomplete: AutocompleteStylesheet::native_default(),
+            progress: ProgressStylesheet::native_default(),
+            stepper: StepperStylesheet::native_default(),
+            card: CardStylesheet::native_default(),
+            badge: BadgeStylesheet::native_default(),
+            split_view: SplitViewStylesheet::native_default(),
+            control_group: ControlGroupStylesheet::native_default(),
+        }
+    }
+
     /// Parses stylesheet TOML without imposing an input-size limit.
     /// Applications own file access and any limits required for untrusted input.
     pub fn parse(source: &str) -> anyhow::Result<Self> {
-        let mut stylesheet: Self = toml::from_str(source).map_err(|err| anyhow::anyhow!("parse style.toml: {err}"))?;
+        let mut stylesheet: Self = toml::from_str(source).map_err(|err| anyhow::anyhow!("parse stylesheet: {err}"))?;
         stylesheet.common = gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[source])?;
         Ok(stylesheet)
     }
@@ -138,7 +169,7 @@ pub(crate) fn matches_optional_str(selector: Option<&str>, value: &str) -> bool 
     selector.is_none_or(|expected| expected == value)
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct LayeredElevationRule {
     pub layer: Option<String>,
     pub shadow: String,

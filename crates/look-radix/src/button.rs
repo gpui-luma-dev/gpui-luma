@@ -198,7 +198,7 @@ fn inset_shadow(offset_y: f32, blur: f32, spread: f32, color: Hsla) -> BoxShadow
 ///
 /// `*_delta` and `rim_lighten` are lightness offsets applied to the accent fill,
 /// `*_alpha` are `0..1`, and the rest are `px`.
-#[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ClassicButtonParams {
     /// Pressed rim shading relative to the resting highlight.

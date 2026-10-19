@@ -63,7 +63,7 @@ pub(crate) fn slider_geometry_with_stylesheet(
             if common_thumb.is_none() && stylesheet.common.slider.geometry.thumb_size.is_none() {
                 let key = super::helpers::control_size_key(thumb_control_size);
                 legacy_thumb_source =
-                    Some(format!("instance thumb_size {key} → style.toml · slider.metrics.{key}.thumb_size"));
+                    Some(format!("instance thumb_size {key} → stylesheet · slider.metrics.{key}.thumb_size"));
             }
         }
     }
@@ -95,7 +95,7 @@ pub fn resolve_slider_metrics_with_stylesheet(
     let legacy = stylesheet.slider.metrics_for_size(size).is_some();
     let metric = |field: &str, value: gpui_luma::theme::provenance::ResolvedMetric| {
         if legacy && matches!(value.source, gpui_luma::theme::provenance::MetricSource::Constant { .. }) {
-            derived_metric(format!("style.toml · slider.metrics.{size_key}.{field}"), value.value_px)
+            derived_metric(format!("stylesheet · slider.metrics.{size_key}.{field}"), value.value_px)
         } else {
             inspect_shared_metric(value)
         }
@@ -106,7 +106,7 @@ pub fn resolve_slider_metrics_with_stylesheet(
         track_height: metric("track_height", geometry.track_height),
         thumb_size: metric("thumb_size", geometry.thumb_size),
         radius: if legacy {
-            derived_metric(format!("style.toml · slider.metrics.{size_key}.radius"), radius)
+            derived_metric(format!("stylesheet · slider.metrics.{size_key}.radius"), radius)
         } else {
             pill_radius_metric(&mode.catalog, radius)
         },

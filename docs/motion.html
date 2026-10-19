@@ -23,7 +23,7 @@
 <main id="main"><div class="breadcrumb"><span>Luma</span><span aria-hidden="true">/</span><span>Motion</span></div>
 <h1>Motion</h1><p class="intro">SDK baseline. Look customization. Typed control roles and consumer overrides.</p>
 <section id="ownership"><h2>Controls define roles; looks set defaults</h2><p>The SDK owns interaction targets, accessibility, events, presence, and frame scheduling. Each control exposes a typed motion profile: Switch has <code>state</code>; Tabs has <code>indicator</code>, <code>content</code>, <code>disclosure</code>, and <code>drop_layout</code>. A look supplies transitions for those roles. Consumers override individual roles through the SDK’s <code>.motion(...)</code> builder method.</p><p>Shadcn and Radix use the same SDK profiles. A look author can change timing, easing, or physics without rewriting control behavior.</p></section>
-<section id="sdk-defaults"><h2>Build with the SDK alone</h2><p>SDK controls have vanilla templates and motion defaults; an application does not need Shadcn or Radix. Motion values are authored in the SDK’s <code>assets/style.toml</code> and embedded in the crate. <code>CommonStylesheet::sdk_default()</code> exposes that stylesheet; <code>MotionDefaults::vanilla()</code> exposes its cached motion profiles. <code>MotionDefaults::default()</code> clones those profiles. Use <code>CommonStylesheet::motion_defaults()</code> to resolve application-authored settings, then supply a component profile through <code>motion_defaults(...)</code>.</p><div class="codebox"><div class="codebar"><span>SDK-only application · integration example</span><button class="copy" aria-label="Copy SDK-only application · integration example">Copy</button></div><pre><code class="language-rust">fn notifications&lt;M: &#x27;static&gt;(
+<section id="sdk-defaults"><h2>Build with the SDK alone</h2><p>SDK controls have vanilla templates and motion defaults; an application does not need Shadcn or Radix. Motion values are authored in Rust in the SDK’s <code>theme/stylesheet/motion.rs</code>. <code>CommonStylesheet::sdk_default()</code> exposes the cached native stylesheet; <code>MotionDefaults::vanilla()</code> exposes its cached motion profiles. <code>MotionDefaults::default()</code> clones those profiles. Use <code>CommonStylesheet::motion_defaults()</code> to resolve application-authored settings, then supply a component profile through <code>motion_defaults(...)</code>.</p><div class="codebox"><div class="codebar"><span>SDK-only application · integration example</span><button class="copy" aria-label="Copy SDK-only application · integration example">Copy</button></div><pre><code class="language-rust">fn notifications&lt;M: &#x27;static&gt;(
     cx: &amp;mut gpui::Context&lt;M&gt;,
 ) -&gt; Result&lt;gpui_luma::controls::switch::Switch, Box&lt;dyn std::error::Error&gt;&gt; {
     use gpui_luma::{controls::switch, theme::stylesheet::CommonStylesheet};
@@ -38,29 +38,22 @@ damping = 28.0
         .motion_defaults(sheet.motion_defaults().switch)
         .spawn(cx))
 }</code></pre></div></section>
-<section id="stylesheet"><h2>Configure roles in the stylesheet</h2><p>The SDK defines <code>[common.motion]</code>. Both looks inherit the embedded SDK baseline before applying their own common stylesheet. Missing look settings retain the SDK values; the look files need only author their differences. Role names match the Rust profiles; nested presence roles expose independent enter and exit definitions.</p><div class="codebox"><div class="codebar"><span>style.toml · shared motion roles</span><button class="copy" aria-label="Copy style.toml · shared motion roles">Copy</button></div><pre><code class="language-toml">[common.motion.switch.state]
-kind = &quot;timed&quot;
-duration_ms = 160
-easing = &quot;out_cubic&quot;
-
-[common.motion.tabs.indicator]
-kind = &quot;spring&quot;
-stiffness = 300.0
-damping = 28.0
-
-[common.motion.tabs.content]
-kind = &quot;instant&quot;
-
-[common.motion.context_menu.presence.enter]
-kind = &quot;timed&quot;
-duration_ms = 200
-easing = &quot;out_cubic&quot;
-
-[common.motion.context_menu.presence.exit]
-kind = &quot;instant&quot;
-
-[common.motion.progress]
-period_ms = 1200</code></pre></div><p>Each authored transition replaces its complete role. Timed definitions require <code>duration_ms</code> and <code>easing</code> (<code>linear</code> or <code>out_cubic</code>). Springs require positive finite <code>stiffness</code> and <code>damping</code>; mass is one. Instant definitions accept no parameters. Missing roles inherit. Zero duration is immediate; a zero loop period stops the phase.</p><p>Unknown families, roles, kinds, easing names, and inappropriate parameters fail parsing. Durations are nonnegative integer milliseconds fitting <code>u32</code>. Custom definitions remain available through Rust’s <code>Transition::custom</code>.</p></section>
+<section id="stylesheet"><h2>Configure roles in Rust</h2><p>Both looks inherit the native SDK baseline before applying their own common stylesheet. Clone the baseline and set only the roles you want to change. Nested presence roles expose independent enter and exit definitions.</p><div class="codebox"><div class="codebar"><span>Rust · shared motion roles</span><button class="copy" aria-label="Copy shared motion roles">Copy</button></div><pre><code class="language-rust">fn configured_motion() -&gt; gpui_luma::theme::MotionDefaults {
+    use gpui_luma::{motion::Easing, theme::stylesheet::{CommonStylesheet, TransitionSpec}};
+    let sheet = CommonStylesheet::sdk_default().clone().with(|sheet| {
+        sheet.motion.switch.state = Some(TransitionSpec::Timed {
+            duration_ms: 160,
+            easing: Easing::OutCubic,
+        });
+        sheet.motion.tabs.indicator = Some(TransitionSpec::Spring {
+            stiffness: 300.0,
+            damping: 28.0,
+        });
+        sheet.motion.tabs.content = Some(TransitionSpec::Instant {});
+        sheet.motion.progress.period_ms = Some(1200);
+    });
+    sheet.motion_defaults()
+}</code></pre></div><p>Each authored transition replaces its complete role. Missing roles inherit. Timed definitions specify duration and easing; springs use positive finite stiffness and damping. Instant transitions and zero durations settle immediately. A zero loop period stops the phase. External TOML loading remains available through the same typed validation path.</p></section>
 <section id="configure"><h2>Set defaults and override a control</h2><div class="codebox"><div class="codebar"><span>Shadcn · integration example</span><button class="copy" aria-label="Copy Shadcn · integration example">Copy</button></div><pre><code class="language-rust">use std::time::Duration;
 use gpui::{Context, Entity};
 use gpui_luma::{controls::tabs::Tabs, motion::{Easing, Transition}};
@@ -80,7 +73,7 @@ fn settings&lt;M: &#x27;static&gt;(look: &amp;ShadcnLook, cx: &amp;mut Context&l
         .motion(|m| m.content = Transition::instant())
         .spawn(cx)
 }</code></pre></div><p>The tab indicator inherits the look’s spring; only content motion becomes immediate. Radix’s <code>Look::motion</code> and <code>Tabs</code> builder expose the same configuration pattern.</p></section>
-<section id="resolution"><h2>Inheritance and lifetime</h2><ol><li>The SDK’s embedded <code>assets/style.toml</code> provides every motion profile.</li><li>Authored <code>common.motion</code> roles override the SDK baseline.</li><li>Look-level <code>motion</code> edits apply in registration order.</li><li>The control snapshots the look profile at spawn.</li><li>Instance <code>.motion</code> edits run in registration order.</li><li><code>motion_enabled(false)</code> makes all roles immediate while retaining the authored profile.</li></ol><p>Assigning a role replaces its complete transition. Untouched roles inherit. The order of <code>.look(...)</code> and <code>.motion(...)</code> calls does not change precedence. <code>Transition::default()</code> explicitly means 200 ms cubic out; it does not mean “inherit.”</p><p>Existing controls retain their snapshot when the look changes; later controls receive the new defaults. Persistent ListBox controls capture defaults on first composition and reuse them. Look clones share edits; Radix forks and Shadcn independent copies isolate subsequent edits.</p></section>
+<section id="resolution"><h2>Inheritance and lifetime</h2><ol><li>The SDK’s native Rust baseline provides every motion profile.</li><li>Authored <code>common.motion</code> roles override the SDK baseline.</li><li>Look-level <code>motion</code> edits apply in registration order.</li><li>The control snapshots the look profile at spawn.</li><li>Instance <code>.motion</code> edits run in registration order.</li><li><code>motion_enabled(false)</code> makes all roles immediate while retaining the authored profile.</li></ol><p>Assigning a role replaces its complete transition. Untouched roles inherit. The order of <code>.look(...)</code> and <code>.motion(...)</code> calls does not change precedence. <code>Transition::default()</code> explicitly means 200 ms cubic out; it does not mean “inherit.”</p><p>Existing controls retain their snapshot when the look changes; later controls receive the new defaults. Persistent ListBox controls capture defaults on first composition and reuse them. Look clones share edits; Radix forks and Shadcn independent copies isolate subsequent edits.</p></section>
 <section id="transitions"><h2>Choose a transition</h2><div class="codebox"><div class="codebar"><span>Transition constructors</span><button class="copy" aria-label="Copy Transition constructors">Copy</button></div><pre><code class="language-rust">fn transition_choices() {
     use std::time::Duration;
     use gpui_luma::motion::{Easing, Transition};

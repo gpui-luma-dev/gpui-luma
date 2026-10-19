@@ -1,8 +1,8 @@
 # Control motion contract (#145)
 
-Controls define typed roles beside their public builder. The SDK’s embedded
-`assets/style.toml` authors the vanilla motion baseline; control profile defaults
-and both looks resolve from that file, without repeating role values in Rust.
+Controls define typed roles beside their public builder. The SDK’s
+`theme/stylesheet/motion.rs` authors the native motion baseline; control profile defaults
+and both looks resolve from those native definitions.
 Switch owns `state`;
 Tabs owns indicator, content, disclosure and drop-layout roles. A look supplies values for
 those roles alongside its templates. Interaction targets, accessibility, events,
@@ -181,15 +181,14 @@ Custom implementations remain a Rust extension through `Transition::custom`.
 
 ### Embedded vanilla baseline
 
-`theme::stylesheet::DEFAULT_STYLE_TOML` exposes the embedded SDK asset;
-`CommonStylesheet::sdk_default()` returns its cached parsed form, and
+`CommonStylesheet::sdk_default()` returns the cached native Rust baseline, and
 `MotionDefaults::vanilla()` returns the compiled profiles. `CommonStylesheet::default()`
 remains an empty overlay whose resolution inherits the SDK baseline.
 Control profile `Default` implementations clone their corresponding cached profile;
 the baseline compiler constructs profiles directly, avoiding recursive defaults.
 The standalone `Transition::default()` uses `common.motion.transition`.
 
-Look files supply overrides, not copies of the SDK defaults. Their typed roles
+Look constructors supply overrides, not copies of the SDK defaults. Their typed roles
 apply over the SDK baseline, followed by programmatic look edits and consumer edits. Tests require the SDK asset to parse and author
 every role. If a packaged baseline is corrupt or incomplete, missing transitions
 settle immediately rather than panicking or falling back to duplicated Rust values.

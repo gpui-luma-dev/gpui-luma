@@ -90,9 +90,326 @@ pub(crate) fn resolve_look(explicit: Option<&Look>, ambient: Option<&Look>) -> L
 pub(crate) fn embedded_common_stylesheet() -> &'static gpui_luma::theme::stylesheet::CommonStylesheet {
     static STYLESHEET: std::sync::OnceLock<gpui_luma::theme::stylesheet::CommonStylesheet> = std::sync::OnceLock::new();
     STYLESHEET.get_or_init(|| {
-        gpui_luma::theme::stylesheet::CommonStylesheet::resolve_layers(&[include_str!("../assets/style.toml")])
-            .unwrap_or_default()
+        let mut sheet = native_radix_stylesheet();
+        apply_radix_slider_stylesheet(&mut sheet);
+        apply_radix_switch_stylesheet(&mut sheet);
+        apply_radix_checkbox_stylesheet(&mut sheet);
+        sheet
     })
+}
+
+/// Construct the remaining Radix common overrides without bundled TOML parsing.
+pub fn native_radix_stylesheet() -> gpui_luma::theme::stylesheet::CommonStylesheet {
+    use gpui_luma::theme::stylesheet::*;
+    use std::collections::HashMap;
+    let mut motion = CommonStylesheet::sdk_default().motion.clone();
+    motion.tabs.content = Some(TransitionSpec::Timed { duration_ms: 300, easing: gpui_luma::motion::Easing::OutCubic });
+    CommonStylesheet {
+        motion,
+        tabs: TabsStylesheet {
+            variants: HashMap::from([
+                (
+                    "line".into(),
+                    TabsGeometryStylesheet { list_gap: Some(0.0), list_padding: Some(0.0), ..Default::default() },
+                ),
+                (
+                    "surface".into(),
+                    TabsGeometryStylesheet { list_gap: Some(2.0), list_padding: Some(4.0), ..Default::default() },
+                ),
+            ]),
+            ..Default::default()
+        },
+        slider: native_radix_slider(),
+        switch: native_radix_switch(),
+        checkbox: native_radix_checkbox(),
+        button: ButtonStylesheet {
+            geometry: ButtonGeometryStylesheet { padding_y: Some(0.0), ..Default::default() },
+            sizes: [
+                ("1", 24.0, 8.0, 4.0, 12.0, 16.0, 12.0),
+                ("2", 32.0, 12.0, 8.0, 14.0, 20.0, 14.0),
+                ("3", 40.0, 16.0, 12.0, 16.0, 24.0, 16.0),
+                ("4", 48.0, 24.0, 12.0, 18.0, 26.0, 18.0),
+            ]
+            .into_iter()
+            .map(|(key, height, padding, gap, font, line, icon)| {
+                (
+                    key.into(),
+                    ButtonGeometryStylesheet {
+                        height: Some(height),
+                        padding_x: Some(padding),
+                        gap: Some(gap),
+                        font_size: Some(font),
+                        line_height: Some(line),
+                        icon_size: Some(icon),
+                        ..Default::default()
+                    },
+                )
+            })
+            .collect(),
+        },
+        radio: RadioStylesheet {
+            geometry: RadioGeometryStylesheet { gap: Some(8.0), ..Default::default() },
+            sizes: [("1", 14.0, 5.6), ("2", 16.0, 6.4), ("3", 20.0, 8.0)]
+                .into_iter()
+                .map(|(key, indicator, dot)| {
+                    (
+                        key.into(),
+                        RadioGeometryStylesheet {
+                            indicator_size: Some(indicator),
+                            dot_size: Some(dot),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        },
+        textfield: TextFieldStylesheet {
+            sizes: [("1", 12.5, 18.0), ("2", 14.0, 20.0), ("3", 16.0, 22.0)]
+                .into_iter()
+                .map(|(key, font, line)| {
+                    (
+                        key.into(),
+                        TextFieldGeometryStylesheet {
+                            font_size: Some(font),
+                            line_height: Some(line),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+            ..Default::default()
+        },
+        progress: ProgressStylesheet {
+            sizes: [("1", 4.0), ("2", 6.0), ("3", 8.0)]
+                .into_iter()
+                .map(|(key, height)| {
+                    (key.into(), ProgressGeometryStylesheet { track_height: Some(height), ..Default::default() })
+                })
+                .collect(),
+            ..Default::default()
+        },
+        textarea: TextAreaStylesheet {
+            geometry: TextAreaGeometryStylesheet {
+                font_size: Some(14.0),
+                line_height: Some(20.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        floating_menu: FloatingMenuStylesheet {
+            geometry: FloatingMenuGeometryStylesheet {
+                separator_inset: Some(8.0),
+                font_size: Some(14.0),
+                line_height: Some(20.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        tooltip: TooltipStylesheet {
+            geometry: TooltipGeometryStylesheet {
+                padding: Some(8.0),
+                padding_y: Some(4.0),
+                font_size: Some(12.0),
+                line_height: Some(16.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        toolbar: ToolbarStylesheet {
+            geometry: ToolbarGeometryStylesheet {
+                padding_x: Some(4.0),
+                padding_y: Some(3.0),
+                gap: Some(6.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        segmented: SegmentedStylesheet {
+            sizes: HashMap::from([(
+                "2".into(),
+                SegmentedGeometryStylesheet {
+                    height: Some(32.0),
+                    padding_x: Some(12.0),
+                    font_size: Some(14.0),
+                    line_height: Some(20.0),
+                },
+            )]),
+            ..Default::default()
+        },
+        avatar: AvatarStylesheet {
+            sizes: [
+                ("1", 24.0, 14.0, 12.0),
+                ("2", 32.0, 16.0, 14.0),
+                ("3", 40.0, 18.0, 16.0),
+                ("4", 48.0, 20.0, 18.0),
+                ("5", 64.0, 24.0, 24.0),
+                ("6", 80.0, 28.0, 28.0),
+                ("7", 96.0, 28.0, 28.0),
+                ("8", 128.0, 35.0, 35.0),
+                ("9", 160.0, 60.0, 60.0),
+            ]
+            .into_iter()
+            .map(|(key, diameter, font, two)| {
+                (
+                    key.into(),
+                    AvatarGeometryStylesheet {
+                        diameter: Some(diameter),
+                        font_size: Some(font),
+                        two_letter_font_size: Some(two),
+                        ..Default::default()
+                    },
+                )
+            })
+            .collect(),
+            ..Default::default()
+        },
+        badge: BadgeStylesheet {
+            sizes: [("1", 12.0, 16.0, 6.0, 2.0), ("2", 12.0, 16.0, 8.0, 4.0), ("3", 14.0, 20.0, 10.0, 4.0)]
+                .into_iter()
+                .map(|(key, font, line, x, y)| {
+                    (
+                        key.into(),
+                        BadgeGeometryStylesheet {
+                            font_size: Some(font),
+                            line_height: Some(line),
+                            padding_x: Some(x),
+                            padding_y: Some(y),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+            ..Default::default()
+        },
+        card: CardStylesheet {
+            sizes: [("1", 12.0), ("2", 16.0), ("3", 24.0)]
+                .into_iter()
+                .map(|(key, padding)| {
+                    (key.into(), CardGeometryStylesheet { padding: Some(padding), ..Default::default() })
+                })
+                .collect(),
+            ..Default::default()
+        },
+        callout: CalloutStylesheet {
+            geometry: CalloutGeometryStylesheet {
+                padding: Some(12.0),
+                gap: Some(12.0),
+                icon_size: Some(15.0),
+                font_size: Some(14.0),
+            },
+            ..Default::default()
+        },
+        overlay_window: OverlayWindowStylesheet {
+            geometry: OverlayWindowGeometryStylesheet { backdrop_opacity: Some(0.42), ..Default::default() },
+            sizes: [("sm", 280.0, 360.0, 180.0), ("md", 360.0, 440.0, 220.0), ("lg", 440.0, 520.0, 260.0)]
+                .into_iter()
+                .map(|(key, min, max, height)| {
+                    (
+                        key.into(),
+                        OverlayWindowGeometryStylesheet {
+                            min_width: Some(min),
+                            max_width: Some(max),
+                            estimated_height: Some(height),
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect(),
+        },
+        popup_menu: PopupMenuStylesheet {
+            geometry: PopupMenuGeometryStylesheet {
+                font_size: Some(14.0),
+                line_height: Some(20.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        context_menu: ContextMenuStylesheet {
+            geometry: ContextMenuGeometryStylesheet {
+                min_width: Some(200.0),
+                font_size: Some(14.0),
+                line_height: Some(20.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        radio_group: RadioGroupStylesheet {
+            sizes: HashMap::from([(
+                "horizontal".into(),
+                RadioGroupGeometryStylesheet { gap: Some(8.0), ..Default::default() },
+            )]),
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+    .with_sdk_defaults()
+}
+
+/// Constructs the native Radix slider definition in pure Rust without preloading TOML.
+pub fn native_radix_slider() -> gpui_luma::theme::stylesheet::SliderStylesheet {
+    let mut slider = gpui_luma::theme::stylesheet::SliderStylesheet::default();
+    slider
+        .width(120.0)
+        .size("1", |m| {
+            m.dimensions(16.0, 4.0, 12.0);
+        })
+        .size("2", |m| {
+            m.dimensions(20.0, 6.0, 16.0);
+        })
+        .size("3", |m| {
+            m.dimensions(24.0, 8.0, 20.0);
+        });
+    slider
+}
+
+/// Applies Radix slider geometry in Rust.
+pub(crate) fn apply_radix_slider_stylesheet(sheet: &mut gpui_luma::theme::stylesheet::CommonStylesheet) {
+    native_radix_slider().apply_to(&mut sheet.slider);
+}
+
+/// Constructs the native Radix switch definition in pure Rust without preloading TOML.
+pub fn native_radix_switch() -> gpui_luma::theme::stylesheet::SwitchStylesheet {
+    let mut switch = gpui_luma::theme::stylesheet::SwitchStylesheet::default();
+    switch
+        .track_padding(1.0)
+        .gap(8.0)
+        .size("1", |m| {
+            m.dimensions(28.0, 16.0, 14.0);
+        })
+        .size("2", |m| {
+            m.dimensions(35.0, 20.0, 18.0);
+        })
+        .size("3", |m| {
+            m.dimensions(42.0, 24.0, 22.0);
+        });
+    switch
+}
+
+/// Applies Radix switch geometry in Rust.
+pub(crate) fn apply_radix_switch_stylesheet(sheet: &mut gpui_luma::theme::stylesheet::CommonStylesheet) {
+    native_radix_switch().apply_to(&mut sheet.switch);
+}
+
+/// Constructs the native Radix checkbox definition in pure Rust without preloading TOML.
+pub fn native_radix_checkbox() -> gpui_luma::theme::stylesheet::CheckboxStylesheet {
+    let mut checkbox = gpui_luma::theme::stylesheet::CheckboxStylesheet::default();
+    checkbox
+        .gap(8.0)
+        .size("1", |m| {
+            m.indicator_size(14.0).glyph_size(9.0);
+        })
+        .size("2", |m| {
+            m.indicator_size(16.0).glyph_size(10.0);
+        })
+        .size("3", |m| {
+            m.indicator_size(20.0).glyph_size(12.0);
+        });
+    checkbox
+}
+
+/// Applies Radix checkbox geometry in Rust.
+pub(crate) fn apply_radix_checkbox_stylesheet(sheet: &mut gpui_luma::theme::stylesheet::CommonStylesheet) {
+    native_radix_checkbox().apply_to(&mut sheet.checkbox);
 }
 
 pub(crate) fn sdk_size_key(size: gpui_luma::theme::ControlSize) -> &'static str {
@@ -272,11 +589,14 @@ impl Look {
         self.state.button_recipes.read().unwrap_or_else(|p| p.into_inner()).clone()
     }
 
-    /// Load sparse look-owned button recipes over the embedded look stylesheet.
+    /// Load sparse look-owned button recipes over the native look defaults.
     /// Rules replace the complete ordered list. Programmatic Classic tuning stays
     /// authoritative over stylesheet tuning.
     pub fn set_button_recipes(&self, source: &str) -> anyhow::Result<()> {
-        let mut baseline: toml::Value = toml::from_str(include_str!("../assets/style.toml"))?;
+        let mut baseline = toml::Value::Table(toml::map::Map::from_iter([(
+            "button_recipes".into(),
+            toml::Value::try_from(crate::button_recipes::embedded())?,
+        )]));
         let authored: toml::Value = toml::from_str(source)?;
         anyhow::ensure!(
             authored.as_table().is_some_and(|table| table.keys().all(|key| key == "button_recipes")),
@@ -651,5 +971,66 @@ mod tests {
         assert_eq!(from, color_3);
         assert_eq!(to, gray_1);
         assert_ne!(from.s, to.s);
+    }
+
+    #[test]
+    fn independent_control_assembly_matches_bundled_styles() {
+        use gpui_luma::theme::stylesheet::{CommonStylesheet, define_sdk_checkbox, define_sdk_slider, define_sdk_switch};
+        let original = native_radix_stylesheet();
+        // Assemble the controls independently from an empty sheet.
+        let mut native = CommonStylesheet::default();
+        define_sdk_slider(&mut native);
+        define_sdk_switch(&mut native);
+        define_sdk_checkbox(&mut native);
+        apply_radix_slider_stylesheet(&mut native);
+        apply_radix_switch_stylesheet(&mut native);
+        apply_radix_checkbox_stylesheet(&mut native);
+        assert_eq!(native.slider, original.slider);
+        assert_eq!(native.switch, original.switch);
+        assert_eq!(native.checkbox, original.checkbox);
+        assert_eq!(native.motion.slider, original.motion.slider);
+        assert_eq!(native.motion.switch, original.motion.switch);
+        assert_eq!(native.motion.checkbox, original.motion.checkbox);
+        for family in ["slider", "switch", "checkbox"] {
+            assert_eq!(native.recipes.0.get(family), original.recipes.0.get(family));
+        }
+
+        let old_look = Look::built_in();
+        old_look.set_common_stylesheet(original);
+        let new_look = old_look.fork();
+        new_look.set_common_stylesheet(native);
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            old_look.set_mode(mode);
+            new_look.set_mode(mode);
+            for variant in crate::slider::SliderVariant::ALL {
+                let old_theme = crate::slider::slider_theme_with(&old_look, variant);
+                let new_theme = crate::slider::slider_theme_with(&new_look, variant);
+                for size in [
+                    gpui_luma::theme::ControlSize::Sm,
+                    gpui_luma::theme::ControlSize::Md,
+                    gpui_luma::theme::ControlSize::Lg,
+                ] {
+                    for bits in 0..32 {
+                        let state = gpui_luma::theme::InteractionState {
+                            hovered: bits & 1 != 0,
+                            pressed: bits & 2 != 0,
+                            focused: bits & 4 != 0,
+                            disabled: bits & 8 != 0,
+                            invalid: bits & 16 != 0,
+                        };
+                        use gpui_luma::controls::slider::SliderThumbSize;
+                        for thumb in
+                            [None, Some(SliderThumbSize::Sm), Some(SliderThumbSize::Md), Some(SliderThumbSize::Lg)]
+                        {
+                            assert_eq!(
+                                format!("{:?}", new_theme.resolve(size, thumb, state)),
+                                format!("{:?}", old_theme.resolve(size, thumb, state)),
+                                "{mode:?} {variant:?} {size:?} {thumb:?} {state:?}",
+                            );
+                        }
+                    }
+                }
+            }
+        }
     }
 }

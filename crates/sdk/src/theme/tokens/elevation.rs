@@ -97,11 +97,55 @@ impl LumaElevation<ColorValue> {
 
 impl<C> LumaElevation<C> {
     fn light_with(color: impl Fn(f32) -> C) -> Self {
-        include!(concat!(env!("OUT_DIR"), "/elevation_light.rs"))
+        Self {
+            none: LumaShadow::default(),
+            drag_preview: LumaShadow::new(vec![
+                LumaShadowLayer::new(color(0.1), 0.0, 1.0, 3.0, 0.0, false),
+                LumaShadowLayer::new(color(0.1), 0.0, 1.0, 2.0, -1.0, false),
+            ]),
+            control: LumaShadow::single(color(0.05), 0.0, 1.0, 2.0, 0.0, false),
+            thumb: LumaShadow::single(color(0.14), 0.0, 1.0, 2.0, 0.0, false),
+            menu: LumaShadow::new(vec![
+                LumaShadowLayer::new(color(0.1), 0.0, 1.0, 3.0, 0.0, false),
+                LumaShadowLayer::new(color(0.1), 0.0, 1.0, 2.0, -1.0, false),
+            ]),
+            popover: LumaShadow::new(vec![
+                LumaShadowLayer::new(color(0.12), 0.0, 4.0, 8.0, -2.0, false),
+                LumaShadowLayer::new(color(0.06), 0.0, 2.0, 4.0, -1.0, false),
+            ]),
+            panel: LumaShadow::single(color(0.06), 0.0, 1.0, 3.0, 0.0, false),
+            dialog: LumaShadow::new(vec![
+                LumaShadowLayer::new(color(0.16), 0.0, 18.0, 32.0, -8.0, false),
+                LumaShadowLayer::new(color(0.08), 0.0, 6.0, 12.0, -4.0, false),
+            ]),
+            overlay_window: LumaShadow::single(color(0.2), 0.0, 18.0, 38.0, -16.0, false),
+        }
     }
 
     fn dark_with(color: impl Fn(f32) -> C) -> Self {
-        include!(concat!(env!("OUT_DIR"), "/elevation_dark.rs"))
+        Self {
+            none: LumaShadow::default(),
+            drag_preview: LumaShadow::new(vec![
+                LumaShadowLayer::new(color(0.1), 0.0, 1.0, 3.0, 0.0, false),
+                LumaShadowLayer::new(color(0.1), 0.0, 1.0, 2.0, -1.0, false),
+            ]),
+            control: LumaShadow::single(color(0.18), 0.0, 1.0, 2.0, 0.0, false),
+            thumb: LumaShadow::single(color(0.14), 0.0, 1.0, 2.0, 0.0, false),
+            menu: LumaShadow::new(vec![
+                LumaShadowLayer::new(color(0.28), 0.0, 1.0, 3.0, 0.0, false),
+                LumaShadowLayer::new(color(0.18), 0.0, 1.0, 2.0, -1.0, false),
+            ]),
+            popover: LumaShadow::new(vec![
+                LumaShadowLayer::new(color(0.32), 0.0, 4.0, 8.0, -2.0, false),
+                LumaShadowLayer::new(color(0.22), 0.0, 2.0, 4.0, -1.0, false),
+            ]),
+            panel: LumaShadow::single(color(0.2), 0.0, 1.0, 3.0, 0.0, false),
+            dialog: LumaShadow::new(vec![
+                LumaShadowLayer::new(color(0.42), 0.0, 18.0, 32.0, -8.0, false),
+                LumaShadowLayer::new(color(0.24), 0.0, 6.0, 12.0, -4.0, false),
+            ]),
+            overlay_window: LumaShadow::single(color(0.2), 0.0, 18.0, 38.0, -16.0, false),
+        }
     }
 }
 
