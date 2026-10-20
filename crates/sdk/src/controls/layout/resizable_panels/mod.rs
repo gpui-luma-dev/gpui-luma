@@ -14,7 +14,7 @@ pub use model::{
 pub use math::{effective_handle_lane_px, handle_hit_target_main_axis_px, handle_layout_main_axis_px};
 pub use template::{
     ResizablePanelsTemplate, ResizablePanelsTemplateModifier, ThemedResizablePanelsTemplate,
-    default_resizable_panels_template,
+    default_resizable_panels_template, render_resizable_panels_surface, render_resizable_panels_handle,
 };
 pub use theme::{DefaultResizablePanelsTheme, ResizablePanelsLook, ResizablePanelsTheme, default_resizable_panels_theme};
 

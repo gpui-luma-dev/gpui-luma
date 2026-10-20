@@ -13,7 +13,7 @@ pub use model::{SlidePanelEdge, SlidePanelSizeConfig, SlidePanelState, SlidePane
 pub use template::{
     SlidePanelOverlayHandlers, SlidePanelResizeDrag, SlidePanelResizeHandlers, SlidePanelResizeHitHandlers,
     render_slide_panel_inner_resize_handle, render_slide_panel_inset, render_slide_panel_overlay,
-    render_slide_panel_resize_handle,
+    render_slide_panel_resize_handle, render_slide_panel_surface,
 };
 
 pub use model::SlidePanelMotion;

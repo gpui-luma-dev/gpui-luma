@@ -94,6 +94,8 @@ pub use model::{
     TableGridColumnsBuilder, TableLabel, TableLabelFn, TableRenderModel, TableRowRenderModel, TableRowTemplate,
     make_table_header_template, make_table_row_template,
 };
+pub use row::render_table_row;
+
 pub use template::{
     DefaultTableShellTemplate, TableTemplate, TableTemplateModifier, default_table_template, table_template_with_theme,
 };

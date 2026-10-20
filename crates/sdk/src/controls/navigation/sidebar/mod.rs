@@ -66,3 +66,10 @@ pub use callback::SidebarEventExt;
 mod drag_tests;
 
 pub use model::SidebarMotion;
+
+/// Presentation-only models for custom sidebar templates and forced-state previews.
+/// They do not expose the retained navigation engine or its behavior.
+pub use engine::{
+    SidebarPanelEngineRenderModel as SidebarPanelRenderModel, RenderedNavNode as SidebarRenderedNode,
+    NavNodeState as SidebarNodeState, NavNodeKind as SidebarNodeKind, RenderedRailSubmenu as SidebarRailSubmenu,
+};

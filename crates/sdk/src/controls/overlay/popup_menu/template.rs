@@ -242,6 +242,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                     face.aria_description("Primary action unavailable; press Down Arrow for menu options")
                 })
                 .bg(primary_look.trigger_background)
+                .h_full()
                 .flex()
                 .flex_1()
                 .min_w(px(0.0))
@@ -275,7 +276,8 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .flex()
                 .items_center()
                 .justify_center()
-                .size(px(look.trigger_height))
+                .w(px(look.trigger_height))
+                .h_full()
                 .flex_shrink_0()
                 .text_size(px(look.trigger_icon_size))
                 .line_height(px(look.trigger_icon_size))
@@ -310,6 +312,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 .child(action_face)
                 .child(
                     div()
+                        .h_full()
                         .border_l(px(self.theme.metrics().border_width.default))
                         .border_color(control_look.trigger_foreground)
                         .child(secondary),

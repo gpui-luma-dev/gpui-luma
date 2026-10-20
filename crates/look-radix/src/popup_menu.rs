@@ -139,16 +139,35 @@ impl PopupMenuTheme for PopupMenuThemeAdapter {
     }
 }
 
-pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: Tone) -> FloatingMenuLook {
+/// Resolve shared Radix menu panel, row, and separator styling for SDK composition.
+///
+/// Pass the result to the SDK floating-menu renderer. This is a resolved snapshot:
+/// resolve again during render after changing the supplied Look, and notify the owner.
+/// Explicit and forked Looks are used directly; no ambient Look is consulted.
+/// Uses the existing Radix menu size (`"2"`) and its shared stylesheet overrides.
+pub fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: Tone) -> FloatingMenuLook {
+    floating_menu_look_for(look, variant, tone, gpui_luma::theme::ControlSize::Md)
+}
+
+/// Size-aware shared menu chrome. Size keys are Radix `1`, `2`, and `3`.
+/// Like [`floating_menu_look`], this resolves a snapshot from the supplied Look.
+pub fn floating_menu_look_for(
+    look: &Look,
+    variant: PopupMenuVariant,
+    tone: Tone,
+    size: gpui_luma::theme::ControlSize,
+) -> FloatingMenuLook {
     let metrics = look.metrics();
+    let key = crate::look::sdk_size_key(size);
+    let control = metrics.for_size(size);
     let (item_hover_background, item_hover_foreground) = match variant {
         PopupMenuVariant::Solid => (tone.step(look, 9), tone.contrast(look)),
         PopupMenuVariant::Soft => (tone.step(look, 4), look.resolve_role(SemanticRole::Foreground).hsla()),
     };
 
     let base_recipe =
-        gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default().floating_menu.authored_geometry("2");
-    let recipe = look.common_stylesheet().floating_menu.authored_geometry("2").with_fallback(&base_recipe);
+        gpui_luma::theme::stylesheet::CommonStylesheet::sdk_default().floating_menu.authored_geometry(key);
+    let recipe = look.common_stylesheet().floating_menu.authored_geometry(key).with_fallback(&base_recipe);
     let mut resolved = FloatingMenuLook {
         window_margin: look
             .common_stylesheet()
@@ -180,10 +199,10 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
         item_hover_background,
         item_hover_foreground,
         item_typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: FontWeight::NORMAL },
-        item_height: metrics.control.md.height * recipe.item_height_scale.unwrap_or_default(),
-        item_padding_x: metrics.control.md.padding_x * recipe.item_padding_scale.unwrap_or_default(),
+        item_height: control.height * recipe.item_height_scale.unwrap_or_default(),
+        item_padding_x: control.padding_x * recipe.item_padding_scale.unwrap_or_default(),
         item_gap: metrics.spacing.s2,
-        item_icon_size: metrics.control.md.icon_size,
+        item_icon_size: control.icon_size,
         item_radius: metrics.radius.sm,
         disabled_opacity: recipe.disabled_opacity.unwrap_or_default(),
         separator_color: look.resolve_role(SemanticRole::Border).hsla(),
@@ -193,7 +212,7 @@ pub(crate) fn floating_menu_look(look: &Look, variant: PopupMenuVariant, tone: T
         submenu_offset_x: metrics.spacing.s1,
     };
     let geometry = look.common_stylesheet().floating_menu.resolve_geometry(
-        "2",
+        key,
         gpui_luma::theme::stylesheet::FloatingMenuGeometry {
             border_width: resolved.border_width,
             padding: resolved.padding,

@@ -34,10 +34,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn copy_menu_icons_are_available_from_the_asset_source() {
-        for name in ["share-2", "copy", "figma-logo"] {
-            let path = format!("assets/react-icons/{name}.svg");
-            let bytes = Assets.load(&path).expect("asset loading succeeds").expect("menu icon exists");
+    fn menu_and_split_button_icons_are_available_from_the_asset_source() {
+        for path in [
+            "assets/react-icons/share-2.svg",
+            "assets/react-icons/copy.svg",
+            "assets/react-icons/figma-logo.svg",
+            lucide_svg_static::Icon::Save.asset_path(),
+        ] {
+            let bytes = Assets.load(path).expect("asset loading succeeds").expect("menu icon exists");
             assert!(bytes.starts_with(b"<svg"), "invalid SVG asset: {path}");
         }
     }

@@ -13,8 +13,7 @@ mod theme;
 
 pub(crate) use control::{SidebarPanelEngine, SidebarPanelEngineEvent};
 pub(crate) use model::{
-    NavHostedContent, NavNode, NavNodeKind, NavNodeState, NavPresenter, SidebarPanelEngineBuilder,
-    SidebarPanelEngineModel, SidebarPanelEngineRenderModel, RenderedNavNode, RenderedRailSubmenu, entity_presenter,
+    NavHostedContent, NavNode, NavPresenter, SidebarPanelEngineBuilder, SidebarPanelEngineModel, entity_presenter,
 };
 pub use template::{
     SidebarPanelTemplate, SidebarPanelTemplateHandlers, SidebarPanelTemplateModifier, ThemedSidebarPanelTemplate,
@@ -22,3 +21,6 @@ pub use template::{
 };
 pub(crate) use template::modified_sidebar_panel_template;
 pub use theme::{DefaultSidebarTheme, SidebarItemLook, SidebarSectionLook, SidebarTheme, default_sidebar_theme};
+
+// Public presentation contracts; the retained engine remains internal.
+pub use model::{NavNodeKind, NavNodeState, SidebarPanelEngineRenderModel, RenderedNavNode, RenderedRailSubmenu};

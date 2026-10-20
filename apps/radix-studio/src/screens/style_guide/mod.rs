@@ -13,15 +13,19 @@ mod context_menus;
 mod high_contrast;
 mod matrix_grid;
 mod menus;
-mod selectors;
+mod selection_previews;
+mod navigation_previews;
 mod palettes;
+mod panel_previews;
 mod preview_handlers;
 mod progress;
 mod radios;
 mod sliders;
+mod split_button_previews;
 mod states;
 mod switches;
 mod table;
+mod table_previews;
 mod tabs;
 mod textareas;
 mod textfields;
@@ -52,9 +56,17 @@ pub struct PreviewTabs {
     pub textareas: Entity<Tabs>,
     pub sliders: Entity<Tabs>,
     pub progress: Entity<Tabs>,
+    pub autocomplete: Entity<Tabs>,
+    pub combobox: Entity<Tabs>,
+    pub search_selector: Entity<Tabs>,
+    pub selection_panel: Entity<Tabs>,
+    pub scrollbar: Entity<Tabs>,
+    pub table: Entity<Tabs>,
+    pub split_button: Entity<Tabs>,
+    navigation: navigation_previews::Previews,
+    panels: panel_previews::Previews,
     pub(crate) tooltips: tooltips::TooltipExamples,
-    pub(crate) collections: Entity<collections::Collections>,
-    pub(crate) selectors: selectors::SelectorExamples,
+    pub(crate) collections: collections::Previews,
 }
 
 pub fn page(
@@ -80,6 +92,18 @@ pub fn page(
             muted,
             border,
             palettes::indicator(look, muted),
+        ),
+        section(
+            "Accordion",
+            "Collapsed and expanded content, trigger states, and all control sizes.",
+            fg, muted, border,
+            tabs.navigation.render(navigation_previews::Kind::Accordion, look, window, cx),
+        ),
+        section(
+            "Autocomplete",
+            "Text-field states, completion status, and an expanded suggestions template in the focused sample.",
+            fg, muted, border,
+            selection_previews::tabbed(selection_previews::Kind::Autocomplete, look, tabs.autocomplete, [fg, muted, border], window, cx),
         ),
         section(
             "Avatar",
@@ -125,12 +149,32 @@ pub fn page(
             border,
             checkboxes::tabbed(look, tabs.checkboxes, fg, muted, border, window, cx),
         ),
+        tabs.collections.checkboxes.clone(),
+        section(
+            "ComboBox",
+            "Text-field and disclosure chrome, with an expanded options template in the focused sample.",
+            fg, muted, border,
+            selection_previews::tabbed(selection_previews::Kind::ComboBox, look, tabs.combobox, [fg, muted, border], window, cx),
+        ),
         section(
             "Context Menu",
             "Template preview · Solid and Soft, in accent and gray.",
             fg, muted, border,
             context_menus::preview(look, fg),
         ),
+        section(
+            "Dock Splitter",
+            "SDK resize separators in both orientations, with hover, focus, drag, and disabled chrome.",
+            fg, muted, border,
+            tabs.navigation.render(navigation_previews::Kind::DockSplitter, look, window, cx),
+        ),
+        section(
+            "Icon Group",
+            "Single and multiple selection in the shared icon-toolbar shell.",
+            fg, muted, border,
+            tabs.navigation.render(navigation_previews::Kind::IconGroup, look, window, cx),
+        ),
+        tabs.collections.lists.clone(),
         section(
             "Menu",
             format!(
@@ -142,16 +186,16 @@ pub fn page(
             menus::matrix(look, &menus::RADIX_VARIANTS, fg, muted, window, cx),
         ),
         section(
-            "Selectors",
-            "Dropdown and selected-item-centered opening, including a scrolling list.",
-            fg, muted, border,
-            tabs.selectors.render(look),
-        ),
-        section(
             "Menu Popup Pane",
             "Template preview · Solid and Soft, in accent and gray, with a selected item and separator.",
             fg, muted, border,
             menus::pane_preview(look, fg),
+        ),
+        section(
+            "Pager",
+            "Minimal, edge, and numeric layouts at the first, middle, and last pages, plus disabled states.",
+            fg, muted, border,
+            tabs.navigation.render(navigation_previews::Kind::Pager, look, window, cx),
         ),
         section(
             "Progress",
@@ -169,6 +213,43 @@ pub fn page(
             border,
             radios::tabbed(look, tabs.radios, fg, muted, border, window, cx),
         ),
+        tabs.collections.radios.clone(),
+        section(
+            "Resizable Panels",
+            "SDK pane surfaces and resize handles in both orientations, across states, palettes, and handle sizes.",
+            fg, muted, border,
+            tabs.panels.render(panel_previews::Kind::Resizable, look, window, cx),
+        ),
+        section(
+            "Scrollbar",
+            "Ghost and Soft tracks in both orientations; palette comparisons use neutral scales.",
+            fg, muted, border,
+            selection_previews::tabbed(selection_previews::Kind::Scrollbar, look, tabs.scrollbar, [fg, muted, border], window, cx),
+        ),
+        section(
+            "Search Selector",
+            "Outline and Ghost triggers, with an expanded searchable panel in the focused sample.",
+            fg, muted, border,
+            selection_previews::tabbed(selection_previews::Kind::SearchSelector, look, tabs.search_selector, [fg, muted, border], window, cx),
+        ),
+        section(
+            "Selection Panel",
+            "Selected, active, pressed, and disabled option rows rendered through the SDK panel template.",
+            fg, muted, border,
+            selection_previews::tabbed(selection_previews::Kind::SelectionPanel, look, tabs.selection_panel, [fg, muted, border], window, cx),
+        ),
+        section(
+            "Sidebar",
+            "Expanded navigation and icon rails, with selected, focused, and disabled rows.",
+            fg, muted, border,
+            tabs.navigation.render(navigation_previews::Kind::Sidebar, look, window, cx),
+        ),
+        section(
+            "Slide Panel",
+            "SDK drawer surfaces on all four edges, shown locally with resting, hover, and resize chrome.",
+            fg, muted, border,
+            tabs.panels.render(panel_previews::Kind::Slide, look, window, cx),
+        ),
         section(
             "Slider",
             format!("Radix variants on {accent}, across interaction states."),
@@ -176,6 +257,24 @@ pub fn page(
             muted,
             border,
             sliders::tabbed(look, tabs.sliders, fg, muted, border, window, cx),
+        ),
+        section(
+            "Split Button",
+            "SDK primary and menu faces, including independent feedback and icon content.",
+            fg, muted, border,
+            split_button_previews::tabbed(look, tabs.split_button, window, cx),
+        ),
+        section(
+            "Split View",
+            "Expanded and collapsed SDK panes with themed separators and geometry comparisons.",
+            fg, muted, border,
+            tabs.navigation.render(navigation_previews::Kind::SplitView, look, window, cx),
+        ),
+        section(
+            "Stepper",
+            "Complete, current, and upcoming steps in horizontal and vertical layouts.",
+            fg, muted, border,
+            tabs.navigation.render(navigation_previews::Kind::Stepper, look, window, cx),
         ),
         section(
             "Switch",
@@ -186,6 +285,12 @@ pub fn page(
             muted,
             border,
             switches::tabbed(look, tabs.switches, fg, muted, border, window, cx),
+        ),
+        section(
+            "Table",
+            "SDK headers and rows across interaction states, palettes, and sizes; selected and disabled rows included.",
+            fg, muted, border,
+            table_previews::tabbed(look, tabs.table, window, cx),
         ),
         section(
             "Tabs",
@@ -217,7 +322,6 @@ pub fn page(
             fg, muted, border,
             tabs.tooltips.render(look),
         ),
-        tabs.collections.clone(),
         section(
             "Tree View",
             "Select rows and expand Grid. Use arrow keys to navigate. Selection uses accent 3/12; hover outlines use accent 8; pressed uses accent 5.",

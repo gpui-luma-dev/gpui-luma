@@ -182,7 +182,7 @@ fn items() -> [MenuItem; 3] {
     ]
 }
 
-fn preview_handlers(item_count: usize) -> PopupMenuTemplateHandlers {
+pub(super) fn preview_handlers(item_count: usize) -> PopupMenuTemplateHandlers {
     PopupMenuTemplateHandlers {
         split_faces: None,
         trigger_bounds: Box::new(noop_bounds),
@@ -213,8 +213,7 @@ fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
 pub fn pane_preview(look: &Look, fg: Hsla) -> AnyElement {
     use gpui_luma::controls::floating_menu::{FloatingMenuHighlight, render_floating_menu_with_submenu_hovers_and_icons};
     use gpui_luma::infra::state::MenuPath;
-    use gpui_luma::theme::InteractionState;
-    use gpui_luma_look_radix::popup_menu_theme;
+    use gpui_luma_look_radix::floating_menu_look;
 
     let items = [
         MenuItem::new("copy-url").label("Copy palette URL").icon(LucideIcon::Share2),
@@ -230,9 +229,7 @@ pub fn pane_preview(look: &Look, fg: Hsla) -> AnyElement {
     let mut panels = div().w_full().flex().flex_wrap().gap(px(24.0));
     for def in &RADIX_VARIANTS {
         let id = SharedString::from(format!("guide-popup-pane-{}", def.id));
-        let palette = popup_menu_theme(look, def.variant, def.tone)
-            .resolve(def.trigger_style, Default::default(), InteractionState::default())
-            .floating_menu;
+        let palette = floating_menu_look(look, def.variant, def.tone);
         let selected = MenuPath::Root(2);
         let panel = render_floating_menu_with_submenu_hovers_and_icons(
             &id,

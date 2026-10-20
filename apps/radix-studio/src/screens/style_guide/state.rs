@@ -29,10 +29,18 @@ impl State {
             textareas: navigation("textareas"),
             sliders: navigation("sliders"),
             progress: navigation("progress"),
+            autocomplete: navigation("autocomplete"),
+            combobox: navigation("combobox"),
+            search_selector: navigation("search-selector"),
+            selection_panel: navigation("selection-panel"),
+            scrollbar: navigation("scrollbar"),
+            table: navigation("table"),
+            split_button: navigation("split-button"),
             examples: TabsExamples::spawn(look, cx),
             tooltips: super::tooltips::TooltipExamples::new(look, cx),
-            selectors: super::selectors::SelectorExamples::new(look, cx),
-            collections: cx.new(|cx| super::collections::Collections::new(look, cx)),
+            collections: super::collections::Previews::new(look, cx),
+            navigation: super::navigation_previews::Previews::new(look, cx),
+            panels: super::panel_previews::Previews::new(look, cx),
         };
         let tree = super::super::shared::tree_view::spawn("guide-tree", look, true, cx);
         let disabled_tree = super::super::shared::tree_view::spawn("guide-tree-disabled", look, false, cx);
@@ -49,13 +57,18 @@ impl State {
     }
 }
 
-fn preview_navigation<M: 'static>(name: &str, look: &Look, cx: &mut Context<M>) -> Entity<Tabs> {
+pub(super) fn preview_navigation<M: 'static>(name: &str, look: &Look, cx: &mut Context<M>) -> Entity<Tabs> {
     let tabs = gpui_luma_look_radix::Tabs::new(format!("radix-studio-{name}-preview-tabs"))
         .look(look)
         .items([
             TabsItem::new("template-preview").label("Template Preview"),
             TabsItem::new("colors").label("Colors"),
-            TabsItem::new("all-sizes").label("All Sizes"),
+            TabsItem::new("all-sizes").label(match name {
+                "pager" => "Layouts",
+                "dock-splitter" | "split-view" => "Geometry",
+                "sidebar" => "Presentations",
+                _ => "All Sizes",
+            }),
         ])
         .active("template-preview")
         .width_mode(TabsWidthMode::Intrinsic)
