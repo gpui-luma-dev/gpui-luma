@@ -5,6 +5,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, Subscription, WeakEntity, Window, div, prelude::*};
 
 use super::Tabs;
+use crate::infra::element_ext::ElementExt;
 
 type ContentPresenter = Arc<dyn Fn(&mut Window, &mut App) -> AnyElement>;
 
@@ -56,27 +57,145 @@ impl Render for TabsList {
 pub(super) struct TabsBody {
     tabs: WeakEntity<Tabs>,
     _subscription: Subscription,
+    viewport: std::rc::Rc<std::cell::Cell<Option<gpui::Bounds<gpui::Pixels>>>>,
+    panel_focus: std::collections::HashMap<gpui::SharedString, gpui::FocusHandle>,
+    renderer: Option<Box<dyn super::TabsTransitionRenderer>>,
 }
 
 impl TabsBody {
     pub(super) fn new(tabs: &Entity<Tabs>, cx: &mut Context<Self>) -> Self {
-        Self { tabs: tabs.downgrade(), _subscription: cx.observe(tabs, |_, _, cx| cx.notify()) }
+        Self {
+            tabs: tabs.downgrade(),
+            _subscription: cx.observe(tabs, |_, _, cx| cx.notify()),
+            viewport: Default::default(),
+            panel_focus: Default::default(),
+            renderer: None,
+        }
+    }
+
+    fn panel(
+        &mut self,
+        slot: (gpui::SharedString, TabsContent),
+        outgoing: bool,
+        layout: super::TabsContentLayout,
+        navigation: gpui::FocusHandle,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> super::TabsTransitionPanel {
+        let (id, content) = slot;
+        let focus = self.panel_focus.entry(id.clone()).or_insert_with(|| cx.focus_handle());
+        let mut element = div()
+            .id((id.clone(), usize::MAX))
+            .relative()
+            .w_full()
+            .flex()
+            .flex_col()
+            .when(layout == super::TabsContentLayout::Fill, |root| root.h_full())
+            .track_focus(focus)
+            .child(content.render(window, cx));
+        if outgoing {
+            element = element
+                .capture_key_down(move |_, window, cx| {
+                    navigation.focus(window, cx);
+                    cx.stop_propagation();
+                })
+                .child(div().absolute().inset_0().occlude());
+        }
+        super::TabsTransitionPanel { id, element: element.into_any_element() }
     }
 }
 
 impl Render for TabsBody {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let mut root = div().w_full().min_h_0().flex_1().flex().flex_col();
+        use gpui::Focusable;
+        let mut root = div().id("tabs-body").w_full().flex().flex_col();
         if let Some(tabs) = self.tabs.upgrade() {
-            let (opacity, content) = tabs.update(cx, |tabs, cx| {
-                tabs.body_transition.sync();
-                tabs.body_transition.schedule_frame(window, cx);
-                let content = tabs.active_id.as_ref().and_then(|id| tabs.contents.get(id)).cloned();
-                (tabs.body_transition.progress(), content)
-            });
-            root = root.opacity(opacity.clamp(0.0, 1.0));
-            if let Some(content) = content {
-                root = root.child(content.render(window, cx));
+            let (progress, content, outgoing, direction, config, active_id, animating, changes, layout, navigation) =
+                tabs.update(cx, |tabs, cx| {
+                    tabs.body_transition.sync();
+                    let animating = tabs.body_transition.is_animating();
+                    if !animating {
+                        tabs.outgoing_content.clear();
+                    }
+                    let content = tabs.active_id.as_ref().and_then(|id| tabs.contents.get(id)).cloned();
+                    (
+                        tabs.body_transition.progress().clamp(0.0, 1.0),
+                        content,
+                        tabs.outgoing_content.clone(),
+                        tabs.content_direction,
+                        tabs.content_transition.clone(),
+                        tabs.active_id.clone(),
+                        animating,
+                        std::mem::take(&mut tabs.transition_changes),
+                        tabs.content_layout,
+                        tabs.group.read(cx).focus_handle(cx),
+                    )
+                });
+            // Animation frames invalidate the body slot, never the navigation owner.
+            if animating {
+                cx.on_next_frame(window, |_, _, cx| cx.notify());
+            }
+            if layout != super::TabsContentLayout::Content {
+                root = root.flex_1().min_h_0();
+            }
+            if layout == super::TabsContentLayout::Fill {
+                root = root.relative().overflow_hidden();
+            }
+            if let Some(config) = config {
+                let navigation = active_id
+                    .as_ref()
+                    .and_then(|id| config.focus.as_ref().and_then(|target| target(id, window, cx)))
+                    .unwrap_or(navigation);
+                if self
+                    .panel_focus
+                    .iter()
+                    .any(|(id, focus)| Some(id) != active_id.as_ref() && focus.contains_focused(window, cx))
+                {
+                    navigation.focus(window, cx);
+                }
+                self.panel_focus.retain(|id, _| {
+                    Some(id) == active_id.as_ref() || outgoing.iter().any(|(previous, _)| previous == id)
+                });
+                if self.renderer.is_none() {
+                    self.renderer = Some(config.create());
+                }
+                if let Some(renderer) = &mut self.renderer {
+                    for change in changes {
+                        renderer.selection_changed(change);
+                    }
+                }
+                let outgoing = outgoing
+                    .into_iter()
+                    .map(|(id, content)| self.panel((id, content), true, layout, navigation.clone(), window, cx))
+                    .collect();
+                let incoming = active_id
+                    .zip(content)
+                    .map(|(id, content)| self.panel((id, content), false, layout, navigation, window, cx));
+                let frame = super::TabsTransitionFrame {
+                    incoming,
+                    outgoing,
+                    progress,
+                    direction,
+                    animating,
+                    viewport: if config.measure { self.viewport.get() } else { None },
+                };
+                if config.measure {
+                    let viewport = self.viewport.clone();
+                    let body = cx.weak_entity();
+                    root = root.relative().on_prepaint(move |bounds, window, cx| {
+                        if viewport.replace(Some(bounds)) != Some(bounds) {
+                            let _ = body.update(cx, |_, cx| cx.on_next_frame(window, |_, _, cx| cx.notify()));
+                        }
+                    });
+                }
+                if let Some(renderer) = &mut self.renderer {
+                    root = root.child(renderer.render(frame, window, cx));
+                }
+            } else {
+                root = root.opacity(progress);
+                if let Some(content) = content {
+                    root = root.child(content.render(window, cx));
+                }
             }
         }
         root
@@ -528,6 +647,359 @@ mod tests {
         });
         app.run_until_parked();
         assert!(events.borrow().is_empty());
+    }
+
+    struct BodyOnly {
+        tabs: Entity<Tabs>,
+    }
+    impl Render for BodyOnly {
+        fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+            div().size_full().flex().flex_col().child(self.tabs.read(cx).body())
+        }
+    }
+
+    #[test]
+    fn custom_frames_notify_only_body_and_default_measurement_adds_no_frame() {
+        let mut app = TestAppContext::single();
+        let renders = std::rc::Rc::new(std::cell::Cell::new(0));
+        let changes = std::rc::Rc::new(std::cell::Cell::new(0));
+        let (page, cx) = app.add_window_view(|_, cx| {
+            let renders = renders.clone();
+            BodyOnly {
+                tabs: Tabs::new("body-frames")
+                    .motion(|m| {
+                        m.content =
+                            crate::motion::Transition::timed(Duration::from_millis(200), crate::motion::Easing::Linear)
+                    })
+                    .content_layout(super::super::TabsContentLayout::Fill)
+                    .content_transition(super::super::TabsContentTransition::new(move |frame, _, _| {
+                        renders.set(renders.get() + 1);
+                        assert!(frame.viewport.is_none());
+                        div().size_full().children(frame.incoming.map(|panel| panel.element))
+                    }))
+                    .tab_with("one", "One", |_, _| div())
+                    .tab_with("two", "Two", |_, _| div())
+                    .spawn(cx),
+            }
+        });
+        cx.run_until_parked();
+        assert_eq!(cx.update(|window, cx| window.simulate_next_frame(cx)), 0);
+        let tabs = cx.update(|_, cx| page.read(cx).tabs.clone());
+        let _observer = cx.update(|_, cx| {
+            cx.observe(&tabs, {
+                let changes = changes.clone();
+                move |_, _| changes.set(changes.get() + 1)
+            })
+        });
+        cx.update(|_, cx| {
+            tabs.update(cx, |tabs, cx| {
+                tabs.set_active("two", cx);
+                tabs.body_transition.elapse_for_test(Duration::from_millis(20));
+            })
+        });
+        cx.run_until_parked();
+        changes.set(0);
+        let before = renders.get();
+        cx.update(|window, cx| window.simulate_next_frame(cx));
+        cx.run_until_parked();
+        assert!(renders.get() > before);
+        assert_eq!(changes.get(), 0, "animation must not notify Tabs observers");
+    }
+
+    #[test]
+    fn custom_content_layout_preserves_intrinsic_height() {
+        let mut app = TestAppContext::single();
+        let (_, cx) = app.add_window_view(|_, cx| BodyOnly {
+            tabs: Tabs::new("intrinsic-effect")
+                .content_layout(super::super::TabsContentLayout::Content)
+                .content_transition(super::super::TabsContentTransition::new(|frame, _, _| {
+                    div().children(frame.incoming.map(|panel| panel.element))
+                }))
+                .tab_with("one", "One", |_, _| div().h(px(80.0)).debug_selector(|| "intrinsic-panel".into()))
+                .spawn(cx),
+        });
+        cx.run_until_parked();
+        assert_eq!(cx.debug_bounds("intrinsic-panel").unwrap().size.height, px(80.0));
+    }
+
+    #[test]
+    fn incoming_accepts_clicks_while_retiring_content_is_shielded() {
+        let mut app = TestAppContext::single();
+        let outgoing_clicks = std::rc::Rc::new(std::cell::Cell::new(0));
+        let incoming_clicks = std::rc::Rc::new(std::cell::Cell::new(0));
+        let (page, cx) = app.add_window_view(|_, cx| {
+            let outgoing = outgoing_clicks.clone();
+            let incoming = incoming_clicks.clone();
+            BodyOnly {
+                tabs: Tabs::new("interactive-effect")
+                    .motion(|m| {
+                        m.content =
+                            crate::motion::Transition::timed(Duration::from_millis(200), crate::motion::Easing::Linear)
+                    })
+                    .content_layout(super::super::TabsContentLayout::Fill)
+                    .content_transition(super::super::TabsContentTransition::new(|frame, _, _| {
+                        div().size_full().relative().children(
+                            frame
+                                .outgoing
+                                .into_iter()
+                                .chain(frame.incoming)
+                                .map(|panel| div().id(panel.id).absolute().inset_0().child(panel.element)),
+                        )
+                    }))
+                    .tab_with("one", "One", move |_, _| {
+                        let count = outgoing.clone();
+                        div()
+                            .id("old-content")
+                            .size_full()
+                            .debug_selector(|| "old-content".into())
+                            .on_mouse_down(gpui::MouseButton::Left, move |_, _, _| count.set(count.get() + 1))
+                    })
+                    .tab_with("two", "Two", move |_, _| {
+                        let count = incoming.clone();
+                        div()
+                            .id("new-content")
+                            .w(px(100.0))
+                            .h(px(100.0))
+                            .debug_selector(|| "new-content".into())
+                            .on_mouse_down(gpui::MouseButton::Left, move |_, _, _| count.set(count.get() + 1))
+                    })
+                    .spawn(cx),
+            }
+        });
+        cx.simulate_resize(gpui::size(px(500.0), px(300.0)));
+        cx.run_until_parked();
+        cx.update(|_, cx| {
+            let tabs = page.read(cx).tabs.clone();
+            tabs.update(cx, |tabs, cx| {
+                tabs.set_active("two", cx);
+                tabs.body_transition.elapse_for_test(Duration::from_millis(20));
+            });
+        });
+        cx.run_until_parked();
+        let incoming_center = cx.debug_bounds("new-content").unwrap().center();
+        cx.simulate_click(incoming_center, Default::default());
+        cx.run_until_parked();
+        assert_eq!(incoming_clicks.get(), 1);
+        cx.simulate_click(gpui::point(px(300.0), px(200.0)), Default::default());
+        cx.run_until_parked();
+        assert_eq!(outgoing_clicks.get(), 0);
+    }
+
+    #[test]
+    fn custom_renderer_receives_lifecycle_bounds_and_releases_inactive_focus() {
+        let samples = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let mut app = TestAppContext::single();
+        let mut panel_focus = None;
+        let (page, cx) = app.add_window_view(|_, cx| {
+            let focus = cx.focus_handle();
+            panel_focus = Some(focus.clone());
+            let samples = samples.clone();
+            let renderer = super::super::TabsContentTransition::new(move |frame, _, _| {
+                samples.borrow_mut().push((
+                    frame.progress,
+                    frame.animating,
+                    frame.outgoing.first().map(|panel| panel.id.clone()),
+                    frame.viewport,
+                ));
+                // A completely different consumer effect: incoming-only opacity.
+                div().size_full().opacity(frame.progress).children(frame.incoming.map(|panel| panel.element))
+            });
+            let renderer = renderer.measure_viewport(true);
+            Page {
+                tabs: Tabs::new("custom-fade")
+                    .content_transition(renderer)
+                    .content_layout(super::super::TabsContentLayout::Fill)
+                    .tab_with("one", "One", move |_, _| div().id("focus-child").size_full().track_focus(&focus))
+                    .tab_with("two", "Two", |_, _| div().size_full())
+                    .motion(|m| {
+                        m.content =
+                            crate::motion::Transition::timed(Duration::from_millis(240), crate::motion::Easing::Linear)
+                    })
+                    .spawn(cx),
+                split: true,
+            }
+        });
+        cx.simulate_resize(gpui::size(px(500.0), px(300.0)));
+        cx.run_until_parked();
+        cx.update(|window, cx| window.simulate_next_frame(cx));
+        cx.run_until_parked();
+        assert!(
+            samples
+                .borrow()
+                .iter()
+                .any(|(_, _, _, bounds)| bounds.is_some_and(|bounds| bounds.size.width == px(500.0)))
+        );
+        let focus = panel_focus.unwrap();
+        let tabs = cx.update(|window, cx| {
+            focus.focus(window, cx);
+            let tabs = page.read(cx).tabs.clone();
+            tabs.update(cx, |tabs, cx| {
+                tabs.set_active("two", cx);
+                tabs.body_transition.elapse_for_test(Duration::from_millis(120));
+            });
+            tabs
+        });
+        cx.run_until_parked();
+        assert!(samples.borrow().iter().any(|(progress, running, outgoing, _)| *running
+            && *progress == 0.5
+            && outgoing.as_deref() == Some("one")));
+        cx.update(|window, cx| {
+            use gpui::Focusable;
+            assert!(!focus.is_focused(window));
+            assert!(tabs.read(cx).group.read(cx).focus_handle(cx).is_focused(window));
+        });
+        cx.update(|_, cx| tabs.update(cx, |tabs, cx| tabs.set_motion_enabled(false, cx)));
+        cx.run_until_parked();
+        let samples = samples.borrow();
+        let (progress, running, outgoing, _) = samples.last().unwrap();
+        assert_eq!(*progress, 1.0);
+        assert!(!running);
+        assert!(outgoing.is_none());
+    }
+
+    #[test]
+    fn custom_zero_duration_does_not_retain_outgoing() {
+        let app = TestAppContext::single();
+        app.update(|cx| {
+            let tabs = Tabs::new("instant-custom")
+                .content_transition(test_transition())
+                .content_layout(super::super::TabsContentLayout::Fill)
+                .tab_with("one", "One", |_, _| div())
+                .tab_with("two", "Two", |_, _| div())
+                .motion(|m| m.content = crate::motion::Transition::timed(Duration::ZERO, crate::motion::Easing::Linear))
+                .spawn(cx);
+            tabs.update(cx, |tabs, cx| {
+                tabs.set_active("two", cx);
+                assert_eq!(tabs.body_transition.progress(), 1.0);
+                assert!(tabs.outgoing_content.is_empty());
+            });
+        });
+    }
+
+    // Consumer-defined renderer: no slide implementation exists in Tabs itself.
+    fn test_transition() -> super::super::TabsContentTransition {
+        super::super::TabsContentTransition::new(|frame, _, _| {
+            let direction = if frame.direction == super::super::TabsTransitionDirection::Forward {
+                1.0
+            } else {
+                -1.0
+            };
+            div()
+                .size_full()
+                .children(frame.outgoing.into_iter().map(|panel| {
+                    div()
+                        .id(panel.id)
+                        .absolute()
+                        .top_0()
+                        .left(gpui::relative(-direction * frame.progress))
+                        .size_full()
+                        .child(panel.element)
+                }))
+                .children(frame.incoming.map(|panel| {
+                    div()
+                        .id(panel.id)
+                        .absolute()
+                        .top_0()
+                        .left(gpui::relative(direction * (1.0 - frame.progress)))
+                        .size_full()
+                        .child(panel.element)
+                }))
+        })
+    }
+
+    #[test]
+    fn horizontal_slide_positions_both_panels_and_releases_outgoing() {
+        for split in [false, true] {
+            let mut app = TestAppContext::single();
+            let (page, cx) = app.add_window_view(|_, cx| Page {
+                tabs: Tabs::new("slide-layout")
+                    .content_transition(test_transition())
+                    .content_layout(super::super::TabsContentLayout::Fill)
+                    .tab_with("one", "One", |_, _| div().size_full().debug_selector(|| "slide-one".into()))
+                    .tab_with("two", "Two", |_, _| div().size_full().debug_selector(|| "slide-two".into()))
+                    .motion(|m| {
+                        m.content = crate::motion::Transition::timed(
+                            Duration::from_millis(240),
+                            crate::motion::Easing::OutCubic,
+                        )
+                    })
+                    .spawn(cx),
+                split,
+            });
+            cx.simulate_resize(gpui::size(px(500.0), px(300.0)));
+            cx.run_until_parked();
+            let tabs = cx.update(|_, cx| page.read(cx).tabs.clone());
+            cx.update(|_, cx| {
+                tabs.update(cx, |tabs, cx| {
+                    tabs.set_active("two", cx);
+                    tabs.body_transition.elapse_for_test(Duration::from_millis(120));
+                })
+            });
+            cx.run_until_parked();
+            let outgoing = cx.debug_bounds("slide-one").expect("outgoing panel");
+            let incoming = cx.debug_bounds("slide-two").expect("incoming panel");
+            assert!(outgoing.origin.x < px(0.0));
+            assert!(incoming.origin.x > px(0.0));
+            assert_eq!(outgoing.size.width, px(500.0));
+            assert!(incoming.size.height > px(0.0));
+            cx.update(|_, cx| {
+                tabs.update(cx, |tabs, cx| {
+                    tabs.body_transition.elapse_for_test(Duration::from_millis(300));
+                    cx.notify();
+                })
+            });
+            cx.run_until_parked();
+            assert!(cx.debug_bounds("slide-one").is_none());
+            assert_eq!(cx.debug_bounds("slide-two").expect("settled panel").origin.x, px(0.0));
+            cx.update(|_, cx| assert!(tabs.read(cx).outgoing_content.is_empty()));
+        }
+    }
+
+    #[test]
+    fn horizontal_slide_tracks_direction_retargets_and_settles() {
+        let app = TestAppContext::single();
+        let tabs = app.update(|cx| {
+            Tabs::new("slide-tabs")
+                .content_transition(test_transition())
+                .content_layout(super::super::TabsContentLayout::Fill)
+                .tab_with("one", "One", |_, _| div())
+                .tab_with("two", "Two", |_, _| div())
+                .tab_with("three", "Three", |_, _| div())
+                .motion(|m| {
+                    m.content =
+                        crate::motion::Transition::timed(Duration::from_millis(240), crate::motion::Easing::OutCubic)
+                })
+                .spawn(cx)
+        });
+        app.update(|cx| {
+            tabs.update(cx, |tabs, cx| {
+                tabs.set_active("three", cx);
+                assert_eq!(tabs.content_direction, super::super::TabsTransitionDirection::Forward);
+                assert_eq!(tabs.outgoing_content.last().map(|(id, _)| id.as_ref()), Some("one"));
+                tabs.body_transition.elapse_for_test(Duration::from_millis(120));
+                tabs.body_transition.sync();
+                assert!(tabs.body_transition.progress() > 0.0);
+                tabs.set_active("two", cx);
+                assert_eq!(tabs.outgoing_content.len(), 2, "both retiring panels survive interruption");
+                assert!(tabs.transition_changes.last().is_some_and(|change| change.previous_progress > 0.0));
+                assert_eq!(tabs.content_direction, super::super::TabsTransitionDirection::Backward);
+                assert_eq!(tabs.outgoing_content.last().map(|(id, _)| id.as_ref()), Some("three"));
+                tabs.set_active("two", cx);
+                assert_eq!(tabs.outgoing_content.last().map(|(id, _)| id.as_ref()), Some("three"));
+                tabs.set_active("missing", cx);
+                assert_eq!(tabs.active_id().map(|id| id.as_ref()), Some("two"));
+                tabs.set_motion_enabled(false, cx);
+                assert!(tabs.outgoing_content.is_empty());
+                assert_eq!(tabs.body_transition.progress(), 1.0);
+                tabs.set_active("one", cx);
+                assert!(tabs.outgoing_content.is_empty());
+                tabs.set_motion_enabled(true, cx);
+                tabs.set_active("three", cx);
+                tabs.set_items([TabsItem::new("one")], cx);
+                assert!(tabs.outgoing_content.is_empty());
+                assert_eq!(tabs.body_transition.progress(), 1.0);
+            })
+        });
     }
 
     #[test]

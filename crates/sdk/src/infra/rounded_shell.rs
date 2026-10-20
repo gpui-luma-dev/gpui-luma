@@ -1,7 +1,7 @@
 //! Rounded bordered panel helpers for GPUI.
 //!
 //! GPUI applies `corner_radii` when painting an element's own background and border, but
-//! [`overflow_hidden`](gpui::Style::overflow_hidden) clips descendants with a **rectangular**
+//! [`overflow_hidden`](gpui::Styled::overflow_hidden) clips descendants with a **rectangular**
 //! mask only. A child with a different [`bg`](gpui::Styled::bg) must use matching radii on
 //! the same node (e.g. [`rounded_top`] for a header strip inside a rounded shell).
 

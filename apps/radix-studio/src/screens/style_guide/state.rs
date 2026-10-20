@@ -74,6 +74,10 @@ pub(super) fn preview_navigation<M: 'static>(name: &str, look: &Look, cx: &mut C
         .width_mode(TabsWidthMode::Intrinsic)
         .with_template_modifier(|root, _| root.w_full())
         .spawn(cx);
-    tabs.clone().on_event(cx, |_, _: &TabsEvent, cx| cx.notify());
+    tabs.clone().on_event(cx, |_, event: &TabsEvent, cx| {
+        if matches!(event, TabsEvent::Change { .. }) {
+            cx.notify();
+        }
+    });
     tabs
 }

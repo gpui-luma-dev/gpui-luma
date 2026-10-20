@@ -145,7 +145,7 @@ impl TabsIndicatorMotionInner {
     }
 }
 
-/// Shared indicator motion state between [`super::TabsControl`] and the list template.
+/// Shared indicator motion state between [`super::Tabs`] and the list template.
 #[derive(Clone, Debug)]
 pub struct TabsIndicatorMotion {
     inner: Arc<Mutex<TabsIndicatorMotionInner>>,

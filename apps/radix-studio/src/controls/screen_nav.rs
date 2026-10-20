@@ -4,8 +4,8 @@ use gpui_luma::controls::toggle::ToggleEventExt;
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, Hsla, FontWeight, px, Context, Entity, EventEmitter, IntoElement, Render, Subscription, Window, div,
-    prelude::*,
+    AnyElement, Hsla, FontWeight, px, Context, Entity, EventEmitter, Focusable, IntoElement, Render, Subscription,
+    Window, div, prelude::*,
 };
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button::Button;
@@ -184,6 +184,12 @@ impl ScreenNav {
         }
     }
 
+    pub fn page_focus_handle(&self, id: &str, cx: &gpui::App) -> Option<gpui::FocusHandle> {
+        let tab = SCREEN_TABS.iter().find(|(_, page, _)| *page == id)?.0;
+        self.pages.iter().find(|(page, _)| *page == tab).map(|(_, toggle)| toggle.read(cx).focus_handle(cx))
+    }
+
+    #[cfg(all(test, feature = "test-support"))]
     pub fn active(&self) -> RadixStudioTab {
         self.active
     }
@@ -245,7 +251,7 @@ fn radix_lockup(foreground: Hsla) -> AnyElement {
 }
 
 impl Render for ScreenNav {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .w_full()
             .flex()
@@ -272,7 +278,35 @@ impl Render for ScreenNav {
                             .child("Made with GPUI-LUMA"),
                     ),
             )
-            .child(div().flex().gap_2().children(self.pages.iter().map(|(_, toggle)| toggle.clone())))
+            .child(
+                div()
+                    .flex()
+                    .gap_2()
+                    .on_key_down(cx.listener(|this, event: &gpui::KeyDownEvent, window, cx| {
+                        if event.keystroke.modifiers != Default::default() {
+                            return;
+                        }
+                        let Some(index) = this
+                            .pages
+                            .iter()
+                            .position(|(_, toggle)| toggle.read(cx).focus_handle(cx).is_focused(window))
+                        else {
+                            return;
+                        };
+                        let next = match event.keystroke.key.as_str() {
+                            "left" => (index + this.pages.len() - 1) % this.pages.len(),
+                            "right" => (index + 1) % this.pages.len(),
+                            _ => return,
+                        };
+                        let (tab, toggle) = this.pages[next].clone();
+                        this.select(tab, cx);
+                        toggle.read(cx).focus_handle(cx).focus(window, cx);
+                        cx.stop_propagation();
+                    }))
+                    .children(self.pages.iter().zip(SCREEN_TABS).map(|((_, toggle), (_, id, _))| {
+                        div().debug_selector(move || id.into()).child(toggle.clone())
+                    })),
+            )
             .child(
                 div()
                     .flex_1()
@@ -284,5 +318,46 @@ impl Render for ScreenNav {
                     .child(self.theme_reset.clone())
                     .child(self.theme_toggle.clone()),
             )
+    }
+}
+
+#[cfg(all(test, feature = "test-support"))]
+mod tests {
+    use super::*;
+    use gpui::TestAppContext;
+
+    #[test]
+    fn clicked_page_keeps_focus_and_arrows_select_neighboring_screens() {
+        let mut app = TestAppContext::single();
+        let (nav, cx) = app.add_window_view(|_, cx| {
+            let look = Arc::new(Look::built_in());
+            let mut tabs = radix::Tabs::new("test-screens").look(&look);
+            for (_, id, label) in SCREEN_TABS {
+                tabs = tabs.tab_with(id, label, |_, _| div());
+            }
+            let tabs = tabs.spawn(cx);
+            ScreenNav::new(&look, &look, tabs, cx)
+        });
+        cx.simulate_resize(gpui::size(px(1400.0), px(100.0)));
+        cx.run_until_parked();
+        let colors = cx.debug_bounds("page-colors").expect("Colors toggle");
+        cx.simulate_click(colors.center(), Default::default());
+        cx.run_until_parked();
+        assert_page_focused(&nav, RadixStudioTab::Colors, cx);
+        cx.simulate_keystrokes("right");
+        cx.run_until_parked();
+        assert_page_focused(&nav, RadixStudioTab::Icons, cx);
+        cx.simulate_keystrokes("left");
+        cx.run_until_parked();
+        assert_page_focused(&nav, RadixStudioTab::Colors, cx);
+    }
+
+    fn assert_page_focused(nav: &Entity<ScreenNav>, expected: RadixStudioTab, cx: &mut gpui::VisualTestContext) {
+        cx.update(|window, cx| {
+            let nav = nav.read(cx);
+            assert_eq!(nav.active(), expected);
+            let (_, toggle) = nav.pages.iter().find(|(tab, _)| *tab == expected).unwrap();
+            assert!(toggle.read(cx).focus_handle(cx).is_focused(window));
+        });
     }
 }

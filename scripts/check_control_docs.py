@@ -69,7 +69,7 @@ EXAMPLES = {
     "slide-panel.html": 0,
     "split-view.html": 0,
     "table.html": [0, 1],
-    "tabs.html": [0, 1],
+    "tabs.html": [0, 1, 2],
     "textarea.html": 0,
     "textfield.html": 0,
     "toolbar.html": 0,

@@ -23,6 +23,8 @@ pub struct Tabs {
     active_id: Option<SharedString>,
     reordering: bool,
     enabled: bool,
+    content_layout: gpui_luma::controls::tabs::TabsContentLayout,
+    content_transition: Option<gpui_luma::controls::tabs::TabsContentTransition>,
     motion_enabled: bool,
     motion: gpui_luma::motion::MotionOverrides<gpui_luma::controls::tabs::TabsMotion>,
     contents: HashMap<SharedString, TabsContent>,
@@ -293,6 +295,8 @@ impl Tabs {
             active_id: None,
             reordering: false,
             enabled: true,
+            content_layout: Default::default(),
+            content_transition: Default::default(),
             motion_enabled: true,
             motion: Default::default(),
             contents: HashMap::new(),
@@ -367,6 +371,18 @@ impl Tabs {
         self
     }
 
+    /// Explicit SDK content sizing; transitions do not change layout policy.
+    pub fn content_layout(mut self, layout: gpui_luma::controls::tabs::TabsContentLayout) -> Self {
+        self.content_layout = layout;
+        self
+    }
+
+    /// Choose the SDK content transition, retaining the configured motion timing.
+    pub fn content_transition(mut self, transition: gpui_luma::controls::tabs::TabsContentTransition) -> Self {
+        self.content_transition = Some(transition);
+        self
+    }
+
     pub fn active(mut self, active_id: impl Into<SharedString>) -> Self {
         self.active_id = Some(active_id.into());
         self
@@ -424,11 +440,15 @@ impl Tabs {
             .template(template)
             .size(self.size.control_size())
             .width_mode(self.width_mode)
+            .content_layout(self.content_layout)
             .enabled(self.enabled)
             .reordering(self.reordering)
             .motion_enabled(self.motion_enabled)
             .motion_defaults(look.motion_defaults().tabs)
             .with_motion_overrides(self.motion);
+        if let Some(transition) = self.content_transition {
+            builder = builder.content_transition(transition);
+        }
         for item in self.items {
             if let Some(content) = self.contents.get(item.id()) {
                 builder = builder.tab_content(item, content.clone());

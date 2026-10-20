@@ -160,7 +160,7 @@ impl OverlayWindowBuilder {
     /// Register a persistent entity hosted in this overlay for theme invalidation fan-out.
     ///
     /// Spawn child controls before the overlay, then register them here so they re-render when
-    /// [`crate::theme::LumaThemeRevision`] changes without app-level notify plumbing.
+    /// [`crate::theme::revision::LumaThemeRevision`] changes without app-level notify plumbing.
     pub fn theme_child<T: 'static>(mut self, entity: Entity<T>) -> Self {
         self.theme_children.push(ThemeInvalidator::from_entity(entity));
         self

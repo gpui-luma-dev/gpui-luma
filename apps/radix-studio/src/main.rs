@@ -6,6 +6,7 @@ mod assets;
 mod color_hex;
 mod controls;
 mod screens;
+mod screen_transition;
 mod tabs;
 
 use assets::Assets;

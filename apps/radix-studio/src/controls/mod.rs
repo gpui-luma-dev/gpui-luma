@@ -3,6 +3,8 @@
 mod classic_shadow_editor;
 mod color_textfield;
 mod screen_nav;
+mod control_bar;
+pub(crate) use control_bar::ControlBar;
 mod icon_button;
 
 pub use classic_shadow_editor::{ClassicShadowEditor, ClassicShadowEditorEvent};
