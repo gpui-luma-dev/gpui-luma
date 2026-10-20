@@ -9,8 +9,8 @@ use gpui_luma::color::{ColorValue, GamutMapping, gpui_bridge};
 use std::sync::Arc;
 
 use gpui::{
-    App, Context, Entity, FocusHandle, Hsla, Render, RenderImage, AnyElement, ScrollHandle, Subscription, Task, Window,
-    div, prelude::*, px,
+    Context, Entity, FocusHandle, Hsla, Render, RenderImage, AnyElement, ScrollHandle, Subscription, Task, Window, div,
+    prelude::*, px,
 };
 use gpui_luma::controls::button::Button;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
@@ -19,6 +19,7 @@ use crate::controls::theme_mode;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::infra::menu_item::{MenuItem, MenuItemIcon};
 use gpui_luma::shell::TitleBar;
+use gpui_luma::infra::element_ext::ElementExt;
 use gpui_luma::controls::tabs::Tabs;
 use gpui_luma::theme::ThemeMode;
 use gpui_luma::{WideMiddle, dock_panel, spawn_wide_middle, vstack};
@@ -27,14 +28,13 @@ use gpui_luma_look_radix as radix;
 
 use crate::screens::custom_palette::{MeshCache, MeshRequest};
 use crate::controls::{
-    ClassicShadowEditor, ClassicShadowEditorEvent, ColorTextField, ColorTextFieldEvent, ScreenNav, ScreenNavEvent,
-    SCREEN_TABS,
+    ControlBar, ClassicShadowEditor, ClassicShadowEditorEvent, ColorTextField, ColorTextFieldEvent, ScreenNav,
+    ScreenNavEvent, SCREEN_TABS,
 };
 use crate::screens::{colors, custom_palette, developer, icons, style_guide};
 use crate::tabs::RadixStudioTab;
 
 const CONTENT_MAX_W: f32 = 1280.0;
-const CONTROL_BAR_FADE_DISTANCE: f32 = 96.0;
 const STARTUP_MODE: ThemeMode = ThemeMode::Dark;
 
 use crate::controls::swatch_info::{self, ColorDetails, SwatchSelection};
@@ -128,7 +128,9 @@ pub struct RadixStudioApp {
     palette_edits: PaletteEdits,
     accent_linked: bool,
     screen_nav: Entity<ScreenNav>,
+    control_bar: Entity<ControlBar>,
     page_scroll: ScrollHandle,
+    screen_scrolls: Vec<(RadixStudioTab, ScrollHandle)>,
     screens: Entity<Tabs>,
     mode_selector: RadioGroup<RadioGroupItem>,
     accent_field: Entity<ColorTextField>,
@@ -164,7 +166,23 @@ impl RadixStudioApp {
         palette_edits.apply(&theme, &draft);
 
         let mode_selector = theme_mode::spawn("palette-mode", &draft, cx);
-        let mut screen_builder = radix::Tabs::new("screen-nav-tabs").look(&theme).line().active("page-custom-palette");
+        let mut screen_builder = radix::Tabs::new("screen-nav-tabs")
+            .look(&theme)
+            .line()
+            .active("page-custom-palette")
+            .content_layout(gpui_luma::controls::tabs::TabsContentLayout::Fill)
+            .content_transition(crate::screen_transition::directional_slide().focus_target({
+                let app = cx.entity().downgrade();
+                move |id, _, cx| {
+                    app.upgrade().and_then(|app| app.read(cx).screen_nav.read(cx).page_focus_handle(id, cx))
+                }
+            }))
+            .motion(|motion| {
+                motion.content = gpui_luma::motion::Transition::timed(
+                    std::time::Duration::from_millis(400),
+                    gpui_luma::motion::Easing::OutCubic,
+                )
+            });
         for (screen, id, label) in SCREEN_TABS {
             let app = cx.entity().downgrade();
             screen_builder = screen_builder.tab_with(id, label, move |window, cx| {
@@ -174,6 +192,9 @@ impl RadixStudioApp {
         }
         let screens = screen_builder.spawn(cx);
         let screen_nav = cx.new(|cx| ScreenNav::new(&theme, &draft, screens.clone(), cx));
+        let control_bar = cx.new(|_| ControlBar::new(&theme, screen_nav.clone()));
+        let screen_scrolls: Vec<_> = SCREEN_TABS.iter().map(|(tab, _, _)| (*tab, ScrollHandle::new())).collect();
+        let page_scroll = screen_scrolls[0].1.clone();
         let home = custom_palette::PreviewControls::spawn(&draft, cx);
         let accent_color = seed_colors.accent;
         let gray_color = seed_colors.gray;
@@ -194,7 +215,11 @@ impl RadixStudioApp {
         // Screen presenters read app-owned state; refresh them when that state changes.
         subscriptions.push(cx.observe(&cx.entity(), {
             let screens = screens.downgrade();
+            let control_bar = control_bar.downgrade();
             move |_, _, cx| {
+                if let Some(bar) = control_bar.upgrade() {
+                    bar.update(cx, |_, cx| cx.notify());
+                }
                 if let Some(screens) = screens.upgrade() {
                     screens.update(cx, |tabs, cx| tabs.refresh_content(cx));
                 }
@@ -304,9 +329,15 @@ impl RadixStudioApp {
             }
         });
         subscriptions.push(cx.subscribe(&screen_nav, |this, _, event: &ScreenNavEvent, cx| match event {
-            ScreenNavEvent::Change { .. } => {
-                this.page_scroll.set_offset(gpui::point(px(0.0), px(0.0)));
-                cx.notify();
+            ScreenNavEvent::Change { tab } => {
+                if let Some((_, handle)) = this.screen_scrolls.iter().find(|(screen, _)| screen == tab) {
+                    this.page_scroll = handle.clone();
+                    let duration = match this.screens.read(cx).motion_profile().content.description() {
+                        gpui_luma::motion::TransitionDescription::Timed { duration, .. } => duration,
+                        _ => std::time::Duration::from_millis(400),
+                    };
+                    this.control_bar.update(cx, |bar, cx| bar.select(*tab, f32::from(handle.offset().y), duration, cx));
+                }
             }
             ScreenNavEvent::ModeChange { mode } => this.set_mode(*mode, cx),
             ScreenNavEvent::ResetTheme => this.reset_theme(cx),
@@ -329,7 +360,9 @@ impl RadixStudioApp {
             palette_edits,
             accent_linked: true,
             screen_nav,
-            page_scroll: ScrollHandle::new(),
+            control_bar,
+            page_scroll,
+            screen_scrolls,
             screens,
             mode_selector,
             accent_field,
@@ -351,7 +384,8 @@ impl RadixStudioApp {
         }
     }
 
-    fn active_tab(&self, cx: &App) -> RadixStudioTab {
+    #[cfg(all(test, feature = "test-support"))]
+    fn active_tab(&self, cx: &gpui::App) -> RadixStudioTab {
         self.screen_nav.read(cx).active()
     }
 
@@ -524,7 +558,33 @@ struct DraftChrome {
 }
 
 impl RadixStudioApp {
+    fn screen_background(&self, tab: RadixStudioTab) -> gpui::Background {
+        match tab {
+            RadixStudioTab::Colors => colors::page_background(self.theme.mode()),
+            // These screens share the editor's background and gradient.
+            RadixStudioTab::CustomPalette | RadixStudioTab::StyleGuide | RadixStudioTab::Developer => {
+                let recipe = radix::PageBackground { settle_at: 0.5, ..Default::default() };
+                let (start, _) = recipe.stops(&self.draft);
+                let end = editor_preview(self.palette_edits.colors(&self.defaults).background);
+                gpui::linear_gradient(
+                    180.0,
+                    gpui::linear_color_stop(start, 0.0),
+                    gpui::linear_color_stop(end, recipe.settle_at),
+                )
+            }
+            RadixStudioTab::Icons => self.defaults.page_background(),
+        }
+    }
+
     fn render_screen(&mut self, active_tab: RadixStudioTab, window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
+        let scroll = self
+            .screen_scrolls
+            .iter()
+            .find(|(tab, _)| *tab == active_tab)
+            .map(|(_, handle)| handle.clone())
+            .unwrap_or_default();
+        let observed_scroll = scroll.clone();
+        let bar = self.control_bar.downgrade();
         let surface = self.surface();
         let fg = self.fg();
         let muted = self.muted();
@@ -568,8 +628,9 @@ impl RadixStudioApp {
                 .render(cx),
         };
         let body = vstack! { gap=28; content };
-        div()
+        let viewport = div()
             .id("radix-studio-scroll")
+            .debug_selector(move || format!("screen-scroll-{active_tab:?}"))
             .relative()
             .flex_1()
             .w_full()
@@ -577,10 +638,25 @@ impl RadixStudioApp {
             .flex()
             .flex_col()
             .overflow_y_scroll()
-            .track_scroll(&self.page_scroll)
-            .on_scroll_wheel(cx.listener(|_, _, _, cx| cx.notify()))
+            .track_scroll(&scroll)
+            .on_prepaint(move |_, window, cx| {
+                if let Some(bar) = bar.upgrade() {
+                    bar.update(cx, |bar, cx| {
+                        if bar.scroll_changed(active_tab, f32::from(observed_scroll.offset().y)) {
+                            cx.on_next_frame(window, |_, _, cx| cx.notify());
+                        }
+                    });
+                }
+            })
             .when(active_tab == RadixStudioTab::Icons, |d| d.child(icons::hero_decoration(fg)))
-            .child(body.relative().w_full().max_w(px(CONTENT_MAX_W)).mx_auto().px_8().pt(px(20.0)).pb_8())
+            .child(body.relative().w_full().max_w(px(CONTENT_MAX_W)).mx_auto().px_8().pt(px(20.0)).pb_8());
+        div()
+            .size_full()
+            .flex()
+            .flex_col()
+            .bg(self.screen_background(active_tab))
+            .debug_selector(move || format!("screen-panel-{active_tab:?}"))
+            .child(viewport)
             .into_any_element()
     }
 }
@@ -590,28 +666,6 @@ impl Render for RadixStudioApp {
         let surface = self.surface();
         let border = self.border();
         let fg = self.fg();
-        let active_tab = self.active_tab(cx);
-        // Fade with scroll distance so scrolling back to the top reverses smoothly.
-        let progress = (f32::from(-self.page_scroll.offset().y) / CONTROL_BAR_FADE_DISTANCE).clamp(0.0, 1.0);
-        let opacity = progress * progress * (3.0 - 2.0 * progress);
-        let background = self.theme.resolve_role(SemanticRole::Background).hsla();
-        let bar_background = Hsla { a: background.a * opacity, ..background };
-        let bar_border = Hsla { a: border.a * opacity, ..border };
-        let page_background = match active_tab {
-            RadixStudioTab::Colors => colors::page_background(self.theme.mode()),
-            // These screens share the editor's background and gradient.
-            RadixStudioTab::CustomPalette | RadixStudioTab::StyleGuide | RadixStudioTab::Developer => {
-                let recipe = radix::PageBackground { settle_at: 0.5, ..Default::default() };
-                let (start, _) = recipe.stops(&self.draft);
-                let end = editor_preview(self.palette_edits.colors(&self.defaults).background);
-                gpui::linear_gradient(
-                    180.0,
-                    gpui::linear_color_stop(start, 0.0),
-                    gpui::linear_color_stop(end, recipe.settle_at),
-                )
-            }
-            RadixStudioTab::Icons => self.defaults.page_background(),
-        };
 
         let title_bar = TitleBar::new().background_color(surface).border_color(border).text_color(fg).child(
             div()
@@ -634,17 +688,8 @@ impl Render for RadixStudioApp {
                 .flex()
                 .flex_col()
                 .child(
-                    // Navigation and theme actions stay outside the page's scroll viewport.
-                    div()
-                        .id("radix-studio-control-bar")
-                        .w_full()
-                        .flex_none()
-                        .px_8()
-                        .py_2()
-                        .border_b_1()
-                        .border_color(bar_border)
-                        .bg(bar_background)
-                        .child(self.screen_nav.clone()),
+                    // This child redraws independently for scroll and fade changes.
+                    self.control_bar.clone(),
                 )
                 .child(
                     div()
@@ -659,7 +704,7 @@ impl Render for RadixStudioApp {
         .into_element()
         .luma_focus_scope(&self.focus_scope)
         .size_full()
-        .bg(page_background)
+        .bg(self.theme.page_background())
         .text_color(fg)
         .font_family("System UI")
     }
@@ -1052,6 +1097,81 @@ mod screen_content_tests {
             cx.simulate_click(close.center(), Default::default());
             cx.run_until_parked();
         }
+    }
+
+    #[test]
+    fn screen_scroll_positions_survive_navigation() {
+        let mut app = TestAppContext::single();
+        let (studio, cx) = app.add_window_view(RadixStudioApp::new);
+        cx.simulate_resize(gpui::size(px(900.0), px(700.0)));
+        cx.run_until_parked();
+        let screens = cx.update(|_, cx| studio.read(cx).screens.clone());
+        cx.update(|_, cx| {
+            screens.update(cx, |tabs, cx| {
+                tabs.set_motion_enabled(false, cx);
+                tabs.set_active("page-style-guide", cx);
+            })
+        });
+        cx.run_until_parked();
+        let saved = cx.update(|window, cx| {
+            let handle = studio.read(cx).page_scroll.clone();
+            handle.set_offset(gpui::point(px(0.0), px(-240.0)));
+            window.refresh();
+            handle
+        });
+        cx.run_until_parked();
+        let offset = saved.offset();
+        assert!(offset.y < px(0.0));
+        cx.update(|_, cx| screens.update(cx, |tabs, cx| tabs.set_active("page-colors", cx)));
+        cx.run_until_parked();
+        cx.update(|_, cx| screens.update(cx, |tabs, cx| tabs.set_active("page-style-guide", cx)));
+        cx.run_until_parked();
+        cx.update(|_, cx| assert_eq!(studio.read(cx).page_scroll.offset(), offset));
+        assert_eq!(saved.offset(), offset);
+    }
+
+    #[test]
+    fn scrolling_updates_control_bar_without_notifying_app() {
+        let mut app = TestAppContext::single();
+        let (studio, cx) = app.add_window_view(RadixStudioApp::new);
+        cx.simulate_resize(gpui::size(px(900.0), px(700.0)));
+        cx.run_until_parked();
+        let screens = cx.update(|_, cx| studio.read(cx).screens.clone());
+        cx.update(|_, cx| {
+            screens.update(cx, |tabs, cx| {
+                tabs.set_motion_enabled(false, cx);
+                tabs.set_active("page-style-guide", cx);
+            })
+        });
+        cx.run_until_parked();
+        let app_notifications = std::rc::Rc::new(std::cell::Cell::new(0));
+        let bar_notifications = std::rc::Rc::new(std::cell::Cell::new(0));
+        let bar = cx.update(|_, cx| studio.read(cx).control_bar.clone());
+        let _app_subscription = cx.update(|_, cx| {
+            cx.observe(&studio, {
+                let count = app_notifications.clone();
+                move |_, _| count.set(count.get() + 1)
+            })
+        });
+        let _bar_subscription = cx.update(|_, cx| {
+            cx.observe(&bar, {
+                let count = bar_notifications.clone();
+                move |_, _| count.set(count.get() + 1)
+            })
+        });
+        let bounds = cx.debug_bounds("screen-scroll-StyleGuide").unwrap();
+        cx.simulate_event(gpui::ScrollWheelEvent {
+            position: gpui::point(bounds.left() + px(4.0), bounds.top() + px(120.0)),
+            delta: gpui::ScrollDelta::Pixels(gpui::point(px(0.0), px(-120.0))),
+            modifiers: Default::default(),
+            touch_phase: gpui::TouchPhase::Moved,
+        });
+        cx.run_until_parked();
+        cx.update(|window, cx| window.simulate_next_frame(cx));
+        cx.run_until_parked();
+        assert!(cx.update(|_, cx| studio.read(cx).page_scroll.offset().y) < px(0.0));
+        assert!(bar_notifications.get() > 0);
+        assert_eq!(app_notifications.get(), 0);
     }
 
     #[test]

@@ -40,6 +40,11 @@ pub struct Tabs {
     pub(super) drop_handler: Option<super::drag::DropHandler>,
     pub(super) contents: HashMap<SharedString, TabsContent>,
     pub(super) body_transition: VisualTransition,
+    pub(super) content_transition: Option<super::TabsContentTransition>,
+    pub(super) outgoing_content: Vec<(SharedString, TabsContent)>,
+    pub(super) transition_changes: Vec<super::TabsTransitionChange>,
+    pub(super) content_layout: super::TabsContentLayout,
+    pub(super) content_direction: super::TabsTransitionDirection,
     motion: super::TabsMotion,
     list_slot: Option<Entity<TabsList>>,
     body_slot: Option<Entity<TabsBody>>,
@@ -130,6 +135,17 @@ impl Tabs {
             items: builder.model.items,
             contents: builder.model.contents,
             body_transition: VisualTransition::with_transition(1.0, motion.content.clone()),
+            content_transition: builder.model.content_transition,
+            outgoing_content: Vec::new(),
+            transition_changes: vec![super::TabsTransitionChange {
+                previous_id: None,
+                active_id: active_id.clone(),
+                previous_progress: 1.0,
+                direction: super::TabsTransitionDirection::Forward,
+                animated: false,
+            }],
+            content_layout: builder.model.content_layout,
+            content_direction: super::TabsTransitionDirection::Forward,
             motion,
             list_slot: None,
             body_slot: None,
@@ -160,7 +176,12 @@ impl Tabs {
 
     /// Render the selected panel with the configured body transition.
     pub fn body(&self) -> Div {
-        div().w_full().min_h_0().flex_1().flex().flex_col().children(self.body_slot.clone())
+        div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .when(self.content_layout != super::TabsContentLayout::Content, |root| root.flex_1().min_h_0())
+            .children(self.body_slot.clone())
     }
 
     /// Authored profile captured at spawn. Animation disabling does not erase it.
@@ -191,6 +212,7 @@ impl Tabs {
             return false;
         };
         self.contents.remove(&id);
+        self.outgoing_content.retain(|(outgoing, _)| outgoing != &id);
         if self.contents.is_empty() {
             cx.notify();
         }
@@ -206,13 +228,53 @@ impl Tabs {
         }
     }
 
-    fn restart_body_transition(&mut self) {
+    fn queue_transition_change(&mut self, previous_id: Option<SharedString>, previous_progress: f32) {
+        if self.content_transition.is_some() {
+            self.transition_changes.push(super::TabsTransitionChange {
+                previous_id,
+                active_id: self.active_id.clone(),
+                previous_progress,
+                direction: self.content_direction,
+                animated: self.body_transition.is_animating(),
+            });
+        }
+    }
+
+    fn restart_body_transition(&mut self, previous: Option<SharedString>) {
+        self.body_transition.sync();
+        let previous_progress = self.body_transition.progress().clamp(0.0, 1.0);
+        let was_animating = self.body_transition.is_animating();
+        if !was_animating {
+            self.outgoing_content.clear();
+        }
+        if self.content_transition.is_some()
+            && self.motion_enabled
+            && let Some(id) = &previous
+        {
+            let from = self.items.iter().position(|item| item.id() == id);
+            let to = self.items.iter().position(|item| Some(item.id()) == self.active_id.as_ref());
+            self.content_direction = if to > from {
+                super::TabsTransitionDirection::Forward
+            } else {
+                super::TabsTransitionDirection::Backward
+            };
+            if !self.outgoing_content.iter().any(|(outgoing, _)| outgoing == id)
+                && let Some(content) = self.contents.get(id)
+            {
+                self.outgoing_content.push((id.clone(), content.clone()));
+            }
+        }
+        self.outgoing_content.retain(|(id, _)| Some(id) != self.active_id.as_ref());
         if self.motion_enabled && !self.contents.is_empty() {
             self.body_transition = VisualTransition::with_transition(0.0, self.motion.content.clone());
             self.body_transition.set_target(1.0);
         } else {
             self.body_transition.snap_to(1.0);
         }
+        if !self.body_transition.is_animating() {
+            self.outgoing_content.clear();
+        }
+        self.queue_transition_change(previous, previous_progress);
     }
 
     pub fn active_id(&self) -> Option<&SharedString> {
@@ -233,7 +295,7 @@ impl Tabs {
         self.active_id = Some(active_id.clone());
         self.pending_changed_id = None;
         if previous_id.as_ref() != Some(&active_id) {
-            self.restart_body_transition();
+            self.restart_body_transition(previous_id.clone());
             self.retarget_indicator_for_active(true);
         }
         self.group.update(cx, |group, cx| {
@@ -252,6 +314,7 @@ impl Tabs {
         self.items = items.into_iter().collect();
         self.contents.retain(|id, _| self.items.iter().any(|item| item.id() == id));
         self.body_transition.snap_to(1.0);
+        self.outgoing_content.clear();
         if !self
             .active_id
             .as_ref()
@@ -286,6 +349,7 @@ impl Tabs {
         self.group.update(cx, |group, cx| {
             group.set_items(self.items.clone(), cx);
         });
+        self.queue_transition_change(None, 1.0);
         cx.notify();
     }
 
@@ -320,6 +384,8 @@ impl Tabs {
         self.motion_enabled = motion_enabled;
         if !motion_enabled {
             self.body_transition.snap_to(1.0);
+            self.outgoing_content.clear();
+            self.queue_transition_change(self.active_id.clone(), 1.0);
         }
         self.indicator_motion.set_motion_enabled(motion_enabled);
         for transition in self.disclosure_transitions.values_mut() {
@@ -426,7 +492,7 @@ impl Tabs {
         match event {
             ControlGroupEvent::Change { selected: true, .. } => {
                 if previous_active != self.active_id {
-                    self.restart_body_transition();
+                    self.restart_body_transition(previous_active.clone());
                     self.retarget_indicator_for_active(true);
                 }
             }
@@ -563,6 +629,9 @@ impl Render for Tabs {
         let mut root = div();
         if !self.contents.is_empty() {
             root = root.flex().flex_col().w_full();
+            if self.content_layout == super::TabsContentLayout::Fill {
+                root = root.flex_1().min_h_0();
+            }
         }
         if let Some(list) = &self.list_slot {
             root = root.child(list.clone());

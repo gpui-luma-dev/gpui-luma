@@ -1,8 +1,8 @@
 //! Edge-anchored drawer overlay (app-owned state + templates).
 //!
 //! Not a spawnable LMTP entity — there is no `SlidePanel` control. Layout:
-//! - [`model`] — [`SlidePanelState`] / edge / size config
-//! - [`template`] — overlay render plus resize-handle chrome (`template/handle`, `template/resize`)
+//! - `model` — [`SlidePanelState`] / edge / size config
+//! - `template` — overlay render plus resize-handle chrome (`template/handle`, `template/resize`)
 //!
 //! Apps own [`SlidePanelState`] and call [`render_slide_panel_overlay`].
 

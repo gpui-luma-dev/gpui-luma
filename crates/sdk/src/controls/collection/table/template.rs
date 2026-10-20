@@ -146,7 +146,7 @@ pub fn default_table_template() -> Arc<dyn TableTemplate> {
     TEMPLATE.get_or_init(|| Arc::new(DefaultTableShellTemplate)).clone()
 }
 
-/// Shell template only; row/list colors come from [`TableTheme`] on the control builder.
+/// Shell template only; row/list colors come from [`TableTheme`](crate::controls::table::TableTheme) on the control builder.
 pub fn table_template_with_theme(_theme: Arc<dyn crate::controls::table::TableTheme>) -> Arc<dyn TableTemplate> {
     default_table_template()
 }

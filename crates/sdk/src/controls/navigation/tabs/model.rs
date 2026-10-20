@@ -5,7 +5,7 @@ use gpui::{App, AppContext, Entity, IntoElement, Render, SharedString, Window};
 
 use super::indicator::{TabsIndicatorMotion, TabsIndicatorPaint};
 use super::template::{tabs_control_group_template, template_with_modifier};
-use super::{Tabs, TabsContent, TabsTemplate, default_tabs_template};
+use super::{TabsContentLayout, TabsContentTransition, Tabs, TabsContent, TabsTemplate, default_tabs_template};
 use crate::controls::control_group::ControlGroupItemLike;
 use crate::infra::icon::IconSource;
 use crate::infra::icon::DisclosureIcons;
@@ -199,6 +199,8 @@ pub struct TabsModel {
     pub(crate) active_id: Option<SharedString>,
     pub(crate) enabled: bool,
     pub(crate) motion_enabled: bool,
+    pub(crate) content_transition: Option<TabsContentTransition>,
+    pub(crate) content_layout: TabsContentLayout,
     pub(crate) contents: HashMap<SharedString, TabsContent>,
     pub(crate) motion: crate::motion::MotionConfig<TabsMotion>,
     pub(crate) disclosure_icons_explicit: bool,
@@ -502,6 +504,8 @@ impl TabsBuilder {
                 active_id: None,
                 enabled: true,
                 motion_enabled: true,
+                content_transition: None,
+                content_layout: TabsContentLayout::Auto,
                 contents: HashMap::new(),
                 motion: Default::default(),
                 disclosure_icons_explicit: false,
@@ -547,6 +551,18 @@ impl TabsBuilder {
     pub fn tab_content(mut self, item: TabsItem, content: TabsContent) -> Self {
         self.model.contents.insert(item.id().clone(), content);
         self.model.items.push(item);
+        self
+    }
+
+    /// Explicit content sizing, independent of the selected effect.
+    pub fn content_layout(mut self, layout: TabsContentLayout) -> Self {
+        self.model.content_layout = layout;
+        self
+    }
+
+    /// Choose the content transition; timing comes from `TabsMotion::content`.
+    pub fn content_transition(mut self, transition: TabsContentTransition) -> Self {
+        self.model.content_transition = Some(transition);
         self
     }
 

@@ -110,10 +110,24 @@
 //! }
 //! ```
 //! `refresh_content`, `set_content`, and `remove_content` invalidate the body
-//! without changing selection or restarting a fade. `set_items` prunes content
+//! without changing selection or restarting a content transition. `set_items` prunes content
 //! for removed IDs; new items can receive panels through `set_content`.
 //!
+//! # Custom content transitions
+//! [`TabsTemplate`] styles navigation; [`TabsContentTransition`] renders panels.
+//! Timing comes from [`TabsMotion::content`], independently of [`TabsContentLayout`].
+//! Choose [`TabsContentLayout::Fill`] explicitly for a bounded sliding viewport.
+//! Use [`TabsContentTransition::with_factory`] with [`TabsTransitionRenderer`] for
+//! independent effect state per control. Ordered [`TabsTransitionChange`] callbacks
+//! expose the prior progress for continuous retargeting across interrupted changes.
+//! Retiring panels remain in [`TabsTransitionFrame::outgoing`] until completion,
+//! cancellation or removal. Incoming panels stay interactive; inactive panels are
+//! shielded and their focus returns to navigation (or the configured focus target).
+//! Relative layouts need no measurement; `measure_viewport(true)` opts into bounds
+//! and its post-layout redraw. Animation frames invalidate only the body slot.
+//!
 mod content;
+mod transition;
 mod control;
 mod indicator;
 mod model;
@@ -122,6 +136,10 @@ pub(crate) mod theme;
 
 pub use control::{Tabs, TabsEvent};
 pub use content::TabsContent;
+pub use transition::{
+    TabsContentLayout, TabsContentTransition, TabsTransitionChange, TabsTransitionDirection, TabsTransitionFrame,
+    TabsTransitionPanel, TabsTransitionRenderer,
+};
 use content::{TabsBody, TabsList};
 pub use indicator::{TabsIndicatorMotion, TabsIndicatorPaint, TabsIndicatorRect, indicator_rect_from_bounds};
 pub use model::{

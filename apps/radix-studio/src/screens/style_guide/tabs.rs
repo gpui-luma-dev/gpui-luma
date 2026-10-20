@@ -49,7 +49,11 @@ impl TabsExamples {
             ])
             .active("template-preview")
             .spawn(cx);
-        navigation.clone().on_event(cx, |_, _: &TabsEvent, cx| cx.notify());
+        navigation.clone().on_event(cx, |_, event: &TabsEvent, cx| {
+            if matches!(event, TabsEvent::Change { .. }) {
+                cx.notify();
+            }
+        });
         let preview = [("Interactive", true), ("Disabled", false)]
             .into_iter()
             .map(|(label, enabled)| {
