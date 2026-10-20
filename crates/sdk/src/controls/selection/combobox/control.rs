@@ -1,3 +1,7 @@
+#[cfg(all(test, feature = "test-support"))]
+#[path = "click_tests.rs"]
+mod click_tests;
+
 use gpui::App;
 use gpui::{
     Bounds, ClickEvent, Context, Entity, EventEmitter, IntoElement, KeyDownEvent, MouseDownEvent, Pixels, Render,

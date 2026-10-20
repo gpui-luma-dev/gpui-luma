@@ -1,3 +1,7 @@
+#[cfg(all(test, feature = "test-support"))]
+#[path = "click_tests.rs"]
+mod click_tests;
+
 use crate::infra::attachments::{AttachmentHost, AttachmentTarget};
 use gpui::{
     Bounds, ClickEvent, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, KeyDownEvent,
