@@ -276,6 +276,7 @@ pub struct SearchSelectorItemsRenderModel<'a> {
 
 pub struct SearchSelectorItemsTemplateHandlers {
     pub item_hovers: Vec<SelectorPanelHoverHandler>,
+    /// One callback per visible row, including disabled rows; consume in visible order.
     pub item_clicks: Vec<SelectorPanelClickHandler>,
 }
 
@@ -386,6 +387,7 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
 
         for (visible_index, (source_index, hover)) in model.visible_indices.iter().copied().zip(item_hovers).enumerate()
         {
+            let click = clicks.next();
             let Some(item) = model.items.get(source_index) else {
                 continue;
             };
@@ -445,7 +447,7 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
                     row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
                 }
 
-                if let Some(click) = clicks.next() {
+                if let Some(click) = click {
                     row = row.on_click(click);
                 }
             } else {
