@@ -220,3 +220,133 @@ check_look!(
         }
     )
 );
+
+check_look!(
+    autocomplete_factory_forwards_callbacks,
+    crate::autocomplete_builder(&crate::Look::built_in(), "callbacks", []),
+    on_select(_, _),
+    gpui_luma::controls::autocomplete::AutocompleteEvent::Select { item_id: "a".into(), label: "A".into() }
+);
+check_look!(
+    combobox_factory_forwards_callbacks,
+    crate::combobox_builder(&crate::Look::built_in(), "callbacks", []),
+    on_value_changed(_),
+    gpui_luma::controls::combobox::ComboBoxEvent::Change { query: "a".into() }
+);
+check_look!(
+    search_selector_factory_forwards_callbacks,
+    crate::search_selector_builder(&crate::Look::built_in(), "callbacks", []),
+    on_select(_, _),
+    gpui_luma::controls::search_selector::SearchSelectorEvent::Select { item_id: "a".into(), label: "A".into() }
+);
+check_look!(
+    selection_panel_factory_forwards_callbacks,
+    crate::selection_panel_builder(
+        &crate::Look::built_in(),
+        "callbacks",
+        Vec::<gpui_luma::controls::selection_panel::SelectionPanelItem>::new()
+    ),
+    on_activate_row(_, _, _),
+    gpui_luma::controls::selection_panel::SelectionPanelEvent::ActivateRow {
+        source_index: 2,
+        visible_index: 1,
+        item_id: "a".into()
+    }
+);
+
+check_look!(
+    control_group_factory_forwards_callbacks,
+    crate::control_group_builder::<gpui_luma::controls::control_group::ControlGroupItem>(
+        &crate::Look::built_in(),
+        "callbacks",
+        gpui_luma::theme::ControlSize::Md
+    ),
+    on_value_changed(_, _, _),
+    gpui_luma::controls::control_group::ControlGroupEvent::Change {
+        changed_id: "a".into(),
+        selected: true,
+        selected_ids: vec!["a".into()]
+    }
+);
+check_look!(
+    icon_group_factory_forwards_callbacks,
+    crate::icon_group_builder::<gpui_luma::controls::control_group::ControlGroupItem>(
+        &crate::Look::built_in(),
+        "callbacks",
+        gpui_luma::theme::ControlSize::Md
+    ),
+    on_activate(_),
+    gpui_luma::controls::control_group::ControlGroupEvent::Activate { activated_id: "a".into() }
+);
+check_look!(
+    accordion_factory_forwards_callbacks,
+    crate::accordion_builder(&crate::Look::built_in(), "callbacks"),
+    on_expanded_changed(_, _),
+    gpui_luma::controls::accordion::AccordionEvent::ExpandedChanged { item_id: "a".into(), expanded: true }
+);
+check_look!(
+    pager_factory_forwards_callbacks,
+    crate::pager_builder(&crate::Look::built_in(), "callbacks"),
+    on_page_changed(_),
+    gpui_luma::controls::pager::PagerEvent::PageChanged { page: 3 }
+);
+check_look!(
+    sidebar_factory_forwards_callbacks,
+    crate::sidebar_builder(&crate::Look::built_in(), "callbacks"),
+    on_select(_),
+    gpui_luma::controls::sidebar::SidebarEvent::Select { id: "a".into() }
+);
+
+check_look!(
+    table_factory_forwards_callbacks,
+    crate::table_builder::<gpui_luma::controls::table::TableLabel>(&crate::Look::built_in(), "callbacks"),
+    on_selection_changed(_),
+    gpui_luma::controls::table::TableEvent::SelectionChanged { selected_indices: vec![1] }
+);
+
+check_look!(
+    dock_splitter_factory_forwards_callbacks,
+    crate::dock_splitter_builder(
+        &crate::Look::built_in(),
+        "callbacks",
+        gpui_luma::controls::dock_splitter::SplitterOrientation::Vertical
+    ),
+    on_resize_delta(_),
+    gpui_luma::controls::dock_splitter::DockSplitterEvent::Resize { total_delta: 17.0 }
+);
+check_look!(
+    split_view_factory_forwards_callbacks,
+    crate::split_view_builder(&crate::Look::built_in(), "callbacks"),
+    on_collapsed_changed(_),
+    gpui_luma::controls::split_view::SplitViewEvent::CollapsedChanged { collapsed: true }
+);
+
+check_look!(
+    resizable_panels_factory_forwards_callbacks,
+    crate::resizable_panels_builder(&crate::Look::built_in(), "callbacks"),
+    on_sizes_changed(_),
+    gpui_luma::controls::resizable_panels::ResizablePanelsEvent::SizesChanged { sizes_px: vec![80.0, 160.0] }
+);
+
+check_look!(
+    split_button_factory_forwards_action_callbacks,
+    crate::split_button_builder(
+        &crate::Look::built_in(),
+        "callbacks",
+        crate::PopupMenuVariant::Solid,
+        crate::Tone::Accent
+    ),
+    on_action_click(),
+    gpui_luma::controls::split_button::SplitButtonEvent::ActionClick
+);
+check_look!(
+    split_button_factory_forwards_menu_callbacks,
+    crate::split_button_builder(
+        &crate::Look::built_in(),
+        "callbacks",
+        crate::PopupMenuVariant::Soft,
+        crate::Tone::Gray
+    ),
+    on_select(_, _),
+    gpui_luma::controls::split_button::SplitButtonEvent::Select { item_id: "save-as".into(), label: "Save as".into() }
+);

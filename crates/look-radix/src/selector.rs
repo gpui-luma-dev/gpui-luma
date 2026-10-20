@@ -6,7 +6,7 @@ use gpui_luma::controls::selector::{
     SelectorBuilder, SelectorItem, SelectorItemLike, SelectorOpeningMode, SelectorPalette, SelectorPlacement,
     SelectorTemplate, SelectorTheme, SelectorTriggerStyle, ThemedSelectorTemplate,
 };
-use gpui_luma::controls::selector_list::{SelectorItemsPanelLook, default_selector_items_template};
+use gpui_luma::controls::selector_list::default_selector_items_template;
 use gpui_luma::theme::{InteractionState, MetricTokens};
 
 use crate::{ButtonSize, Look, PopupMenuVariant, Tone};
@@ -33,7 +33,6 @@ impl SelectorTheme for SelectorThemeAdapter {
             PopupMenuTriggerMetrics::default(),
             state,
         );
-        let panel = palette.floating_menu;
         SelectorPalette {
             trigger_background: palette.trigger_background,
             trigger_foreground: palette.trigger_foreground,
@@ -45,12 +44,7 @@ impl SelectorTheme for SelectorThemeAdapter {
                 palette.trigger_shadow
             },
             trigger_typography: palette.trigger_typography,
-            items_panel: SelectorItemsPanelLook::from_menu(
-                panel,
-                &self.look.metrics(),
-                &self.look.common_stylesheet(),
-                "2",
-            ),
+            items_panel: crate::selector_items_panel_look(&self.look, PopupMenuVariant::Solid, Tone::Accent),
         }
     }
 
@@ -59,12 +53,15 @@ impl SelectorTheme for SelectorThemeAdapter {
     }
 }
 
+/// Shared Radix selector trigger and panel theme for SDK composition.
+/// Retains the supplied Look and resolves palette changes on the next render.
+pub fn selector_theme(look: &Look) -> Arc<dyn SelectorTheme> {
+    Arc::new(SelectorThemeAdapter { look: look.clone() })
+}
+
 /// Build a selector template using the Radix trigger and menu palette.
 pub fn selector_template<T: SelectorItemLike + 'static>(look: &Look) -> Arc<dyn SelectorTemplate<T>> {
-    Arc::new(ThemedSelectorTemplate::new(
-        Arc::new(SelectorThemeAdapter { look: look.clone() }),
-        default_selector_items_template(),
-    ))
+    Arc::new(ThemedSelectorTemplate::new(selector_theme(look), default_selector_items_template()))
 }
 
 /// Radix selector builder. Opening and placement behavior are shared with the SDK.

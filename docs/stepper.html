@@ -20,10 +20,10 @@
 <div data-site-mobile-nav></div>
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
-<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Stepper</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a></div><p class="intro">Show a process with discrete steps.</p><section id="use"><h2>Advance and reset</h2><div class="codebox"><div class="codebar"><span>Shadcn · Next and Reset</span><button class="copy" aria-label="Copy Shadcn · Next and Reset">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Entity, Render, Window, div, prelude::*};
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Stepper</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">Show a process with discrete steps.</p><section id="use"><h2>Advance and reset</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Entity, Render, Window, div, prelude::*};
 use gpui_luma::controls::{button::Button, stepper::Stepper};
 use gpui_luma::infra::presenter::HasPresenter;
-use gpui_luma_look_shadcn as shadcn;
+use gpui_luma_look_radix as radix;
 
 struct Example {
     stepper: Stepper,
@@ -33,10 +33,11 @@ struct Example {
 
 impl Example {
     fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
-        let stepper = shadcn::Stepper::new(&quot;setup&quot;, 3)
-            .labels(vec![&quot;Details&quot;, &quot;Review&quot;, &quot;Done&quot;])
+        let look = radix::Look::built_in();
+        let stepper = radix::stepper_builder(&amp;look, "setup", 3)
+            .labels(vec!["Details", "Review", "Done"])
             .spawn(cx);
-        let next = shadcn::Button::new(&quot;next&quot;).label(&quot;Next / Finish&quot;)
+        let next = radix::Button::new("next").look(&amp;look).label("Next / Finish")
             .on_click(cx, |owner: &amp;mut Self, cx| {
                 owner.stepper.update(cx, |stepper, cx| {
                     let next = stepper.current_step() + 1;
@@ -48,7 +49,7 @@ impl Example {
                 });
             })
             .spawn(cx);
-        let reset = shadcn::Button::new(&quot;reset&quot;).label(&quot;Reset&quot;)
+        let reset = radix::Button::new("reset").look(&amp;look).label("Reset")
             .on_click(cx, |owner: &amp;mut Self, cx| {
                 owner.stepper.update(cx, |stepper, cx| stepper.set_current_step(0, cx));
             })
@@ -63,8 +64,8 @@ impl Render for Example {
             .child(self.stepper.clone())
             .child(div().flex().gap_2().child(self.next.clone()).child(self.reset.clone()))
     }
-}</code></pre></div><p class="small">Render this view in an initialized Luma application. Next advances through the three steps; another click completes the workflow. Reset returns to the first step.</p></section><section id="sdk"><h2>SDK behavior & customization</h2><p>Configure step count, current step, labels, and direction. It is a process indicator rather than Tabs.</p><p class="small">Relevant contracts: <code>StepperRenderModel</code>, <code>StepperTemplateModifier</code>, <code>StepperTemplate</code>, <code>ThemedStepperTemplate</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="interaction"><h2>Application interaction</h2><p>Stepper has no events of its own. Button’s <code>on_click</code> handlers drive it here. Indices start at zero; <code>set_current_step</code> derives each badge’s state, <code>complete</code> marks all steps complete, and setting a step again clears completion.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/navigation/stepper/mod.rs">SDK module</a></p></section><footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Advance and reset</a><a href="#sdk">SDK behavior</a><a href="#interaction">Application interaction</a><a href="#source">Source</a></nav>
+}</code></pre></div><p class="small">Render this view in an initialized Luma application. Next advances through the three steps; another click completes the workflow. Reset returns to the first step.</p></section><section id="radix"><h2>Radix styling</h2><p><code>stepper_builder(&amp;look, id, step_count)</code> installs Radix status, connector, and badge styling. SDK labels, direction, completion, state overrides, sizes, content, and motion remain available.</p><p>Pass an explicit <code>Look</code>, including forks. Theme adapters retain that binding; notify affected controls and their owners after palette, mode, or stylesheet edits. Resolved look values are snapshots and must be resolved again during render.</p><p>See the <a href="look-radix.html#support">Radix control support table</a> for adapter and utility status.</p></section><section id="sdk"><h2>SDK behavior & customization</h2><p>Configure step count, current step, labels, and direction. It is a process indicator rather than Tabs.</p><p class="small">Relevant contracts: <code>StepperRenderModel</code>, <code>StepperTemplateModifier</code>, <code>StepperTemplate</code>, <code>ThemedStepperTemplate</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="interaction"><h2>Application interaction</h2><p>Stepper has no events of its own. Button’s <code>on_click</code> handlers drive it here. Indices start at zero; <code>set_current_step</code> derives each badge’s state, <code>complete</code> marks all steps complete, and setting a step again clears completion.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/navigation/stepper/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/navigation.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Advance and reset</a><a href="#radix">Radix styling</a><a href="#sdk">SDK behavior</a><a href="#interaction">Application interaction</a><a href="#source">Source</a></nav>
 </div>
 </body>
 </html>

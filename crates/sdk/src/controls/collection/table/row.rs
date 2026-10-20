@@ -2,7 +2,11 @@ use gpui::{AnyElement, Stateful, div, prelude::*, px};
 
 use super::theme::TableRowLook;
 
-pub(crate) fn render_table_row(
+/// Render SDK row chrome from a resolved look, without selection or input bindings.
+/// `is_custom` delegates row background/padding to the supplied content; otherwise
+/// SDK row styling is applied. `fill_row_height` fixes the border-box row height.
+/// This presentation helper also supports forced-state template previews.
+pub fn render_table_row(
     id: impl Into<gpui::ElementId>,
     content: AnyElement,
     look: TableRowLook,

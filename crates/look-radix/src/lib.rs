@@ -11,6 +11,13 @@
 //! - Input: [`TextField`], [`TextArea`], [`Slider`].
 //! - Progress: [`Progress`] (Surface / Soft bars, sizes 1–3).
 //! - Navigation and collections: [`Tabs`], [`Toolbar`], [`PopupMenu`], [`ContextMenu`], [`TreeView`], [`ListBoxBuilder`].
+//! - Selection factories: [`autocomplete_builder`], [`combobox_builder`], [`search_selector_builder`], [`selection_panel_builder`].
+//! - Groups/navigation: [`control_group_builder`], [`icon_group_builder`], [`accordion_builder`], [`pager_builder`], [`stepper_builder`], [`sidebar_builder`].
+//! - Tables: [`table_builder`], [`paging_table_builder`], [`table_theme`], [`table_template`].
+//! - Resizing: [`dock_splitter_builder`], [`split_view_builder`].
+//! - Panels: [`resizable_panels_builder`], [`slide_panel_state`], [`render_slide_panel_overlay`], [`render_slide_panel_inset`].
+//! - Split actions: [`split_button_builder`], [`split_button_template`], [`split_button_theme`].
+//! - Shared chrome: [`floating_menu_look`], [`selector_items_panel_look`], [`scrollbar_template`].
 //! - Popup content: [`HoverCard`] (interactive hover details), with [`hover_card_look`].
 //! - Composition: [`segmented_radio_template`] and [`LookControlExt::overlay_window`].
 //!
@@ -84,6 +91,15 @@
 //! Display controls keep their element and resolved style together. All public
 //! entry points are re-exported here; private modules are implementation details.
 
+mod accordion;
+mod control_group;
+mod navigation;
+mod pager;
+mod sidebar;
+mod table;
+mod splitters;
+mod split_button;
+mod panels;
 mod avatar;
 mod badge;
 mod button;
@@ -114,6 +130,9 @@ mod radio_group;
 mod scale;
 mod segmented;
 mod selector;
+mod selector_list;
+mod selection;
+mod scrollbar;
 mod semantic;
 mod slider;
 mod slider_builder;
@@ -167,7 +186,7 @@ pub use checkbox::{
 };
 pub use checkbox_builder::Checkbox;
 pub use checkbox_group::{CheckboxGroup, checkbox_group_template};
-pub use popup_menu::{PopupMenuVariant, popup_menu_template, popup_menu_theme};
+pub use popup_menu::{PopupMenuVariant, floating_menu_look, floating_menu_look_for, popup_menu_template, popup_menu_theme};
 pub use popup_menu_builder::PopupMenu;
 pub use progress::{
     ProgressSize, ProgressVariant, progress_template, progress_theme, progress_theme_with, resolve_progress_radius,
@@ -208,9 +227,36 @@ pub use tree_view::{TreeView, tree_view_frame, tree_view_template, tree_view_the
 pub use ext::LookControlExt;
 pub use overlay_window::overlay_window_theme;
 pub use segmented::segmented_radio_template;
-pub use selector::{Selector, selector_template};
+pub use selector::{Selector, selector_template, selector_theme};
+pub use selector_list::{selector_items_panel_look, selector_items_panel_look_for};
+pub use selection::{
+    autocomplete_builder, autocomplete_theme, combobox_builder, search_selector_builder, selection_panel_builder,
+    selection_panel_look,
+};
+pub use scrollbar::{scrollbar_template, scrollbar_theme};
 
 pub use tooltip::tooltip_theme;
+
+pub use panels::{
+    resizable_panels_builder, resizable_panels_template, resizable_panels_theme, slide_panel_state, slide_panel_look,
+    render_slide_panel_overlay, render_slide_panel_surface, render_slide_panel_inset,
+};
+pub use split_button::{split_button_builder, split_button_template, split_button_theme};
+pub use splitters::{
+    dock_splitter_builder, dock_splitter_template, dock_splitter_theme, split_view_builder, split_view_template,
+    split_view_theme,
+};
+pub use table::{table_builder, table_template, table_theme, paging_table_builder};
+
+// Group and navigation composition retains the full SDK builder APIs.
+pub use accordion::{accordion_builder, accordion_template, accordion_theme};
+pub use control_group::{
+    control_group_builder, control_group_template, control_group_theme, control_group_item_template,
+    icon_group_builder, icon_group_template, icon_group_item_template,
+};
+pub use navigation::{stepper_builder, stepper_template, stepper_theme};
+pub use pager::{pager_builder, pager_template, pager_theme};
+pub use sidebar::{sidebar_builder, sidebar_template, sidebar_theme};
 
 #[cfg(test)]
 mod stylesheet_tests;
@@ -235,3 +281,6 @@ gpui_luma::test_stylesheet_motion_contract!(
 );
 
 mod button_recipes;
+
+#[cfg(test)]
+mod navigation_tests;

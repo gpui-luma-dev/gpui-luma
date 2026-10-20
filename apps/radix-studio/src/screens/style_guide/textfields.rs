@@ -369,3 +369,36 @@ fn size_id(size: ControlSize) -> &'static str {
         ControlSize::Lg => "lg",
     }
 }
+
+/// Render the same field template inside composite selection-control previews.
+pub(super) fn selection_field(
+    look: &Look,
+    id: &SharedString,
+    size: ControlSize,
+    state: TextFieldState,
+    enabled: bool,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let theme = textfield_theme_with(look, TextFieldVariant::Surface);
+    let value = SharedString::from("Option one");
+    let placeholder = SharedString::from("Choose an option");
+    let model = TextFieldRenderModel {
+        id,
+        placeholder: &placeholder,
+        value: &value,
+        prefix_icon: None,
+        size,
+        enabled,
+        full_width: true,
+        state,
+        marked_range: None,
+        caret_visible: state.focused && enabled,
+        horizontal_scroll: 0.0,
+        character_offsets: character_offsets(&value, theme.clone(), state, enabled, size, window),
+        look: field_look(&theme, state, enabled, size, window),
+    };
+    look.textfield_template(TextFieldVariant::Surface)
+        .render(&model, preview_handlers::textfield_handlers(), window, cx)
+        .into_any_element()
+}

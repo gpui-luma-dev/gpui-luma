@@ -33,6 +33,36 @@ pub fn render_slide_panel_overlay(
     handlers: SlidePanelOverlayHandlers,
     resize_handlers: SlidePanelResizeHandlers,
 ) -> AnyElement {
+    if state.active_edge().is_none() {
+        return div().into_any_element();
+    }
+    anchored()
+        .snap_to_window_with_margin(px(0.0))
+        .anchor(Anchor::TopLeft)
+        .position(point(px(0.0), state.top_anchor().inset()))
+        .child(render_slide_panel_surface(
+            panel_background,
+            panels_look,
+            state,
+            viewport,
+            panel_content,
+            handlers,
+            resize_handlers,
+        ))
+        .into_any_element()
+}
+
+/// Render the SDK overlay inside a bounded local viewport, without window anchoring.
+/// Uses the same drawer/resize chrome as the window overlay; handlers remain owner-supplied.
+pub fn render_slide_panel_surface(
+    panel_background: Hsla,
+    panels_look: &ResizablePanelsLook,
+    state: &SlidePanelState,
+    viewport: Size<gpui::Pixels>,
+    panel_content: AnyElement,
+    handlers: SlidePanelOverlayHandlers,
+    resize_handlers: SlidePanelResizeHandlers,
+) -> AnyElement {
     debug_assert_eq!(SUPPORTED_TOP_ANCHORS.len(), 2);
 
     let Some(edge) = state.active_edge() else {
@@ -123,12 +153,7 @@ pub fn render_slide_panel_overlay(
         );
     }
 
-    anchored()
-        .snap_to_window_with_margin(px(0.0))
-        .anchor(Anchor::TopLeft)
-        .position(point(px(0.0), overlay_top_inset))
-        .child(overlay_root.child(panel_shell).child(resize_handle))
-        .into_any_element()
+    overlay_root.child(panel_shell).child(resize_handle).into_any_element()
 }
 
 pub fn render_slide_panel_inset(

@@ -30,7 +30,7 @@ EXAMPLES = {
     "switch.html": 0,
     "toggle.html": 0,
     "index.html": 1,  # Cargo.toml precedes the complete Rust application.
-    "look-radix.html": 0,
+    "look-radix.html": [0, 1],
     "look-shadcn.html": 0,
     "architecture.html": 0,
     "looks.html": 0,
@@ -64,6 +64,9 @@ EXAMPLES = {
     "color-swatch.html": 0,
     "split-button.html": 0,
     "control-specialization.html": 0,
+    "floating-menu.html": 0,
+    "selector-list.html": 0,
+    "slide-panel.html": 0,
     "split-view.html": 0,
     "table.html": [0, 1],
     "tabs.html": [0, 1],
