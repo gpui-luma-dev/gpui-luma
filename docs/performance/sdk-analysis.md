@@ -2,7 +2,7 @@
 
 The first SDK-wide baseline identifies shared stylesheet cloning, large navigation scenes, repeated element/layout work, vector color geometry, and chart tessellation as the main investigation areas. **Radix stylesheet cloning is the clearest immediate optimization candidate:** it accounts for 32.88% of sampled main-thread CPU in the driven form workload.
 
-This is a representative baseline for [issue 167](https://github.com/gpui-luma-dev/gpui-luma/issues/167), not a claim that every control or interaction has been profiled. The [coverage matrix](sdk-coverage.csv) lists measured representatives and remaining scenarios across the SDK, both looks, color, plotting, and shared infrastructure. No production rendering optimization or public API change is included in this analysis commit.
+This is a representative baseline for [issue 167](https://github.com/gpui-luma-dev/gpui-luma/issues/167), not a claim that every control or interaction has been profiled. The [coverage matrix](sdk-coverage.csv) lists measured representatives and remaining scenarios across the SDK, both looks, color, plotting, and shared infrastructure. The original baseline predates production optimization. A subsequent [Radix stylesheet optimization and comparison](radix-stylesheet-optimization.md) is now included on this branch; the baseline data remains unchanged.
 
 ## Evidence and reproduction
 

@@ -87,7 +87,7 @@ impl ButtonFamilyTheme for ButtonFamilyThemeAdapter {
         pill_radius: f32,
     ) -> Option<ButtonFamilyLook> {
         let mut palette = self.resolve(role, size, state);
-        let geometry = self.look.common_stylesheet().button.resolve_geometry(
+        let geometry = self.look.stylesheet_snapshot().button.resolve_geometry(
             self.size.map(ButtonSize::as_str).unwrap_or_else(|| crate::look::sdk_size_key(size)),
             gpui_luma::theme::stylesheet::ButtonGeometry {
                 height: scale.height,
@@ -138,8 +138,11 @@ pub fn button_look_for<D: 'static>(
     let look = look.clone();
     Arc::new(move |model| {
         let palette = resolve_button_palette(&look, variant, paint, model.role, model.state);
-        let mut family =
-            apply_button_box(&palette, model.role, button_box_with_stylesheet(&look.common_stylesheet(), size, radius));
+        let mut family = apply_button_box(
+            &palette,
+            model.role,
+            button_box_with_stylesheet(&look.stylesheet_snapshot(), size, radius),
+        );
         if matches!(variant, ButtonVariant::Classic) {
             family.shadow = Some(classic_shadow(&look, family.background, model.state));
         }
@@ -168,14 +171,15 @@ fn resolve_button_palette(
     state: InteractionState,
 ) -> ButtonFamilyPalette {
     let colors = super::button_recipes::resolve(look, variant, paint, role, state);
-    let tokens = look.common_stylesheet().tokens.typography;
+    let stylesheet = look.stylesheet_snapshot();
+    let tokens = &stylesheet.tokens.typography;
     ButtonFamilyPalette {
         background: colors.background,
         foreground: colors.foreground,
         muted_foreground: colors.foreground,
         border: colors.border,
         typography: tokens.text.label,
-        font_family: tokens.font.sans.family.into(),
+        font_family: tokens.font.sans.family.clone().into(),
     }
 }
 

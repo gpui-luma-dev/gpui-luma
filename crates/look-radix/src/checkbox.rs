@@ -261,7 +261,7 @@ impl CheckboxTheme for CheckboxThemeAdapter {
 
     fn scale(&self, size: ControlSize, scale_factor: f32) -> CheckboxScale {
         if let Some((radix_size, radius)) = self.geometry {
-            return checkbox_scale_with_stylesheet(&self.look.common_stylesheet(), radix_size, radius);
+            return checkbox_scale_with_stylesheet(&self.look.stylesheet_snapshot(), radix_size, radius);
         }
         let radix_size = match size {
             ControlSize::Sm => CheckboxSize::One,
@@ -269,7 +269,7 @@ impl CheckboxTheme for CheckboxThemeAdapter {
             ControlSize::Lg => CheckboxSize::Three,
         };
         let _ = scale_factor;
-        checkbox_scale_with_stylesheet(&self.look.common_stylesheet(), radix_size, Radius::Medium)
+        checkbox_scale_with_stylesheet(&self.look.stylesheet_snapshot(), radix_size, Radius::Medium)
     }
 }
 

@@ -158,7 +158,7 @@ impl SliderTheme for SliderThemeAdapter {
         let (geometry, _) = slider_geometry(look, radix_size, thumb_size);
         SliderLook {
             thumb_border_width: look.metrics().border_width.default,
-            decoration: look.common_stylesheet().slider.decoration(radix_size.control_size()),
+            decoration: look.stylesheet_snapshot().slider.decoration(radix_size.control_size()),
             track_background: track,
             fill_background: fill,
             thumb_background: thumb_bg,
@@ -188,7 +188,7 @@ pub fn slider_geometry(
         SliderThumbSize::Lg => ControlSize::Lg,
     });
     let (geometry, mut sources) =
-        look.common_stylesheet().slider.inspect_geometry(size.control_size(), thumb_key, &fallback);
+        look.stylesheet_snapshot().slider.inspect_geometry(size.control_size(), thumb_key, &fallback);
     // Numeric identities belong to Radix, including inspector descriptions.
     for source in [&mut sources.width, &mut sources.height, &mut sources.track_height, &mut sources.thumb_size] {
         use gpui_luma::theme::provenance::MetricSource;
