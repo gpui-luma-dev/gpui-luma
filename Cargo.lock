@@ -2237,6 +2237,7 @@ dependencies = [
  "smallvec",
  "toml 0.8.23",
  "ttf-parser",
+ "web-time",
 ]
 
 [[package]]

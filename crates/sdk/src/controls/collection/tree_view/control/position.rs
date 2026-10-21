@@ -1,6 +1,6 @@
 //! Keyed positioning over ListState. Estimates only bridge unmeasured rows;
 //! final alignment uses measured bounds and ListState's own boundary clamping.
-use std::time::Instant;
+use web_time::Instant;
 use super::*;
 use crate::motion::{MotionState, RunningMotion};
 
