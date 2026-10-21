@@ -67,10 +67,6 @@
                 "label": "Context Menu"
             },
             {
-                "href": "control-group.html",
-                "label": "Control Group"
-            },
-            {
                 "href": "icon-button.html",
                 "label": "Icon Button"
             },
@@ -81,10 +77,6 @@
             {
                 "href": "listbox.html",
                 "label": "List Box"
-            },
-            {
-                "href": "overlay-window.html",
-                "label": "Overlay Window"
             },
             {
                 "href": "pager.html",
@@ -185,15 +177,23 @@
         ]
     },
     {
-        "title": "Layout",
+        "title": "Layout & Containers",
         "items": [
             {
                 "href": "layout.html",
                 "label": "Primitives & macros"
             },
             {
+                "href": "control-group.html",
+                "label": "Control Group"
+            },
+            {
                 "href": "frame.html",
                 "label": "Frame"
+            },
+            {
+                "href": "overlay-window.html",
+                "label": "Overlay Window"
             },
             {
                 "href": "scroll-container.html",

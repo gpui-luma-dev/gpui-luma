@@ -138,6 +138,7 @@ def main():
                            ("gpui-luma-look-shadcn", "look-shadcn"), ("gpui-luma-plot", "plot"),
                            ("gpui-luma-color", "luma-color")]:
             manifest.append(f'{name} = {{ path = {json.dumps(str(ROOT / "crates" / path))} }}')
+        manifest.append(f'luma-app-common = {{ path = {json.dumps(str(ROOT / "apps/common"))} }}')
         (package / "Cargo.toml").write_text("\n".join(manifest) + "\n")
         (package / "src").mkdir()
         (package / "src/lib.rs").write_text(example_source())

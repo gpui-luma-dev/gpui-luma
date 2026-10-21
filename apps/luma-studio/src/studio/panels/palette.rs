@@ -216,8 +216,15 @@ fn build_palette_pickers(
         .flat_map(|(_, tokens)| tokens.iter())
         .map(|(token, _)| {
             let color = token_color_for_mode(&mode_tokens, &overrides.global_color_overrides, token, fallback);
-            let picker =
-                cx.new(|cx| ColorPickerPopover::new_palette(look.clone(), color, format!("palette-{token}"), cx));
+            let picker = cx.new(|cx| {
+                ColorPickerPopover::new_palette(
+                    look.clone(),
+                    color,
+                    format!("palette-{token}"),
+                    format_color_readout,
+                    cx,
+                )
+            });
             ((*token).to_string(), picker)
         })
         .collect()

@@ -21,38 +21,42 @@
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
 <main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><a href="colors.html">Color controls</a></div><h1>Color Swatch</h1><p class="intro">Preview a retained source color, or use a swatch as an SDK button.</p>
-<section id="preview"><h2>Try it</h2><p>Interact with the control below. This preview runs the exact code sample shown on this page.</p><div class="live-example live-example--tall"><iframe data-luma-example src="examples/embed.html?id=color-swatch-basic" title="Live color swatch code sample" loading="lazy"></iframe></div><p class="small"><a href="examples/embed.html?id=color-swatch-basic" target="_blank" rel="noopener">Open example separately ↗</a></p></section><section id="use"><h2>Preview and clickable swatch</h2><div class="codebox"><div class="codebar"><span>Static preview and picker trigger</span><button class="copy" aria-label="Copy Static preview and picker trigger">Copy</button></div><pre><code class="language-rust" data-live-example="color-swatch-basic">use std::sync::Arc;
-use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+<section id="preview"><h2>Try it</h2><p>Click the small swatch to open Studio’s saturation/value, hue, and opacity picker. This preview runs the exact code sample shown on this page.</p><div class="live-example live-example--chart"><iframe data-luma-example src="examples/embed.html?id=color-swatch-basic" title="Live color swatch code sample" loading="lazy"></iframe></div><p class="small"><a href="examples/embed.html?id=color-swatch-basic" target="_blank" rel="noopener">Open example separately ↗</a></p></section><section id="use"><h2>Preview and clickable swatch</h2><div class="codebox"><div class="codebar"><span>Static preview and picker trigger</span><button class="copy" aria-label="Copy Static preview and picker trigger">Copy</button></div><pre><code class="language-rust" data-live-example="color-swatch-basic">use std::sync::Arc;
+use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::color::ColorValue;
-use gpui_luma::controls::button::Button;
-use gpui_luma_color::{ColorSwatch, ColorSwatchButtonTemplate, ColorSwatchData};
+use gpui_luma_color::ColorSwatch;
+use gpui_luma_look_shadcn::ShadcnLook;
+// The same app-level picker composition used by Luma Studio.
+use luma_app_common::color_picker::{ColorPickerEvent, ColorPickerPopover};
 
 struct Example {
-    button: Entity&lt;Button&lt;ColorSwatchData&gt;&gt;,
+    picker: Entity&lt;ColorPickerPopover&gt;,
     source: ColorValue,
-    picker_requested: bool,
+    _subscription: Subscription,
 }
 impl Example {
     fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
         let source = ColorValue::srgb(0.2, 0.5, 0.9, 0.65);
-        let button = Button::new(&quot;accent-swatch&quot;)
-            .typed(ColorSwatchData { color: source, checkerboard: true, ..Default::default() })
-            .template(Arc::new(ColorSwatchButtonTemplate))
-            .on_click(cx, |owner: &amp;mut Self, cx| {
-                owner.picker_requested = true;
-                cx.notify();
-            })
-            .spawn(cx);
-        Self { button, source, picker_requested: false }
+        let look = cx.try_global::&lt;ShadcnLook&gt;().cloned().unwrap_or_else(ShadcnLook::built_in);
+        let picker = cx.new(|cx| ColorPickerPopover::new(Arc::new(look), source, "accent-picker", cx));
+        let subscription = cx.subscribe(&amp;picker, |owner: &amp;mut Self, _, event: &amp;ColorPickerEvent, cx| {
+            let ColorPickerEvent::Change(color) = event;
+            owner.source = *color;
+            cx.notify();
+        });
+        Self { picker, source, _subscription: subscription }
     }
 }
 impl Render for Example {
     fn render(&amp;mut self, _: &amp;mut Window, _: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
-        div().flex().items_center().gap(px(8.0))
-            .child(div().w(px(80.0)).child(ColorSwatch::new(self.source).checkerboard(true).height(px(30.0))))
-            .child(self.button.clone())
+        div().w(px(360.0)).max_w(gpui::relative(1.0)).flex().flex_col().gap_3()
+            .child(div().flex().items_center().gap(px(8.0))
+                .child(div().w(px(80.0)).child(ColorSwatch::new(self.source).checkerboard(true).height(px(30.0))))
+                .child(self.picker.clone()))
+            .child(div().h(px(24.0)).truncate().child(self.source.to_css().unwrap_or_else(|_| "Invalid color".into())))
     }
-}</code></pre></div></section>
+}
+</code></pre></div></section>
 <section id="appearance"><h2>Appearance and source colors</h2><p><code>ColorSwatch</code> is a renderable element; it has no events or spawned entity. Configure <code>size(ControlSize)</code>, <code>height</code>, <code>rounded</code>, <code>checkerboard</code>, and <code>bordered</code>. Checkerboard is off by default on static swatches; enable it to reveal alpha.</p><p>Both swatch forms take <code>ColorValue</code>, retaining its source space and components. Previews use an sRGB fallback with <code>CssLocalMinde</code> mapping. Static swatches can select another policy with <code>mapping</code>. Invalid source colors render transparently; validate input with the strict source-color API when errors need to be reported.</p></section>
 <section id="events"><h2>Button events and updates</h2><p><code>ColorSwatchButtonTemplate</code> is a template for <code>Button&lt;ColorSwatchData&gt;</code>. The SDK Button handles click, focus, hover, and enabled events; no separate swatch event enum is needed. The example sets an application flag: it does not construct a picker automatically.</p><div class="event-table event-reference">
 <table>

@@ -108,7 +108,6 @@ sample!(toolbar, "Last command: {}", last_command);
 sample!(accordion, "Expanded: {}", details_expanded);
 sample!(tree_view, "Selected: {:?}", selected_nodes);
 sample!(table, "Selected rows: {:?}", selected_rows);
-sample!(control_group, "Selected: {:?}", selected_tools);
 sample!(icon_group, "Selected: {:?}", selected_tools);
 sample!(tooltip, button, state, {
     let _ = state.help_shown.load(std::sync::atomic::Ordering::Relaxed);
@@ -190,7 +189,7 @@ rendered_sample!(
 rendered_sample!(pager, control, _state, gpui::div(), numeric, page_size_select);
 rendered_sample!(progress, progress, _state, gpui::div(), circular, loading_bar, loading_ring, advance, reset);
 rendered_sample!(stepper, stepper, _state, gpui::div());
-rendered_sample!(color_swatch, button, state, format!("Picker requested: {}", state.picker_requested));
+rendered_sample!(color_swatch, picker, _state, gpui::div());
 
 mod listbox {
     use super::{App, AppContext, Sample, Rc};
@@ -314,7 +313,11 @@ pub fn set_theme(dark: bool) {
         if let Some((view, app)) = state {
             let _ = view.update(app, |view, cx| {
                 view.look.set_mode(if dark { ThemeMode::Dark } else { ThemeMode::Light });
+                if let Some(look) = cx.try_global::<gpui_luma_look_shadcn::ShadcnLook>() {
+                    look.set_mode(if dark { ThemeMode::Dark } else { ThemeMode::Light });
+                }
                 (view.sample.refresh)(cx);
+                cx.refresh_windows();
                 cx.notify();
             });
         }
@@ -369,7 +372,6 @@ pub fn start(example_id: &str) -> Result<(), JsValue> {
         "accordion-basic" => accordion::spawn,
         "tree-view-basic" => tree_view::spawn,
         "table-basic" => table::spawn,
-        "control-group-basic" => control_group::spawn,
         "icon-group-basic" => icon_group::spawn,
         "progress-basic" => progress::spawn,
         "stepper-basic" => stepper::spawn,
@@ -403,6 +405,9 @@ pub fn start(example_id: &str) -> Result<(), JsValue> {
                 look.set_common_stylesheet(stylesheet);
                 look.set_mode(if DARK.get() { ThemeMode::Dark } else { ThemeMode::Light });
                 cx.set_global(look.clone());
+                let picker_look = gpui_luma_look_shadcn::ShadcnLook::built_in();
+                picker_look.set_mode(if DARK.get() { ThemeMode::Dark } else { ThemeMode::Light });
+                cx.set_global(picker_look);
                 cx.open_window(WindowOptions::default(), |_, cx| {
                     let sample = spawn(cx);
                     let view = cx.new(|_| Preview { sample, look });

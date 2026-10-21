@@ -3,10 +3,10 @@ name: Check and deploy documentation site
 on:
   workflow_dispatch:
   pull_request:
-    paths: ["docs/**", "apps/docs-embed/**", "apps/common/assets/**", "crates/**", "Cargo.*", ".github/workflows/docs.yml"]
+    paths: ["docs/**", "apps/docs-embed/**", "apps/common/**", "crates/**", "Cargo.*", ".github/workflows/docs.yml"]
   push:
     branches: [main]
-    paths: ["docs/**", "apps/docs-embed/**", "apps/common/assets/**", "crates/**", "Cargo.*", ".github/workflows/docs.yml"]
+    paths: ["docs/**", "apps/docs-embed/**", "apps/common/**", "crates/**", "Cargo.*", ".github/workflows/docs.yml"]
 
 permissions:
   contents: read

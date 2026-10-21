@@ -223,7 +223,13 @@ impl<'a, M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxBuilder<
         if let Some(drag_drop) = &parts.drag_drop {
             viewport = drag_drop.bind_viewport(viewport, parts.scroll, axis);
         }
-        let mut surface = crate::tree_view_frame(&look).id(self.id).w_full().min_w_0().aria_label(self.id);
+        let mut surface = crate::tree_view_frame(&look)
+            .rounded(px(8.0))
+            .p_1()
+            .id(self.id)
+            .w_full()
+            .min_w_0()
+            .aria_label(self.id);
         if let Some(drag_drop) = &parts.drag_drop {
             use gpui_luma::infra::drag_drop::DragDropElementExt;
             surface = drag_drop.bind_target(surface, None, cx).cancel_drag_on_escape();
