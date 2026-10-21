@@ -240,7 +240,8 @@ impl gpui::Element for TextAreaElement {
             .filter(|cache| Arc::ptr_eq(&cache.lines, &lines))
             .map(|cache| cache.paint_lines.as_slice())
             .unwrap_or_default();
-        for (line_ix, line) in lines.iter().enumerate() {
+        let visible = TextArea::visible_line_range(lines.len(), line_height, vertical_scroll, bounds.size.height);
+        for (line_ix, line) in lines.iter().enumerate().take(visible.end).skip(visible.start) {
             let top = bounds.top() + line_height * line_ix as f32 - vertical_scroll;
             let bottom = top + line_height;
 

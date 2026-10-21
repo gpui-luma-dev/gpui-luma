@@ -68,6 +68,25 @@ impl TextArea {
         lines
     }
 
+    // Preserve the inclusive edge test used by prepaint: a line touching either
+    // viewport edge participates, including the preceding line at exact scroll boundaries.
+    // Include one candidate on either side to tolerate floating-point rounding;
+    // prepaint still applies the original bounds test.
+    pub(super) fn visible_line_range(
+        line_count: usize,
+        line_height: Pixels,
+        vertical_scroll: Pixels,
+        viewport_height: Pixels,
+    ) -> Range<usize> {
+        let height = line_height.as_f32();
+        if !height.is_finite() || height <= 0.0 {
+            return 0..line_count;
+        }
+        let first = (vertical_scroll.as_f32() / height).floor() as usize;
+        let last = ((vertical_scroll + viewport_height).as_f32() / height).ceil() as usize;
+        first.saturating_sub(1).min(line_count)..last.saturating_add(1).min(line_count)
+    }
+
     pub(super) fn max_vertical_scroll_for_cache(cache: &TextAreaLayoutCache) -> Pixels {
         (cache.line_height * cache.lines.len() as f32 - cache.text_viewport.size.height).max(px(0.0))
     }
@@ -368,6 +387,33 @@ mod tests {
             let reconstructed: String = offsets.windows(2).map(|pair| &text[pair[0]..pair[1]]).collect();
             assert_eq!(reconstructed, text);
         }
+    }
+
+    #[test]
+    fn visible_lines_preserve_inclusive_edges_and_partial_scroll() {
+        for line_count in [0, 1, 100, 10_000] {
+            for height in [0.5_f32, 17.3, 20.0] {
+                for scroll in [0.0, 0.5, height - 0.1, height, height + 0.1, height * 99.0] {
+                    for viewport in [0.0, 0.5, height, height * 2.0, 101.0] {
+                        let candidates = TextArea::visible_line_range(line_count, px(height), px(scroll), px(viewport));
+                        assert!(candidates.len() <= (viewport / height).ceil() as usize + 3);
+                        for origin in [0.0, 5.5, 1000.0] {
+                            let intersects = |index: &usize| {
+                                let top = origin + *index as f32 * height - scroll;
+                                top + height >= origin && top <= origin + viewport
+                            };
+                            let expected: Vec<_> = (0..line_count).filter(intersects).collect();
+                            let actual: Vec<_> = candidates.clone().filter(intersects).collect();
+                            assert_eq!(
+                                actual, expected,
+                                "{line_count} lines, height={height}, scroll={scroll}, viewport={viewport}, origin={origin}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!(TextArea::visible_line_range(10, px(0.0), px(0.0), px(20.0)), 0..10);
     }
 
     fn cache_with_lines(lines: Vec<(usize, usize)>) -> TextAreaLayoutCache {

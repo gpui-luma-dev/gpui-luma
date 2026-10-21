@@ -1408,3 +1408,7 @@ fn wheel_policy_dispatch_matrix() {
         },
     );
 }
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "perf_tests.rs"]
+mod perf_tests;
