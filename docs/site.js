@@ -48,7 +48,17 @@ function syncTheme() {
     theme.setAttribute('aria-pressed', String(dark));
     theme.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
     document.getElementById('theme-label').textContent = dark ? 'Light mode' : 'Dark mode';
+    if (location.protocol === 'file:') return;
+    document.querySelectorAll('[data-luma-example]').forEach(frame => {
+        frame.contentWindow?.postMessage({ type: 'luma-theme', dark }, location.origin);
+    });
 }
+window.addEventListener('message', event => {
+    if (event.origin !== location.origin || event.data?.type !== 'luma-ready') return;
+    const frame = [...document.querySelectorAll('[data-luma-example]')]
+        .find(frame => frame.contentWindow === event.source);
+    if (frame) event.source.postMessage({ type: 'luma-theme', dark: isDarkTheme() }, location.origin);
+});
 syncTheme();
 systemTheme.addEventListener('change', syncTheme);
 theme.addEventListener('click', () => {
@@ -58,6 +68,52 @@ theme.addEventListener('click', () => {
     syncTheme();
 });
 // Highlight only explicitly marked code blocks; copying still reads plain text.
+document.querySelectorAll('[data-example-tabs]').forEach(group => {
+    const tabs = [...group.querySelectorAll('[role="tab"]')];
+    const panel = group.querySelector('[role="tabpanel"]');
+    const frame = panel.querySelector('[data-luma-example]');
+    const description = panel.querySelector('[data-example-description]');
+    const link = panel.querySelector('[data-example-link]');
+    let restoreTabFocus = false;
+    function select(tab) {
+        if (tab.getAttribute('aria-selected') === 'true') return;
+        tabs.forEach(item => {
+            item.setAttribute('aria-selected', String(item === tab));
+            item.tabIndex = item === tab ? 0 : -1;
+        });
+        panel.setAttribute('aria-labelledby', tab.id);
+        description.textContent = tab.dataset.description;
+        link.href = tab.dataset.src;
+        frame.title = `Live ${tab.textContent} chart sample`;
+        restoreTabFocus = true;
+        // Navigate the existing iframe: its previous WASM document is released.
+        frame.src = tab.dataset.src;
+    }
+    window.addEventListener('message', event => {
+        if (event.origin !== location.origin || event.source !== frame.contentWindow ||
+            event.data?.type !== 'luma-ready' || !restoreTabFocus) return;
+        restoreTabFocus = false;
+        // GPUI focuses its canvas on startup. Keep keyboard navigation in the
+        // tab strip when switching examples, unless the user moved elsewhere.
+        if (document.activeElement === frame || tabs.includes(document.activeElement)) {
+            tabs.find(tab => tab.getAttribute('aria-selected') === 'true').focus({ preventScroll: true });
+        }
+    });
+    tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => select(tab));
+        tab.addEventListener('keydown', event => {
+            let next;
+            if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+            else if (event.key === 'ArrowLeft') next = (index + tabs.length - 1) % tabs.length;
+            else if (event.key === 'Home') next = 0;
+            else if (event.key === 'End') next = tabs.length - 1;
+            else return;
+            event.preventDefault();
+            tabs[next].focus();
+            select(tabs[next]);
+        });
+    });
+});
 if (window.Prism) window.Prism.highlightAll();
 document.querySelectorAll('.copy').forEach(button => {
     button.addEventListener('click', async () => {

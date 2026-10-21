@@ -46,6 +46,12 @@ shell-2026:
 loc:
     tokei --types Rust
 
+docs-embed:
+    sh apps/docs-embed/build.sh
+
+docs-serve:
+    python3 -m http.server 8766 --bind 127.0.0.1 --directory docs
+
 # SDK / Library (Fast)
 check:
     cargo check

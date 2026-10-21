@@ -6,7 +6,7 @@
 <meta name="description" content="Select two color dimensions on a rectangle, triangle, or wheel.">
 <title>Color Field · Luma SDK</title>
 <script src="theme-init.js"></script>
-<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="site.css?v=2">
 <!-- Prism 1.30.0: local core and Rust/TOML grammars; MIT license in vendor/prism/LICENSE. -->
 <script src="vendor/prism/prism-core.min.js" data-manual defer></script>
 <script src="vendor/prism/prism-rust.min.js" defer></script>
@@ -21,7 +21,8 @@
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
 <main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><a href="colors.html">Color controls</a></div><h1>Color Field</h1><p class="intro">Select two color dimensions on a rectangle, triangle, or wheel.</p>
-<section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Saturation/value field with named callbacks</span><button class="copy" aria-label="Copy Saturation/value field with named callbacks">Copy</button></div><pre><code class="language-rust">use gpui::{AppContext, Context, Entity, Render, Window, prelude::*, px};
+<section id="preview"><h2>Try it</h2><p>Drag within the saturation/value field to update the preview and committed color. This preview runs the exact code sample below.</p><div class="live-example live-example--tall"><iframe data-luma-example src="examples/embed.html?id=color-field-basic" title="Live Color Field code sample" loading="lazy"></iframe></div><p class="small"><a href="examples/embed.html?id=color-field-basic" target="_blank" rel="noopener">Open example separately ↗</a></p></section>
+<section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Saturation/value field with named callbacks</span><button class="copy" aria-label="Copy Saturation/value field with named callbacks">Copy</button></div><pre><code class="language-rust" data-live-example="color-field-basic">use gpui::{AppContext, Context, Entity, Render, Window, prelude::*, px};
 use gpui_luma_color::color_field::{ColorFieldEventExt, ColorFieldState};
 use gpui_luma_color::color_slider::color_spec::Hsv;
 
@@ -35,7 +36,7 @@ impl Example {
         let hsv = Hsv { h: 210.0, s: 0.7, v: 0.8, a: 1.0 };
         let field = cx.new(|_| {
             ColorFieldState::saturation_value_rect(&quot;sv&quot;, hsv, 16.0)
-                .vector().size(px(220.0)).rounded(px(12.0))
+                .vector().size(px(220.0)).rounded(px(0.0))
                 .keyboard_steps(0.01, 0.1)
         })
         .on_value_changed(cx, |owner: &amp;mut Self, hsv, cx| {
@@ -79,7 +80,7 @@ impl Render for Example {
 <section id="keyboard"><h2>Keyboard and rendering</h2><p>An enabled field is one Tab stop and focuses on pointer press by default. Arrows move spatially by 1%; Shift+Arrow uses 10%. <code>keyboard_steps</code>, <code>tab_stop</code>, and <code>pointer_focus_policy</code> customize this. A changed keyboard adjustment emits Change and one final Release, without pointer drag events. Wheel input passes through.</p><p><code>vector()</code> paints the field directly. Raster rendering is the default; <code>raster_image_prewarmed(width, height)</code> prepares its cache. <code>inside_field</code>, <code>edge_to_edge</code>, and <code>edge_to_edge_clipped</code> control thumb placement. Focus does not add a visual focus treatment; screen-reader semantics remain a follow-up in the current implementation.</p></section>
 <section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/luma-color/src/color_field/mod.rs">Implementation</a> · <a href="colors.html#compose">Picker composition</a></p></section>
 <footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Basic use</a><a href="#domains">Planes and wheels</a><a href="#events">Events and updates</a><a href="#keyboard">Keyboard and rendering</a><a href="#source">Source</a></nav>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#preview">Try it</a><a href="#use">Basic use</a><a href="#domains">Planes and wheels</a><a href="#events">Events and updates</a><a href="#keyboard">Keyboard and rendering</a><a href="#source">Source</a></nav>
 </div>
 </body>
 </html>

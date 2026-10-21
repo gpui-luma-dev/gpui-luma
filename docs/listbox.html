@@ -20,7 +20,7 @@
 <div data-site-mobile-nav></div>
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
-<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>List Box</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">A keyed, selectable flat collection.</p><p class="small">Supports drag and drop. See the <a href="drag-drop.html">shared DnD guide</a> for lifecycle, callbacks, and transaction rules.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Render, Window, div, prelude::*};
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>List Box</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">A keyed, selectable flat collection.</p><p class="small">Supports drag and drop. See the <a href="drag-drop.html">shared DnD guide</a> for lifecycle, callbacks, and transaction rules.</p><section id="preview"><h2>Try it</h2><p>Interact with the control below. This preview runs the exact code sample shown on this page.</p><div class="live-example live-example--tall"><iframe data-luma-example src="examples/embed.html?id=listbox-basic" title="Live listbox code sample" loading="lazy"></iframe></div><p class="small"><a href="examples/embed.html?id=listbox-basic" target="_blank" rel="noopener">Open example separately ↗</a></p></section><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust" data-live-example="listbox-basic">use gpui::{Context, Render, Window, div, prelude::*};
 use gpui_luma::controls::listbox::{
     ListBoxControl, ListBoxInput, ListBoxState, ListBoxError, SelectionMode, make_listbox_item_template,
 };
@@ -33,12 +33,15 @@ struct Example {
 }
 
 impl Example {
-    fn try_new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Result&lt;Self, ListBoxError&gt; {
-        let state = ListBoxState::try_new(
+    fn initial_state() -&gt; Result&lt;ListBoxState&lt;String, String&gt;, ListBoxError&gt; {
+        ListBoxState::try_new(
             ["Draft".to_string(), "Published".to_string()],
             |row| row.clone(),
             SelectionMode::SingleRequired,
-        )?;
+        )
+    }
+
+    fn new(state: ListBoxState&lt;String, String&gt;, cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
         let list = ListBoxControl::new(state, Self::on_input, |key| key.clone().into(), |row| row.clone().into(), cx)
             .on_selection_changed(cx, |owner: &amp;mut Self, selected, _active, cx| {
                 owner.selected = selected.to_vec();
@@ -48,7 +51,7 @@ impl Example {
                 owner.last_opened = Some(key.clone());
                 cx.notify();
             });
-        Ok(Self { list, selected: Vec::new(), last_opened: None })
+        Self { list, selected: Vec::new(), last_opened: None }
     }
 
     fn on_input(&amp;mut self, input: ListBoxInput&lt;String&gt;, _: &amp;mut Window, cx: &amp;mut Context&lt;Self&gt;) {
@@ -148,7 +151,7 @@ impl Render for Example {
     }
 }
 </code></pre><p>Committed changes also support <a href="drag-drop.html#drop-motion">shared drop-layout motion</a>, including duration settings, reduced motion and documented virtualization/transfer limits.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/collection/listbox/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/listbox.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#events">Events</a><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#drag-drop">Drag/drop</a><a href="#source">Source</a></nav>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#events">Events</a><a href="#preview">Try it</a><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#drag-drop">Drag/drop</a><a href="#source">Source</a></nav>
 </div>
 </body>
 </html>

@@ -20,13 +20,27 @@
 <div data-site-mobile-nav></div>
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
-<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Progress</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">Show progress through a numeric range.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use gpui_luma::controls::{button::Button, progress::Progress};
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Progress</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">Show progress through a numeric range.</p><section id="preview"><h2>Try it</h2><p>Advance or reset the linear and circular indicators. The loading examples animate indeterminately, as in Luma Studio. This preview runs the exact code sample shown on this page.</p><div class="live-example live-example--chart"><iframe data-luma-example src="examples/embed.html?id=progress-basic" title="Live progress code sample" loading="lazy"></iframe></div><p class="small"><a href="examples/embed.html?id=progress-basic" target="_blank" rel="noopener">Open example separately ↗</a></p></section><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust" data-live-example="progress-basic">use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::{button::Button, progress::{Progress, ProgressBuilder, CircularProgressTemplate, ProgressTheme, ProgressLook}};
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma_look_radix as radix;
 
+// Retain Radix colors while giving rings their own size and stroke.
+struct CircularTheme(std::sync::Arc&lt;dyn ProgressTheme&gt;);
+impl ProgressTheme for CircularTheme {
+    fn resolve(&amp;self, enabled: bool, size: gpui_luma::theme::ControlSize) -&gt; ProgressLook {
+        let mut look = self.0.resolve(enabled, size);
+        look.size = 48.0;
+        look.stroke_width = 4.0;
+        look
+    }
+}
+
 struct Example {
     progress: Progress,
+    circular: Progress,
+    loading_bar: Progress,
+    loading_ring: Progress,
     advance: Entity&lt;Button&gt;,
     reset: Entity&lt;Button&gt;,
     completed: f32,
@@ -34,24 +48,35 @@ struct Example {
 
 impl Example {
     fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
-        let progress = radix::Progress::new(&quot;progress&quot;)
+        let look = cx.try_global::&lt;radix::Look&gt;().cloned().unwrap_or_else(radix::Look::built_in);
+        let circular_template = std::sync::Arc::new(CircularProgressTemplate::new(
+            std::sync::Arc::new(CircularTheme(radix::progress_theme(&amp;look))),
+        ));
+        let progress = radix::Progress::new("progress")
             .range(0..100).value(0.0).motion_enabled(true).spawn(cx);
-        let advance = radix::Button::new(&quot;advance&quot;)
-            .label(&quot;Advance +10%&quot;)
+        let circular = ProgressBuilder::new("circular").circular()
+            .template(circular_template.clone()).range(0..100).value(0).motion_enabled(true).spawn(cx);
+        let loading_bar = radix::Progress::new("loading-bar")
+            .indeterminate(true).spawn(cx);
+        let loading_ring = ProgressBuilder::new("loading-ring").circular().template(circular_template)
+            .indeterminate(true).spawn(cx);
+        let advance = radix::Button::new("advance")
+            .label("Advance +10%")
             .on_click(cx, |owner: &amp;mut Self, cx| {
                 owner.set_progress((owner.completed + 10.0).min(100.0), cx);
             })
             .spawn(cx);
-        let reset = radix::Button::new(&quot;reset&quot;)
-            .label(&quot;Reset&quot;)
+        let reset = radix::Button::new("reset")
+            .label("Reset")
             .on_click(cx, |owner: &amp;mut Self, cx| owner.set_progress(0.0, cx))
             .spawn(cx);
-        Self { progress, advance, reset, completed: 0.0 }
+        Self { progress, circular, loading_bar, loading_ring, advance, reset, completed: 0.0 }
     }
 
     fn set_progress(&amp;mut self, value: f32, cx: &amp;mut Context&lt;Self&gt;) {
         self.completed = value;
         self.progress.update(cx, |progress, cx| progress.set_value(value, cx));
+        self.circular.update(cx, |progress, cx| progress.set_value(value, cx));
         self.advance.update(cx, |button, cx| button.set_enabled(value &lt; 100.0, cx));
         cx.notify();
     }
@@ -60,13 +85,19 @@ impl Example {
 impl Render for Example {
     fn render(&amp;mut self, _: &amp;mut Window, _: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
         div().flex().flex_col().gap_3().w(px(320.0))
+            .child("Linear progress")
             .child(self.progress.clone())
-            .child(format!(&quot;{:.0}% complete&quot;, self.completed))
+            .child(div().flex().items_center().gap_3()
+                .child(self.circular.clone()).child("Circular progress"))
+            .child(format!("{:.0}% complete", self.completed))
             .child(div().flex().gap_2()
                 .child(self.advance.clone()).child(self.reset.clone()))
+            .child("Indeterminate loading")
+            .child(self.loading_bar.clone())
+            .child(self.loading_ring.clone())
     }
 }</code></pre></div><p class="small">Click <strong>Advance +10%</strong> to animate the progress and update the percentage. At 100%, Advance is disabled; <strong>Reset</strong> returns to zero and enables it again. Render this view inside an initialized Luma application.</p></section><section id="sdk"><h2>SDK behavior & customization</h2><p>A read-only indicator. Update its value from application state; it is not a value picker.</p><p class="small">Relevant contracts: <code>ProgressRenderModel</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="interaction"><h2>Application interaction</h2><p>Progress is read-only and exposes no <code>ProgressEvent</code>. In this example, Button’s named <code>on_click</code> callbacks update application state and call <code>set_value</code>. For real work, call the same update method as tasks complete. <code>motion_enabled(true)</code> animates transitions between values; it does not advance progress automatically.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/range/progress/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/progress_builder.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#interaction">Application interaction</a><a href="#source">Source</a></nav>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#preview">Try it</a><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#interaction">Application interaction</a><a href="#source">Source</a></nav>
 </div>
 </body>
 </html>

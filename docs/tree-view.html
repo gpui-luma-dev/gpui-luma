@@ -20,7 +20,7 @@
 <div data-site-mobile-nav></div>
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
-<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Tree View</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">A hierarchical collection.</p><p class="small">Supports drag and drop. See the <a href="drag-drop.html">shared DnD guide</a> for lifecycle, callbacks, and transaction rules.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust">use gpui::{Context};
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Tree View</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">A hierarchical collection.</p><p class="small">Supports drag and drop. See the <a href="drag-drop.html">shared DnD guide</a> for lifecycle, callbacks, and transaction rules.</p><section id="preview"><h2>Try it</h2><p>Expand folders, collapse branches, and select files in this workspace tree. This preview runs the exact code sample shown on this page.</p><div class="live-example live-example--chart"><iframe data-luma-example src="examples/embed.html?id=tree-view-basic" title="Live tree view code sample" loading="lazy"></iframe></div><p class="small"><a href="examples/embed.html?id=tree-view-basic" target="_blank" rel="noopener">Open example separately ↗</a></p></section><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust" data-live-example="tree-view-basic">use gpui::{Context};
 use gpui_luma_look_radix as radix;
 use gpui_luma::controls::tree_view::TreeNode;
 
@@ -32,7 +32,26 @@ struct Example {
 impl Example {
     fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
         let control = radix::TreeView::&lt;()&gt;::new("example")
-            .items([TreeNode::new("root", "Workspace", ())])
+            .items([
+                TreeNode::new("workspace", "Workspace", ()).expanded(true).children([
+                    TreeNode::new("src", "src", ()).expanded(true).children([
+                        TreeNode::new("main", "main.rs", ()),
+                        TreeNode::new("controls", "controls", ()).children([
+                            TreeNode::new("button", "button.rs", ()),
+                            TreeNode::new("input", "input.rs", ()),
+                        ]),
+                    ]),
+                    TreeNode::new("assets", "assets", ()).children([
+                        TreeNode::new("icons", "icons", ()),
+                        TreeNode::new("fonts", "fonts", ()),
+                    ]),
+                    TreeNode::new("cargo", "Cargo.toml", ()),
+                ]),
+                TreeNode::new("docs", "Documentation", ()).children([
+                    TreeNode::new("guide", "Getting started", ()),
+                    TreeNode::new("reference", "API reference", ()),
+                ]),
+            ])
             .on_selection_changed(cx, |app, selected_ids, cx| {
                 app.selected_nodes = selected_ids.clone();
                 cx.notify();
@@ -84,7 +103,7 @@ impl Example {
     }
 }
 </code></pre><p>Committed changes also support <a href="drag-drop.html#drop-motion">shared drop-layout motion</a>, including duration settings, reduced motion and documented virtualization/transfer limits.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/collection/tree_view/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/tree_view.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#events">Events</a><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#drag-drop">Drag/drop</a><a href="#source">Source</a></nav>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#events">Events</a><a href="#preview">Try it</a><a href="#use">Basic use</a><a href="#sdk">SDK behavior</a><a href="#drag-drop">Drag/drop</a><a href="#source">Source</a></nav>
 </div>
 </body>
 </html>

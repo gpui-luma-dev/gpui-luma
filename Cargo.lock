@@ -3234,6 +3234,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "luma-docs-embed"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui-luma",
+ "gpui-luma-color",
+ "gpui-luma-look-radix",
+ "gpui-luma-plot",
+ "gpui-unofficial",
+ "gpui-web-gpui-unofficial",
+ "lucide-static-svg",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "luma-neumorphic-demo"
 version = "0.1.0"
 dependencies = [
