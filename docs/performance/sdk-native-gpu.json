@@ -1,0 +1,18 @@
+{
+  "metal_workload": "forms/shadcn/100 driven, Metal System Trace",
+  "metal_current_allocated_size_peak_bytes": 72712192,
+  "metal_current_allocated_size_last_bytes": 72712192,
+  "app_hitches": [
+    {
+      "start_ns": 741795416,
+      "duration_ns": 150000000,
+      "description": "Potentially expensive app update(s)"
+    }
+  ],
+  "steady_window_ns": [
+    2000000000,
+    12000000000
+  ],
+  "steady_app_hitches": 0,
+  "frame_lifetime_caveat": "Display-wide lifetime/render tables do not carry process identity; application presentation percentiles have not been derived."
+}

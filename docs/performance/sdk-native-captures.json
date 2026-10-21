@@ -1,0 +1,166 @@
+[
+  {
+    "template": "Time Profiler",
+    "scene": "forms",
+    "look": "shadcn",
+    "size": 100,
+    "exit_code": 0,
+    "driver_summary": "native workload: 660 frame callbacks in 12.004146833s; callbacks are not GPU presentation timestamps",
+    "trace": "target/perf-traces/issue-167/forms-shadcn-100.trace"
+  },
+  {
+    "template": "Time Profiler",
+    "scene": "forms",
+    "look": "sdk",
+    "size": 100,
+    "exit_code": 0,
+    "driver_summary": "native workload: 716 frame callbacks in 12.0139s; callbacks are not GPU presentation timestamps",
+    "trace": "target/perf-traces/issue-167/time-profiler-forms-sdk-100.trace",
+    "elapsed_seconds": 15.800593852996826
+  },
+  {
+    "template": "Time Profiler",
+    "scene": "forms",
+    "look": "radix",
+    "size": 100,
+    "exit_code": 0,
+    "driver_summary": "native workload: 460 frame callbacks in 12.01700875s; callbacks are not GPU presentation timestamps",
+    "trace": "target/perf-traces/issue-167/time-profiler-forms-radix-100.trace",
+    "elapsed_seconds": 15.79917597770691
+  },
+  {
+    "template": "Time Profiler",
+    "scene": "navigation",
+    "look": "sdk",
+    "size": 1000,
+    "exit_code": 0,
+    "driver_summary": "native workload: 715 frame callbacks in 12.013301417s; callbacks are not GPU presentation timestamps",
+    "trace": "target/perf-traces/issue-167/time-profiler-navigation-sdk-1000.trace",
+    "elapsed_seconds": 15.829922199249268
+  },
+  {
+    "template": "Time Profiler",
+    "scene": "collections",
+    "look": "sdk",
+    "size": 10000,
+    "exit_code": 0,
+    "driver_summary": "native workload: 716 frame callbacks in 12.006572208s; callbacks are not GPU presentation timestamps",
+    "trace": "target/perf-traces/issue-167/time-profiler-collections-sdk-10000.trace",
+    "elapsed_seconds": 15.831012964248657,
+    "status": "superseded_fixture_layout"
+  },
+  {
+    "template": "Time Profiler",
+    "scene": "layout",
+    "look": "sdk",
+    "size": 1000,
+    "exit_code": 0,
+    "driver_summary": "native workload: 716 frame callbacks in 12.011254208s; callbacks are not GPU presentation timestamps",
+    "trace": "target/perf-traces/issue-167/time-profiler-layout-sdk-1000.trace",
+    "elapsed_seconds": 15.81102991104126,
+    "status": "superseded_fixture_layout"
+  },
+  {
+    "template": "Time Profiler",
+    "scene": "color",
+    "look": "sdk",
+    "size": 10,
+    "exit_code": 0,
+    "driver_summary": "native workload: 717 frame callbacks in 12.008195666s; callbacks are not GPU presentation timestamps",
+    "trace": "target/perf-traces/issue-167/time-profiler-color-sdk-10.trace",
+    "elapsed_seconds": 15.798393249511719
+  },
+  {
+    "template": "Time Profiler",
+    "scene": "plot",
+    "look": "sdk",
+    "size": 100000,
+    "exit_code": 0,
+    "driver_summary": "native workload: 717 frame callbacks in 12.014748625s; callbacks are not GPU presentation timestamps",
+    "trace": "target/perf-traces/issue-167/time-profiler-plot-sdk-100000.trace",
+    "elapsed_seconds": 15.75577187538147
+  },
+  {
+    "template": "Allocations",
+    "scene": "forms",
+    "look": "shadcn",
+    "size": 100,
+    "status": "startup_timeout_120s",
+    "trace": null
+  },
+  {
+    "template": "Animation Hitches",
+    "scene": "forms",
+    "look": "shadcn",
+    "size": 100,
+    "mode": "--drive",
+    "status": "complete",
+    "exit_code": 0,
+    "driver_summary": "native workload: 653 frame callbacks in 12.012559708s; callbacks are not GPU presentation timestamps",
+    "trace": "target/perf-traces/issue-167/animation-hitches-forms-shadcn-100.trace"
+  },
+  {
+    "template": "Metal System Trace",
+    "scene": "forms",
+    "look": "shadcn",
+    "size": 100,
+    "mode": "--drive",
+    "status": "complete",
+    "exit_code": 0,
+    "driver_summary": "native workload: 418 frame callbacks in 12.049304708s; callbacks are not GPU presentation timestamps",
+    "trace": "target/perf-traces/issue-167/metal-system-trace-forms-shadcn-100.trace"
+  },
+  {
+    "template": "Time Profiler",
+    "scene": "forms",
+    "look": "shadcn",
+    "size": 100,
+    "mode": "--idle",
+    "status": "complete",
+    "exit_code": 0,
+    "driver_summary": "native idle workload completed after 12 seconds",
+    "trace": "target/perf-traces/issue-167/time-profiler-forms-shadcn-100-idle.trace"
+  },
+  {
+    "template": "process resource usage",
+    "scene": "forms",
+    "look": "shadcn",
+    "size": 100,
+    "exit_code": 0,
+    "maximum_resident_bytes": 173670400,
+    "driver_summary": "native workload: 658 frame callbacks in 12.008567417s; callbacks are not GPU presentation timestamps",
+    "log": "target/perf-traces/issue-167/process-memory-forms-shadcn-100.log"
+  },
+  {
+    "template": "process resource usage",
+    "scene": "color",
+    "look": "sdk",
+    "size": 100,
+    "exit_code": 0,
+    "maximum_resident_bytes": 137527296,
+    "driver_summary": "native workload: 489 frame callbacks in 12.014039209s; callbacks are not GPU presentation timestamps",
+    "log": "target/perf-traces/issue-167/process-memory-color-sdk-100.log"
+  },
+  {
+    "template": "Time Profiler",
+    "scene": "collections",
+    "look": "sdk",
+    "size": 10000,
+    "exit_code": 0,
+    "status": "complete",
+    "fixture_layout": "bounded_visible_panels",
+    "driver_summary": "native workload: 716 frame callbacks in 12.004324125s; callbacks are not GPU presentation timestamps",
+    "trace": "target/perf-traces/issue-167/time-profiler-collections-visible-sdk-10000.trace"
+  },
+  {
+    "template": "Time Profiler",
+    "scene": "layout",
+    "look": "sdk",
+    "size": 1000,
+    "exit_code": 54,
+    "status": "display_unavailable",
+    "fixture_layout": "bounded_visible_panels",
+    "trace": "target/perf-traces/issue-167/time-profiler-layout-visible-sdk-1000.trace",
+    "reason": "macOS reported invalid display count (0); excluded from CPU results"
+  }
+]

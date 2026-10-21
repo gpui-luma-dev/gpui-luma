@@ -1,0 +1,37 @@
+[package]
+name = "luma-sdk-perf"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[features]
+native = ["dep:gpui_platform"]
+
+[dependencies]
+anyhow.workspace = true
+gpui.workspace = true
+gpui_platform = { workspace = true, optional = true }
+gpui-luma.workspace = true
+gpui-luma-look-shadcn.workspace = true
+gpui-luma-look-radix.workspace = true
+gpui-luma-color.workspace = true
+gpui-luma-plot.workspace = true
+luma-app-common.workspace = true
+lucide-svg-static.workspace = true
+
+[dev-dependencies]
+gpui = { workspace = true, features = ["test-support"] }
+serde_json = "1"
+libc = "0.2"
+
+[[bin]]
+name = "luma-sdk-perf"
+path = "src/main.rs"
+required-features = ["native"]
+
+[[bench]]
+name = "sdk_workloads"
+harness = false
+
+[lints]
+workspace = true

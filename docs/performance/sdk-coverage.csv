@@ -1,0 +1,21 @@
+package,area,representatives,baseline_source,remaining_coverage
+sdk,buttons,Button,forms,IconButton and SplitButton; pointer and keyboard activation
+sdk,choices,Checkbox and Switch,forms,RadioButton RadioGroup Toggle ControlGroup IconGroup Toolbar; animated transitions
+sdk,text,TextField and TextArea,forms; render_hot_paths,Focus traversal selection IME and long text in composed scenes
+sdk,range,Slider and Progress,forms,Multiple thumbs radial strategies indeterminate progress and pointer dragging
+sdk,navigation,Sidebar Tabs Accordion Stepper Pager,navigation,Expansion collapse nested content tab transitions and overflow interaction
+sdk,selection,Selector closed trigger,navigation,Open Selector SelectionPanel SearchSelector ComboBox Autocomplete and shared list chrome; filtering
+sdk,overlays,PopupMenu closed trigger,navigation,Open PopupMenu ContextMenu Tooltip PopoverButton OverlayWindow SlidePanel and shared floating menu chrome
+sdk,collections,Table and TreeView,collections; render_hot_paths,ListBox sorting filtering replacement drag/drop and distant scrolling in composed screens
+sdk,layout,Frame and SplitView,layout,DockSplitter ResizablePanels ScrollContainer Scrollbar PopupScrollSurface; interactive resize and nested layouts
+sdk,layouts,Layout exports,inventory,GridLayout LayerStack DockPanel WideMiddle; size changes and nested composition
+sdk,motion,Spring trajectory creation and four samples,infrastructure,Concurrent control animations interrupted transitions scheduling settling and native idle CPU
+sdk,theme,ThemeTokens clone StandardBoxScale and revision fanout,infrastructure; all scenes,Actual token/mode changes CSS parsing stylesheet edits cache hit/miss and resolver attribution
+sdk,infra,Listener and subscription lifecycle via constructed controls,all scenes,Separate focus attachment drag/drop presenter icon geometry and event dispatch attribution
+look-shadcn,adapters,Button Checkbox Switch TextField TextArea Slider Progress,forms/shadcn,Remaining control adapters and configurable stylesheet variants; real theme switching
+look-radix,adapters,Button Checkbox Switch TextField TextArea Slider Progress,forms/radix,Remaining control adapters palettes variants and custom color generation; real theme switching
+luma-color,color,Vector ColorField and HueRing,color,Raster ColorField ColorSlider ColorArc checkerboard and swatch; pointer keyboard and raster cache invalidation
+plot,cartesian,Line chart signal dataset,plot,Area bar markers decimation annotations labels tooltips pan zoom and live replacement
+plot,other families,Pie Radar Radial,inventory,Construction redraw and interaction fixtures for each family
+all,lifecycle,Construct/drop replacement/first paint root release and repeated lifecycle RSS,all scenes,Separate teardown latency nested entity ownership subscriptions and peak/retained heap attribution
+all,platforms,macOS arm64 native CPU GPU memory and headless release,current run,Application presentation and input latency; native heap attribution; Windows and WASM runtime measurements

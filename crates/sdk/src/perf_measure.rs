@@ -73,7 +73,18 @@ pub(crate) fn allocations_for<T>(operation: impl FnOnce() -> T) -> (T, usize, us
     (result, counts.allocations, counts.bytes)
 }
 
-pub(crate) fn measure<T>(name: &str, iterations: usize, mut operation: impl FnMut() -> T) {
+pub(crate) struct Measurement {
+    #[allow(dead_code)] // Structured suite output retains batches; legacy text output uses summaries.
+    pub samples_ns: [f64; 5],
+    pub median_ns: f64,
+    pub min_ns: f64,
+    pub max_ns: f64,
+    pub allocations: f64,
+    pub requested_bytes: f64,
+}
+
+pub(crate) fn sample<T>(iterations: usize, mut operation: impl FnMut() -> T) -> Measurement {
+    assert!(iterations > 0, "measurement requires a nonzero iteration count");
     // Warm the process, not necessarily the control: cold cases explicitly reset
     // their control caches on every operation. Output destruction is included.
     for _ in 0..3 {
@@ -87,18 +98,27 @@ pub(crate) fn measure<T>(name: &str, iterations: usize, mut operation: impl FnMu
         }
         *sample = start.elapsed().as_nanos() as f64 / iterations as f64;
     }
-    samples.sort_by(f64::total_cmp);
+    let mut sorted = samples;
+    sorted.sort_by(f64::total_cmp);
     let (_, allocations, bytes) = allocations_for(|| {
         for _ in 0..iterations {
             black_box(operation());
         }
     });
+    Measurement {
+        samples_ns: samples,
+        median_ns: sorted[2],
+        min_ns: sorted[0],
+        max_ns: sorted[4],
+        allocations: allocations as f64 / iterations as f64,
+        requested_bytes: bytes as f64 / iterations as f64,
+    }
+}
+
+pub(crate) fn measure<T>(name: &str, iterations: usize, operation: impl FnMut() -> T) {
+    let result = sample(iterations, operation);
     println!(
         "{name}: {:.1} ns/op [{:.1}, {:.1}], {:.3} allocations/op, {:.1} requested bytes/op",
-        samples[2],
-        samples[0],
-        samples[4],
-        allocations as f64 / iterations as f64,
-        bytes as f64 / iterations as f64,
+        result.median_ns, result.min_ns, result.max_ns, result.allocations, result.requested_bytes,
     );
 }

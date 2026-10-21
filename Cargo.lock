@@ -3296,6 +3296,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "luma-sdk-perf"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui-luma",
+ "gpui-luma-color",
+ "gpui-luma-look-radix",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-plot",
+ "gpui-platform-gpui-unofficial",
+ "gpui-unofficial",
+ "libc",
+ "lucide-static-svg",
+ "luma-app-common",
+ "serde_json",
+]
+
+[[package]]
 name = "luma-shell-2026"
 version = "0.1.0"
 dependencies = [
