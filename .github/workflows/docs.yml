@@ -19,6 +19,7 @@ concurrency:
 jobs:
   check:
     name: Browser checks
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -41,7 +42,6 @@ jobs:
   build:
     name: Build deployment runtime
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
