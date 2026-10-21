@@ -69,9 +69,21 @@ context-menu regression uses a headless GPUI TestWindow, without launching Studi
 
 ## Deployment
 
-`.github/workflows/docs.yml` builds and validates the release runtime on pull
-requests and uploads the full site as `docs-site`. Main-branch pushes and manual
-runs on `main` also deploy that built artifact through GitHub Pages.
+`.github/workflows/docs.yml` runs WASM Clippy, packaging tests, and JavaScript
+syntax checks on relevant pull requests. PRs do not install wasm-bindgen CLI,
+compile a release runtime, or upload a site artifact. Superseded PR checks cancel.
+
+Main-branch pushes and manual runs on `main` build and validate the release
+runtime, upload the full site as `docs-site`, and deploy through GitHub Pages.
+The wasm-bindgen CLI cache is keyed by its locked version and runner platform;
+check and release Rust caches are separate.
+
+In `.github/workflows/ci.yml`, changes confined to `docs/` and `apps/docs-embed/`
+keep formatting and compile all documentation snippets in a focused job. They
+skip native workspace Clippy and test suites. Shared Rust, dependency, script,
+and workflow changes retain full native CI. Missing comparison history defaults
+to full checks; a source file moved into docs also retains native coverage.
+Routing tests run with `python3 -B -m unittest discover -s scripts -p 'test_*.py'`.
 
 For the initial rollout, after the workflow reaches `main`, set repository
 Settings → Pages → Build and deployment → Source to **GitHub Actions**, retain
