@@ -1,4 +1,4 @@
-use gpui::{Context, ListOffset, Window, px};
+use gpui::{Context, ListOffset, ListState, Window, px};
 
 use super::super::layout::{
     distributed_row_height, effective_visible_rows, page_start, rows_for_viewport_height_border_box,
@@ -29,10 +29,70 @@ where
         }
     }
 
+    pub(super) fn fixed_row_height(model: &TableModel<T>) -> Option<f32> {
+        // Auto-sized pages stretch rows after layout, overriding the explicit
+        // height. Their small current page retains the measured fallback.
+        if model.fill_height && model.scroll_mode.is_paged() && model.visible_rows.is_none() {
+            return None;
+        }
+        model.visible_row_height.filter(|height| height.is_finite() && *height > 0.0)
+    }
+
+    pub(super) fn new_list_state(model: &TableModel<T>, page: usize) -> ListState {
+        let state = ListState::new(Self::visible_list_item_count(model, page), model.alignment, px(model.overdraw));
+        if let Some(height) = Self::fixed_row_height(model) {
+            state.with_uniform_item_height(px(height))
+        } else if model.visible_rows.is_some() || model.fill_height {
+            // Arbitrary row/cell content can grow. Preserve exact extents for
+            // variable-height fixed viewports instead of assuming a row size.
+            state.measure_all()
+        } else {
+            state
+        }
+    }
+
+    pub(super) fn sync_row_measurement_policy(&mut self) {
+        let height = Self::fixed_row_height(&self.model);
+        if self.uniform_row_height != height {
+            let top = self.list_state.logical_scroll_top();
+            self.list_state = Self::new_list_state(&self.model, self.current_page);
+            self.list_state.scroll_to(top);
+            self.uniform_row_height = height;
+            self.uniform_hint_width = None;
+        }
+    }
+
+    pub(super) fn sync_uniform_row_hints(&mut self, cx: &mut Context<Self>) {
+        let Some(height) = self.uniform_row_height else { return };
+        let width = self.list_state.viewport_bounds().size.width;
+        if width > px(0.0) && self.uniform_hint_width != Some(width) {
+            // GPUI discards all height hints during width-change prepaint,
+            // including first layout. Restore them after child prepaint and
+            // request one bounded redraw so scroll extents become exact.
+            self.list_state = self.list_state.clone().with_uniform_item_height(px(height));
+            self.uniform_hint_width = Some(width);
+            cx.notify();
+        }
+    }
+
+    pub(super) fn reveal_row(&self, index: usize) {
+        if self.uniform_row_height.is_some() || self.list_state.bounds_for_item(index).is_some() {
+            self.list_state.scroll_to_reveal_item(index);
+        } else {
+            // Measured height sums cannot locate an unmeasured distant row.
+            self.list_state.scroll_to(ListOffset { item_ix: index, offset_in_item: px(0.0) });
+        }
+    }
+
     pub(super) fn sync_list_state(&mut self) {
+        self.sync_row_measurement_policy();
         let count = Self::visible_list_item_count(&self.model, self.current_page);
         if self.list_state.item_count() != count {
-            self.list_state.reset(count);
+            if let Some(height) = self.uniform_row_height {
+                self.list_state.reset_with_uniform_height(count, px(height));
+            } else {
+                self.list_state.reset(count);
+            }
         }
     }
 
@@ -144,7 +204,7 @@ where
         if index < visible_rows {
             self.list_state.scroll_to(ListOffset { item_ix: 0, offset_in_item: px(0.0) });
         } else {
-            self.list_state.scroll_to_reveal_item(index);
+            self.reveal_row(index);
         }
         self.emit_scroll_changed_if_needed(cx);
     }

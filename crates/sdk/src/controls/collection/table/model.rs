@@ -821,10 +821,11 @@ where
         self
     }
 
-    /// Overrides the per-row height used for [`Self::visible_rows`] shell sizing.
+    /// Fix row border-box height, clipping overflow, and size the visible-row shell.
     ///
-    /// Use when a custom [`Self::row_template`] applies vertical padding that differs
-    /// from the default row chrome (`min_height + 2 * padding_y`).
+    /// Fixed rows seed offscreen height metadata instead of rendering every row
+    /// for measurement. Use for uniform data-table rows, including custom content.
+    /// Fill-height paged tables still stretch rows to the available page height.
     pub fn visible_row_height(mut self, height: impl Into<f32>) -> Self {
         self.model.visible_row_height = Some(height.into().max(1.0));
         self

@@ -6,7 +6,7 @@ sdk,range,Slider and Progress,forms,Multiple thumbs radial strategies indetermin
 sdk,navigation,Sidebar Tabs Accordion Stepper Pager,navigation,Expansion collapse nested content tab transitions and overflow interaction
 sdk,selection,Selector closed trigger,navigation,Open Selector SelectionPanel SearchSelector ComboBox Autocomplete and shared list chrome; filtering
 sdk,overlays,PopupMenu closed trigger,navigation,Open PopupMenu ContextMenu Tooltip PopoverButton OverlayWindow SlidePanel and shared floating menu chrome
-sdk,collections,Table and TreeView,collections; render_hot_paths,ListBox sorting filtering replacement drag/drop and distant scrolling in composed screens
+sdk,collections,Table keyed default fill-height fixed-height grids and nested TreeView,collections; collection_workloads; render_hot_paths,ListBox; embedded interactive cells variable heights large multi-selection lazy loading drag/drop paging animated expansion and native input/presentation latency
 sdk,layout,Frame and SplitView,layout,DockSplitter ResizablePanels ScrollContainer Scrollbar PopupScrollSurface; interactive resize and nested layouts
 sdk,layouts,Layout exports,inventory,GridLayout LayerStack DockPanel WideMiddle; size changes and nested composition
 sdk,motion,Spring trajectory creation and four samples,infrastructure,Concurrent control animations interrupted transitions scheduling settling and native idle CPU

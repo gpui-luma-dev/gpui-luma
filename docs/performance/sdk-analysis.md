@@ -4,6 +4,8 @@ The first SDK-wide baseline identifies shared stylesheet cloning, large navigati
 
 This is a representative baseline for [issue 167](https://github.com/gpui-luma-dev/gpui-luma/issues/167), not a claim that every control or interaction has been profiled. The [coverage matrix](sdk-coverage.csv) lists measured representatives and remaining scenarios across the SDK, both looks, color, plotting, and shared infrastructure. The original baseline predates production optimization. A subsequent [Radix stylesheet optimization and comparison](radix-stylesheet-optimization.md) is now included on this branch; the baseline data remains unchanged.
 
+Priority update after the Radix optimization: the [Table and TreeView interaction analysis](collection-analysis.md) takes precedence over the original large-navigation stress ranking. The [fixed-height Table follow-up](table-fixed-height-optimization.md) implements the first collection optimization. A 10,000-item Sidebar is a documented scaling limit, not a representative product requirement; navigation optimization should be driven by measured usage near its expected size (roughly 100 items or fewer).
+
 ## Evidence and reproduction
 
 - [Protocol, commands, workload definitions, and limitations](sdk-protocol.md).
@@ -37,7 +39,7 @@ Across all three native form traces, memory copying is the largest individual le
 
 Collection and SplitView controls use bounded panels to keep them visible. Earlier unbounded collection/layout captures are excluded; the corrected layout capture failed when macOS reported no available displays and needs a retry.
 
-Navigation is a composed scene, not a Sidebar-only benchmark. Its large-row scaling merits virtualization investigation; native stacks include Sidebar render/layout work. Table/TreeView's nearly flat warm redraw is a positive result consistent with viewport virtualization. Their construction and replacement costs remain distinct from steady-state rendering.
+Navigation is a composed scene, not a Sidebar-only benchmark. Its large-row scaling is a stress observation and does not establish priority at realistic navigation sizes. Table/TreeView's nearly flat warm redraw is a positive result consistent with viewport virtualization, but does not describe interaction costs. The [collection follow-up](collection-analysis.md) separately measures startup, wheel/keyboard input, keyed selection, data replacement, projection and column resizing.
 
 In the color workload, GPUI `paint_path` is 18.57% of main-thread leaf weight. HueRing draws segmented geometry each paint, while the field uses its vector renderer. Compare cached geometry and raster alternatives with quality and memory checks rather than replacing vector rendering indiscriminately.
 
@@ -46,6 +48,8 @@ In the 100,000-point plot workload, stroke tessellation is 23.86% of main-thread
 ## Lifecycle, idle, and memory
 
 All **24,666 tracked primary control entities** released after scene removal, executor draining, and two additional frames. Across the ten additional lifecycle cycles, the largest RSS increase after that release checkpoint was about 2.2 MiB in the SDK 7,000-control stress fixture. This does not prove that all internal entities or subscriptions are leak-free: probes track added primary controls, and RSS includes allocator and GPUI cache retention. The complete sequential headless run reached roughly 2.0 GB RSS; use an isolated `--scene/--look/--size` process to attribute memory to a case.
+
+The historical sequential headless RSS above also includes test contexts retained by the original harness before explicit shutdown was added. Treat it as a historical process observation, not retained SDK heap. The collection follow-up checks release of both the primary control and the headless App.
 
 Isolated native process peaks, measured without Instruments allocation hooks:
 
@@ -69,11 +73,11 @@ The animation trace identified one 150 ms potentially expensive update during st
 | Priority | Investigation | Evidence and proposed boundary |
 | --- | --- | --- |
 | 1 | Avoid full stylesheet clones in Radix render-time resolution | 32.88% inclusive main-thread weight in the driven form trace. Preserve the public owned getter; evaluate internal borrowed access or revision-aware shared snapshots, with mutation/fork semantics and theme invalidation regressions. |
-| 2 | Virtualize large Sidebar/navigation content | Navigation redraw grows sharply with rows; native Sidebar render/layout attribution is material. Separate design for grouping, collapsed rails, animated expansion, focus, keyboard navigation, custom presenters, and scrolling. |
-| 3 | Reduce common element/layout/copy churn | Copying, allocation, and layout recur across default and adapted forms and frames. Attribute individual controls and repeated layout/look resolution before introducing caches; verify invalidation on text, size, scale, and theme changes. |
+| 2 | Reduce Table full-dataset measurement on startup, replacement and resizing | Collection fixtures expose explicit fill-height measurement visiting every row. Evaluate fixed-height hints and correct invalidation while preserving scrollbar range, variable-height content and header/body alignment. |
+| 3 | Characterize TreeView visible-state and data/projection work | Nested expanded/collapsed fixtures separate viewport presenter counts from loaded/displayed-node traversal. Investigate refresh/replacement and keyed reveal before changing APIs; preserve expansion, selection, sorting, filtering, scroll anchors and animation. |
 | 4 | Compare color geometry reuse and raster caching | Path painting dominates a substantial part of the color trace. Compare stable versus changing hue, renderer modes, sizes, memory, and visual fidelity. |
 | 5 | Characterize chart reduction and tessellation choices | Large undecimated lines spend time in projection and stroke tessellation. Benchmark existing decimation and interaction features independently; preserve data/gap/hit-test semantics. |
-| 6 | Complete interaction, ownership, and platform coverage | Open overlays, filtering, dragging, focus/IME, actual theme switching, concurrent animations, browser runtime, and other native platforms remain listed gaps. Avoid speculative changes to already effective collection virtualization. |
+| 6 | Complete interaction, ownership, and platform coverage | Open overlays, filtering, dragging, focus/IME, actual theme switching, concurrent animations, browser runtime, and other native platforms remain listed gaps. Include common element/layout/copy churn and revisit Sidebar only with representative usage evidence. |
 
 These are reviewable work boundaries, not implemented fixes or new GitHub issues. Re-run identical scenarios for each proposed optimization and retain correctness and memory tradeoffs with the results.
 

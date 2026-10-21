@@ -15,8 +15,11 @@ pub(super) struct Task {
 }
 
 pub(super) fn build_task_rows() -> Vec<Task> {
-    const TASK_COUNT: usize = 100;
-    (0..TASK_COUNT).map(make_task).collect()
+    build_task_rows_with_count(100)
+}
+
+pub(super) fn build_task_rows_with_count(count: usize) -> Vec<Task> {
+    (0..count).map(make_task).collect()
 }
 
 fn make_task(index: usize) -> Task {

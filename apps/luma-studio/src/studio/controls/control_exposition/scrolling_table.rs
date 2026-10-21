@@ -19,10 +19,12 @@ use super::collection_theme_inspectors::TableThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
-use super::table_demo::{Task, build_task_rows, email_column, status_cell, tag_pill};
+use super::table_demo::{Task, build_task_rows_with_count, email_column, status_cell, tag_pill};
 use super::inspector::{TableInspectorAdapter, TABLE_INSPECTOR_SPEC};
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
+
+const TASK_COUNT: usize = 10_000;
 
 pub struct ScrollingTableControlExposition {
     look: Arc<ShadcnLook>,
@@ -39,6 +41,7 @@ struct ScrollingTableExpositionLeftPane {
     table: Table<Task>,
     sort_button: Entity<Button>,
     select_button: Entity<Button>,
+    jump_button: Entity<Button>,
     event_stream: Entity<ControlEventStream>,
     details: Entity<AccordionControl>,
 }
@@ -55,6 +58,7 @@ impl ScrollingTableExpositionLeftPane {
         self.table.update(cx, |_, cx| cx.notify());
         self.sort_button.update(cx, |_, cx| cx.notify());
         self.select_button.update(cx, |_, cx| cx.notify());
+        self.jump_button.update(cx, |_, cx| cx.notify());
         self.details.update(cx, |_, cx| cx.notify());
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
         cx.notify();
@@ -88,6 +92,12 @@ impl Render for ScrollingTableExpositionLeftPane {
                             div()
                                 .text_sm()
                                 .text_color(chrome.muted_text)
+                                .child("10,000 tasks · 36 px rows. Scroll, resize columns, reverse the order, or jump to the last row."),
+                        )
+                        .child(
+                            div()
+                                .text_sm()
+                                .text_color(chrome.muted_text)
                                 .child("Drag a row or selected group to reorder. Hold near an edge to scroll; Escape cancels."),
                         )
                         .child(
@@ -105,7 +115,16 @@ impl Render for ScrollingTableExpositionLeftPane {
                                 .child("Click selects; Ctrl/Cmd-click toggles; Shift-click or Shift+arrows extends. Ctrl/Cmd+A selects all; add Shift to clear."),
                         ),
                 )
-                .child(div().flex_none().flex().gap(px(8.0)).child(self.sort_button.clone()).child(self.select_button.clone()))
+                .child(
+                    div()
+                        .flex_none()
+                        .flex()
+                        .flex_wrap()
+                        .gap(px(8.0))
+                        .child(self.sort_button.clone())
+                        .child(self.select_button.clone())
+                        .child(self.jump_button.clone()),
+                )
                 .child(div().w_full().flex_none().child(self.details.clone()))
                 .child(div().w_full().flex_1().min_h(px(0.0)).overflow_hidden().child(self.table.clone()));
 
@@ -125,7 +144,7 @@ impl ScrollingTableControlExposition {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let entry = *catalog_entry("scrolling-table").expect("scrolling-table catalog entry");
 
-        let tasks = build_task_rows();
+        let tasks = build_task_rows_with_count(TASK_COUNT);
         let table = gpui_luma_look_shadcn::Table::new("controls-doc-table-scroll")
             .look(&look)
             .items(tasks)
@@ -135,7 +154,7 @@ impl ScrollingTableControlExposition {
             .row_label(|row: &Task| row.title.clone())
             .row_enabled(|row| row.enabled)
             .fill_height()
-            .scroll_snap(true)
+            .visible_row_height(36.0_f32)
             .grid_view([
                 column_emphasis!("Task", width = 108 => |row: &Task| row.id.clone()),
                 column!("Title" => |row: &Task| {
@@ -196,6 +215,19 @@ impl ScrollingTableControlExposition {
             .outline()
             .label("Select tasks 1–3")
             .spawn(cx);
+        let jump_button = gpui_luma_look_shadcn::Button::new("table-jump-last")
+            .look(&look)
+            .outline()
+            .label("Jump to last row")
+            .spawn(cx);
+        jump_button.clone().on_click(cx, {
+            let table = table.downgrade();
+            move |_, cx| {
+                if let Some(table) = table.upgrade() {
+                    table.update(cx, |table, cx| table.scroll_to_row(TASK_COUNT - 1, cx));
+                }
+            }
+        });
         sort_button.clone().on_click(cx, {
             let table = table.downgrade();
             move |_, cx| {
@@ -267,6 +299,7 @@ impl ScrollingTableControlExposition {
                 table: table.clone(),
                 sort_button,
                 select_button,
+                jump_button,
                 event_stream: event_stream.clone(),
                 details,
             }

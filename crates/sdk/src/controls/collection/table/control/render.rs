@@ -184,6 +184,7 @@ where
     T: 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.sync_row_measurement_policy();
         if !self.model.enabled && self.focus_handle.contains_focused(window, cx) {
             window.blur(cx);
         }
@@ -305,10 +306,13 @@ where
         if render_model.shell_height.is_none() {
             root = root.h_full();
         }
-        if sync_page_size {
+        if sync_page_size || self.uniform_row_height.is_some() {
             root = root.on_children_prepainted(move |_child_bounds, window, cx| {
                 entity.update(cx, |this, cx| {
-                    this.sync_fill_height_page_size(window, cx);
+                    if sync_page_size {
+                        this.sync_fill_height_page_size(window, cx);
+                    }
+                    this.sync_uniform_row_hints(cx);
                 });
             });
         }

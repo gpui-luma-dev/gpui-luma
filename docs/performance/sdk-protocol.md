@@ -50,6 +50,8 @@ Shared infrastructure microbenchmarks separately measure layout-scale computatio
 
 JSONL records include OS/architecture, Rust version, commit, dirty status, capture time, viewport, build assertion mode, workload identity, iteration count, and all five batch means. Timing uses three warmups followed by five batches; the reported median is the median of batch means, not an individual-frame percentile. A separate pass counts measuring-thread allocation calls, including zeroed allocations and reallocations, and requested byte traffic. This excludes background-thread allocations, allocator overhead, retained heap size, and GPU memory.
 
+Historical caveat: the original SDK baseline predates explicit TestAppContext shutdown in the runner. Its sequential RSS also includes retained headless harness contexts, and must not be used to attribute SDK ownership or leaks. The collection follow-up adds App shutdown/draining and weak App-release checks.
+
 Resident bytes are current process RSS (Mach task information on macOS, `/proc/self/status` on Linux; unavailable elsewhere). Memory checkpoints occur after complete lifecycle cycles. The default matrix runs sequentially in one process, so allocator and process-global cache history affects later cases. RSS is not per-control ownership, and growth alone does not establish a leak. Weak probes track the added primary controls, not every SDK-internal entity or subscription.
 
 A completion record is written only after all selected fixtures succeed. The summary tool rejects partial runs, duplicate workloads, invalid sample data, and mismatched completion counts. Correctness tests run in Cargo's normal test profile; existing GPUI interaction tests depend on debug selectors unavailable in release builds.

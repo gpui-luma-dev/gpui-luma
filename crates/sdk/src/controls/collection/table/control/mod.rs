@@ -2,6 +2,8 @@ mod input;
 mod render;
 mod selection;
 mod viewport;
+#[cfg(all(test, feature = "test-support"))]
+mod virtualization_tests;
 mod keys;
 mod reorder;
 mod drag;
@@ -74,6 +76,9 @@ where
 
     model: TableModel<T>,
     list_state: ListState,
+    /// Height used to seed offscreen rows; None retains variable-height measurement.
+    uniform_row_height: Option<f32>,
+    uniform_hint_width: Option<gpui::Pixels>,
     focus_handle: gpui::FocusHandle,
     focus_in_subscription: Option<Subscription>,
     focus_out_subscription: Option<Subscription>,
@@ -156,16 +161,12 @@ where
         normalize_model(&mut builder.model);
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
 
-        let visible_count = Self::visible_list_item_count(&builder.model, 0);
-        let mut list_state = ListState::new(visible_count, builder.model.alignment, px(builder.model.overdraw));
-        if builder.model.visible_rows.is_some() || builder.model.fill_height {
-            // Fixed-viewport / fill-height lists still scroll through the full item set.
-            // Without measuring every row, GPUI's internal height sum stays at the visible
-            // slice and scroll_max collapses to zero when overdraw is small.
-            list_state = list_state.measure_all();
-        }
+        let uniform_row_height = Self::fixed_row_height(&builder.model);
+        let list_state = Self::new_list_state(&builder.model, 0);
         Self {
             list_state,
+            uniform_row_height,
+            uniform_hint_width: None,
             focus_handle: cx.focus_handle().tab_stop(builder.model.enabled),
             focus_in_subscription: None,
             focus_out_subscription: None,
@@ -328,6 +329,7 @@ where
         }
 
         self.model.scroll_mode = scroll_mode;
+        self.fill_row_height = None;
         self.current_page = clamp_page(self.current_page, self.model.items.len(), self.page_size().unwrap_or(1));
         self.sync_list_state();
         cx.notify();
@@ -406,7 +408,7 @@ where
         if self.is_scroll_snap() {
             self.list_state.scroll_to(ListOffset { item_ix: index, offset_in_item: px(0.0) });
         } else {
-            self.list_state.scroll_to_reveal_item(index);
+            self.reveal_row(index);
         }
         self.emit_scroll_changed_if_needed(cx);
         cx.notify();

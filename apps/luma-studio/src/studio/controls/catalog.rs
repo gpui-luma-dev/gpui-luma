@@ -170,9 +170,9 @@ pub const CONTROL_CATALOG: &[ControlDocEntry] = &[
     ControlDocEntry {
         id: "scrolling-table",
         title: "Scrolling Table",
-        description: "Virtualized task grid that fills the pane, with column templates, row snap scrolling, range selection, and drag reordering. Resizes with the window.",
+        description: "10,000-task grid with fixed-height virtualized rows, resizable columns, range selection, drag reordering, and a jump to the last row. Resizes with the window.",
         category: ControlCategory::Collection,
-        snippet: "let table = shadcn::Table::new(\"tasks\")\n    .look(&look)\n    .items(rows)\n    .extended()\n    .fill_height()\n    .scroll_snap(true)\n    .grid_view(columns)\n    .spawn(cx);\ntable.update(cx, |table, cx| {\n    table.set_row_key(|row| row.id.clone(), cx).expect(\"unique IDs\");\n    table.set_row_reordering(true, cx).expect(\"keyed table\");\n});",
+        snippet: "let table = shadcn::Table::new(\"tasks\")\n    .look(&look)\n    .items(rows)\n    .extended()\n    .fill_height()\n    .visible_row_height(36.0_f32)\n    .grid_view(columns)\n    .spawn(cx);\ntable.update(cx, |table, cx| {\n    table.set_row_key(|row| row.id.clone(), cx).expect(\"unique IDs\");\n    table.set_row_reordering(true, cx).expect(\"keyed table\");\n});",
         section_order: 140,
     },
     ControlDocEntry {
