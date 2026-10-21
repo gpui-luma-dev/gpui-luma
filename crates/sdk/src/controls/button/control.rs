@@ -221,3 +221,7 @@ impl<D: 'static> AttachmentTarget for Button<D> {
 #[cfg(all(test, feature = "test-support"))]
 #[path = "callback_tests.rs"]
 mod callback_tests;
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "perf_tests.rs"]
+mod perf_tests;

@@ -1,0 +1,49 @@
+arm64 macOS, rustc 1.99.0, GPUI 1.24.2, optimized release profile
+after runtime measurements; ns/op [batch minimum, batch maximum]
+
+Button/100 headless redraw/0 layers: 1093841.8 ns/op [1075958.4, 1101658.2], 8719.000 allocations/op, 5297580.0 requested bytes/op
+Button/construct entity/0 layers: 491.7 ns/op [464.6, 530.0], 11.180 allocations/op, 933.9 requested bytes/op
+Button/100 headless redraw/1 layers: 1140241.6 ns/op [1135708.4, 1144000.0], 9320.000 allocations/op, 5330380.0 requested bytes/op
+Button/construct entity/1 layers: 453.3 ns/op [447.1, 464.2], 11.180 allocations/op, 933.9 requested bytes/op
+Button/100 headless redraw/2 layers: 1183208.4 ns/op [1141975.0, 1209241.6], 9320.000 allocations/op, 5363180.0 requested bytes/op
+Button/construct entity/2 layers: 493.8 ns/op [455.0, 532.5], 11.180 allocations/op, 933.9 requested bytes/op
+Button/100 headless redraw/8 layers: 1438566.6 ns/op [1429750.0, 1441400.0], 9320.000 allocations/op, 5559980.0 requested bytes/op
+Button/construct entity/8 layers: 510.4 ns/op [500.0, 583.8], 11.180 allocations/op, 933.9 requested bytes/op
+Tree/index rebuild/100: 3318.8 ns/op [3081.2, 3410.4], 8.000 allocations/op, 15372.0 requested bytes/op
+Tree/headless warm redraw/100: 301075.0 ns/op [291966.6, 303975.0], 2088.000 allocations/op, 1115892.0 requested bytes/op
+Tree/replace+headless redraw/100: 426316.8 ns/op [422716.6, 428575.0], 2890.000 allocations/op, 1673698.0 requested bytes/op
+Tree/index rebuild/10000: 374827.0 ns/op [373712.5, 378131.2], 15.000 allocations/op, 1963652.0 requested bytes/op
+Tree/headless warm redraw/10000: 756825.0 ns/op [750641.6, 763250.0], 2094.000 allocations/op, 1122036.0 requested bytes/op
+Tree/replace+headless redraw/10000: 2750633.2 ns/op [2702016.6, 2762391.6], 8818.000 allocations/op, 12252890.0 requested bytes/op
+Sidebar/signature hit/100: 181.7 ns/op [181.7, 184.2], 0.000 allocations/op, 0.0 requested bytes/op
+Sidebar/signature late miss/100: 182.5 ns/op [182.1, 195.8], 0.000 allocations/op, 0.0 requested bytes/op
+Sidebar/handlers cold/100: 12450.0 ns/op [12375.0, 12808.4], 518.000 allocations/op, 47568.0 requested bytes/op
+Sidebar/handlers warm/100: 191.7 ns/op [191.2, 192.5], 0.000 allocations/op, 0.0 requested bytes/op
+Sidebar/model+handlers warm/100: 8791.8 ns/op [8658.2, 9266.6], 12.000 allocations/op, 88704.0 requested bytes/op
+Sidebar/headless redraw/100: 717403.0 ns/op [685736.3, 721139.0], 6662.000 allocations/op, 3877412.0 requested bytes/op
+Sidebar/signature hit/10000: 24150.8 ns/op [23669.2, 24518.8], 0.000 allocations/op, 0.0 requested bytes/op
+Sidebar/signature late miss/10000: 24058.3 ns/op [23798.3, 26044.2], 0.000 allocations/op, 0.0 requested bytes/op
+Sidebar/handlers cold/10000: 1362316.6 ns/op [1361133.4, 1377475.0], 50025.000 allocations/op, 4968752.0 requested bytes/op
+Sidebar/handlers warm/10000: 24394.6 ns/op [24325.4, 25466.2], 0.000 allocations/op, 0.0 requested bytes/op
+Sidebar/model+handlers warm/10000: 1091975.0 ns/op [1077383.4, 1150766.6], 26.000 allocations/op, 11532928.0 requested bytes/op
+Sidebar/headless redraw/10000: 89299944.3 ns/op [88706805.7, 89703888.7], 671615.000 allocations/op, 434830604.0 requested bytes/op
+Sidebar/rail submenu handlers/10: 582.1 ns/op [580.8, 646.2], 26.000 allocations/op, 2128.0 requested bytes/op
+Sidebar/rail model+handlers/10: 1422.9 ns/op [1360.8, 1428.3], 36.000 allocations/op, 7918.0 requested bytes/op
+Sidebar/rail submenu handlers/100: 5189.6 ns/op [5175.0, 5216.2], 209.000 allocations/op, 19744.0 requested bytes/op
+Sidebar/rail model+handlers/100: 8992.5 ns/op [8944.2, 9035.4], 222.000 allocations/op, 60702.0 requested bytes/op
+TextArea/headless warm/100 lines: 23583.4 ns/op [23483.2, 24000.0], 228.000 allocations/op, 98318.0 requested bytes/op
+TextArea/headless cold layout/100 lines: 92516.6 ns/op [92141.8, 98700.0], 1657.000 allocations/op, 1312174.0 requested bytes/op
+TextArea/headless edit/100 lines: 101333.2 ns/op [100825.0, 109383.4], 1753.600 allocations/op, 1347159.6 requested bytes/op
+TextArea/headless resize/100 lines: 107166.8 ns/op [101275.0, 110541.8], 1752.000 allocations/op, 1335472.0 requested bytes/op
+TextArea/headless scroll/100 lines: 23700.0 ns/op [23633.2, 23891.6], 228.000 allocations/op, 98318.0 requested bytes/op
+TextArea/headless selection/100 lines: 24175.0 ns/op [24133.4, 24291.8], 241.000 allocations/op, 101353.0 requested bytes/op
+TextArea/headless IME/100 lines: 24183.4 ns/op [24041.8, 24508.2], 240.000 allocations/op, 100793.0 requested bytes/op
+TextArea/headless warm decoration/100 lines: 24141.8 ns/op [23458.4, 26325.0], 229.000 allocations/op, 98878.0 requested bytes/op
+TextArea/headless warm/10000 lines: 23683.4 ns/op [23575.0, 24466.6], 228.000 allocations/op, 98318.0 requested bytes/op
+TextArea/headless cold layout/10000 lines: 9575791.6 ns/op [9407458.2, 9822983.4], 150171.000 allocations/op, 145736342.0 requested bytes/op
+TextArea/headless edit/10000 lines: 10559958.4 ns/op [10096766.6, 10812275.0], 150267.600 allocations/op, 146911807.6 requested bytes/op
+TextArea/headless resize/10000 lines: 10143700.0 ns/op [10042183.2, 10567458.4], 150266.000 allocations/op, 145759640.0 requested bytes/op
+TextArea/headless scroll/10000 lines: 24525.0 ns/op [23883.2, 26441.6], 228.000 allocations/op, 98318.0 requested bytes/op
+TextArea/headless selection/10000 lines: 25475.0 ns/op [24450.0, 27041.6], 241.000 allocations/op, 101353.0 requested bytes/op
+TextArea/headless IME/10000 lines: 24983.4 ns/op [24033.4, 26816.8], 240.000 allocations/op, 100793.0 requested bytes/op
+TextArea/headless warm decoration/10000 lines: 24875.0 ns/op [23550.0, 26175.0], 229.000 allocations/op, 98878.0 requested bytes/op

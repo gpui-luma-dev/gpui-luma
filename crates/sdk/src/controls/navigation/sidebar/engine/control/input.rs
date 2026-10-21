@@ -32,7 +32,12 @@ fn clone_row_handlers(handlers: &SidebarPanelTemplateHandlers) -> SidebarPanelTe
         row_mouse_up_outs: handlers.row_mouse_up_outs.clone(),
         row_clicks: handlers.row_clicks.clone(),
         children_height_reports: handlers.children_height_reports.clone(),
-        ..Default::default()
+        // A struct update from Default constructs and drops seven unused Rc
+        // containers, even though every row field above is supplied explicitly.
+        rail_submenu_mouse_down_out: None,
+        rail_submenu_item_hovers: Vec::new(),
+        rail_submenu_item_clicks: Vec::new(),
+        rail_submenu_bounds: None,
     }
 }
 
@@ -72,7 +77,10 @@ impl SidebarPanelEngine {
                 } else {
                     branch_count
                 })),
-                ..Default::default()
+                rail_submenu_mouse_down_out: None,
+                rail_submenu_item_hovers: Vec::new(),
+                rail_submenu_item_clicks: Vec::new(),
+                rail_submenu_bounds: None,
             };
 
             let interaction = if model.collapsed {
@@ -770,7 +778,8 @@ fn row_handlers_reuse_and_follow_projection_and_mode_changes() {
         engine.update(app, |view, cx| {
             let model = view.render_model(window, cx);
             let first = view.template_handlers(&model, cx);
-            let second = view.template_handlers(&model, cx);
+            let (second, allocations, _) = crate::perf_measure::allocations_for(|| view.template_handlers(&model, cx));
+            assert_eq!(allocations, 0, "warm row-handler binding must not allocate temporary defaults");
             assert!(Rc::ptr_eq(&first.row_bounds, &second.row_bounds));
             assert!(Rc::ptr_eq(&first.row_hovers, &second.row_hovers));
             assert!(Rc::ptr_eq(&first.row_mouse_downs, &second.row_mouse_downs));
@@ -805,3 +814,7 @@ fn row_handlers_reuse_and_follow_projection_and_mode_changes() {
         })
     });
 }
+
+#[cfg(all(test, feature = "test-support"))]
+#[path = "perf_tests.rs"]
+mod perf_tests;

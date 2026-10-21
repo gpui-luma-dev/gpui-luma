@@ -1,16 +1,10 @@
 //! Isolated headless costs, not application frame times. Run with:
 //! `cargo bench -p gpui-luma --bench render_hot_paths -- --measure`
-use std::{
-    alloc::{GlobalAlloc, Layout, System},
-    collections::HashMap,
-    hint::black_box,
-    rc::Rc,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, AtomicUsize, Ordering},
-    },
-    time::Instant,
-};
+use std::{collections::HashMap, hint::black_box, rc::Rc, sync::Arc};
+
+#[path = "../src/perf_measure.rs"]
+mod perf_measure;
+use perf_measure::measure;
 
 use gpui::{BoxShadow, ElementId, SharedString};
 use gpui_luma::{
@@ -23,65 +17,13 @@ use gpui_luma::{
 };
 use smallvec::SmallVec;
 
-struct CountingAllocator;
-static COUNTING: AtomicBool = AtomicBool::new(false);
-static ALLOCATIONS: AtomicUsize = AtomicUsize::new(0);
-
-// SAFETY: Every allocation operation delegates unchanged to System. Counters do
-// not allocate and are only enabled during a separate, single-threaded pass.
-unsafe impl GlobalAlloc for CountingAllocator {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        if COUNTING.load(Ordering::Relaxed) {
-            ALLOCATIONS.fetch_add(1, Ordering::Relaxed);
-        }
-        unsafe { System.alloc(layout) }
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        unsafe { System.dealloc(ptr, layout) }
-    }
-
-    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, size: usize) -> *mut u8 {
-        if COUNTING.load(Ordering::Relaxed) {
-            ALLOCATIONS.fetch_add(1, Ordering::Relaxed);
-        }
-        unsafe { System.realloc(ptr, layout, size) }
-    }
-}
-
-#[global_allocator]
-static ALLOCATOR: CountingAllocator = CountingAllocator;
-
-fn measure<T>(name: &str, iterations: usize, mut operation: impl FnMut() -> T) {
-    for _ in 0..100 {
-        black_box(operation());
-    }
-    let mut samples = [0.0; 5];
-    for sample in &mut samples {
-        let start = Instant::now();
-        for _ in 0..iterations {
-            black_box(operation());
-        }
-        *sample = start.elapsed().as_nanos() as f64 / iterations as f64;
-    }
-    samples.sort_by(f64::total_cmp);
-    ALLOCATIONS.store(0, Ordering::Relaxed);
-    COUNTING.store(true, Ordering::Relaxed);
-    for _ in 0..iterations {
-        black_box(operation());
-    }
-    COUNTING.store(false, Ordering::Relaxed);
-    let allocations = ALLOCATIONS.load(Ordering::Relaxed);
-    println!("{name}: {:.1} ns/op, {:.3} allocations/op", samples[2], allocations as f64 / iterations as f64);
-}
-
 fn main() {
     // `cargo test --all-targets` should compile this target without benchmarking.
     if !std::env::args().any(|argument| argument == "--measure") {
         return;
     }
     println!(
-        "Isolated costs (median of five batches); fixtures and index/cache construction excluded. Allocation counts include reallocations."
+        "Isolated costs (median of five batches); fixtures excluded unless construction is named. Ranges show batch min/max; allocation counts include reallocations and zeroed allocations on the measuring thread."
     );
     let iterations = 100_000;
     let metrics = MetricTokens::default();
@@ -144,12 +86,41 @@ fn main() {
     let scale = StandardBoxScale::compute(ControlSize::Md, &metrics, 2.0);
     let mut look = compose_button_family_look(&palette, ButtonFamilyRole::Text, &scale, metrics.radius.pill);
     measure("Button look/no shadows clone", iterations, || black_box(&look).clone());
-    let shadows = ThemeTokens::default().elevation.control.to_box_shadows();
-    println!("Shadow fixture: {} layers", shadows.len());
-    look.shadow = Some(shadows.clone());
-    measure("Button look/Vec shadows clone", iterations, || black_box(&look).clone());
-    let inline: SmallVec<[BoxShadow; 2]> = shadows.iter().cloned().collect();
-    let shared: Arc<[BoxShadow]> = shadows.into();
-    measure("Shadow storage/SmallVec clone", iterations, || black_box(&inline).clone());
-    measure("Shadow storage/Arc clone", iterations, || Arc::clone(black_box(&shared)));
+    let layer = ThemeTokens::default().elevation.control.to_box_shadows()[0].clone();
+    for count in [0, 1, 2, 8] {
+        let shadows = vec![layer.clone(); count];
+        look.shadow = Some(shadows.clone());
+        let inline: SmallVec<[BoxShadow; 2]> = shadows.iter().cloned().collect();
+        let shared: Arc<[BoxShadow]> = shadows.clone().into();
+        measure(&format!("Button look/Vec clone/{count}"), iterations, || black_box(&look).clone());
+        measure(&format!("Shadow/Vec construct/{count}"), iterations, || black_box(&shadows).to_vec());
+        measure(&format!("Shadow/SmallVec construct/{count}"), iterations, || {
+            black_box(&shadows).iter().cloned().collect::<SmallVec<[BoxShadow; 2]>>()
+        });
+        measure(&format!("Shadow/Arc construct/{count}"), iterations, || {
+            Arc::<[BoxShadow]>::from(black_box(&shadows).as_slice())
+        });
+        measure(&format!("Shadow/SmallVec clone/{count}"), iterations, || black_box(&inline).clone());
+        measure(&format!("Shadow/Arc clone/{count}"), iterations, || Arc::clone(black_box(&shared)));
+        // GPUI 1.24.2 takes Vec<BoxShadow>; include that ownership conversion.
+        use gpui::{Styled, div};
+        measure(&format!("Shadow/Vec clone+GPUI/{count}"), iterations, || div().shadow(black_box(&shadows).clone()));
+        measure(&format!("Shadow/SmallVec clone+GPUI/{count}"), iterations, || {
+            div().shadow(black_box(&inline).clone().into_vec())
+        });
+        measure(&format!("Shadow/Arc clone+GPUI/{count}"), iterations, || {
+            let cloned = Arc::clone(black_box(&shared));
+            div().shadow(cloned.to_vec())
+        });
+        measure(&format!("Shadow/Vec construct+GPUI/{count}"), iterations, || {
+            div().shadow(black_box(&shadows).to_vec())
+        });
+        measure(&format!("Shadow/SmallVec construct+GPUI/{count}"), iterations, || {
+            div().shadow(black_box(&shadows).iter().cloned().collect::<SmallVec<[BoxShadow; 2]>>().into_vec())
+        });
+        measure(&format!("Shadow/Arc construct+GPUI/{count}"), iterations, || {
+            let constructed: Arc<[BoxShadow]> = black_box(&shadows).as_slice().into();
+            div().shadow(constructed.to_vec())
+        });
+    }
 }

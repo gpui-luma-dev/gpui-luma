@@ -642,3 +642,6 @@ fn wrapping_shapes_logical_lines_once_and_selection_decorates_only_visible_lines
         assert!(window.painted_underlines().is_empty(), "unmarking must remove the underline");
     });
 }
+
+#[cfg(all(test, feature = "test-support"))]
+mod perf_tests;
