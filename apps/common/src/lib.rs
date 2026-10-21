@@ -3,6 +3,7 @@
 //! Embeds tweakcn CSS packs and fonts referenced by those themes. Not part of the
 //! SDK or look runtime — production apps should supply their own CSS and fonts.
 
+pub mod color_picker;
 mod built_in;
 mod fonts;
 

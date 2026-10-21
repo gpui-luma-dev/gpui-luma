@@ -3228,6 +3228,8 @@ name = "luma-app-common"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "gpui-luma",
+ "gpui-luma-color",
  "gpui-luma-look-shadcn",
  "gpui-unofficial",
  "tracing",
@@ -3241,10 +3243,12 @@ dependencies = [
  "gpui-luma",
  "gpui-luma-color",
  "gpui-luma-look-radix",
+ "gpui-luma-look-shadcn",
  "gpui-luma-plot",
  "gpui-unofficial",
  "gpui-web-gpui-unofficial",
  "lucide-static-svg",
+ "luma-app-common",
  "wasm-bindgen",
  "web-sys",
 ]

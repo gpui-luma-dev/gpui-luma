@@ -28,7 +28,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "accordion",
         "tree-view",
         "table",
-        "control-group",
         "icon-group",
         "progress",
         "stepper",

@@ -9,7 +9,12 @@ description = "Shared demo assets for Luma apps — tweakcn CSS packs and embedd
 [lib]
 name = "luma_app_common"
 
+[features]
+test-support = ["gpui-luma/test-support"]
+
 [dependencies]
+gpui-luma.workspace = true
+gpui-luma-color.workspace = true
 anyhow = { workspace = true }
 gpui = { workspace = true }
 gpui-luma-look-shadcn.workspace = true

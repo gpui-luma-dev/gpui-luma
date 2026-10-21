@@ -114,6 +114,7 @@ jobs:
           --package gpui-luma-plot
           --package gpui-luma-look-radix
           --package gpui-luma-look-shadcn
+          --package luma-app-common
 
       # Only run doc-tests on library packages that actually contain documentation
       - name: Documentation tests

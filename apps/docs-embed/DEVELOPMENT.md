@@ -39,6 +39,11 @@ the complete directory together; no runtime files are committed to Git.
    share a page, use the existing HTML tab strip to navigate one shared iframe.
 4. Rebuild and check interaction and light/dark theme changes.
 
+Studio and docs share `luma_app_common::color_picker::ColorPickerPopover`. The
+Swatch sample subscribes to its color changes; it is a working picker composition,
+not just a click notification. Control Group remains documentation-only as a base
+class.
+
 Explicit Look constructors should reuse the ambient Look with a standalone
 fallback. SDK controls and Look builders own interactive chrome. The host embeds
 Inter from `apps/common/assets` and IBM Plex Sans from `assets/ibm-plex-sans`;
