@@ -108,7 +108,7 @@ impl ProgressTheme for ProgressThemeAdapter {
         };
         let height = self
             .look
-            .common_stylesheet()
+            .stylesheet_snapshot()
             .progress
             .resolve_geometry(
                 crate::look::sdk_size_key(size),
@@ -118,7 +118,7 @@ impl ProgressTheme for ProgressThemeAdapter {
         ProgressLook {
             geometry: self
                 .look
-                .common_stylesheet()
+                .stylesheet_snapshot()
                 .progress
                 .resolve_geometry(size.stylesheet_key(), Default::default()),
             track_color: track,

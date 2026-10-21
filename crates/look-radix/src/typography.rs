@@ -14,7 +14,7 @@ pub(crate) fn label_typography(size: ControlSize) -> LumaTextStyle {
 }
 
 pub(crate) fn font_family(look: &Look) -> SharedString {
-    look.common_stylesheet().tokens.typography.font.sans.family.into()
+    look.stylesheet_snapshot().tokens.typography.font.sans.family.clone().into()
 }
 
 #[cfg(test)]

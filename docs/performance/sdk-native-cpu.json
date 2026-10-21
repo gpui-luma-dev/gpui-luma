@@ -1,0 +1,1346 @@
+[
+  {
+    "scene": "forms",
+    "look": "shadcn",
+    "size": 100,
+    "mode": "--drive",
+    "window_ns": [
+      2000000000,
+      12000000000
+    ],
+    "main_samples": 9982,
+    "main_sample_weight_ns": 9982000000,
+    "all_thread_sample_weight_ns": 10133000000,
+    "estimated_main_cpu_percent": 99.82,
+    "leaf_symbols": [
+      {
+        "symbol": "_platform_memmove",
+        "sample_weight_ns": 1533000000,
+        "percent_of_main_weight": 15.36
+      },
+      {
+        "symbol": "_xzm_free_main",
+        "sample_weight_ns": 677000000,
+        "percent_of_main_weight": 6.78
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "sample_weight_ns": 468000000,
+        "percent_of_main_weight": 4.69
+      },
+      {
+        "symbol": "<deduplicated_symbol>",
+        "sample_weight_ns": 243000000,
+        "percent_of_main_weight": 2.43
+      },
+      {
+        "symbol": "_RINvNtNtCskV7B1maoAHE_5taffy7compute5block13compute_innerINtNtNtB6_4tree10taffy_tree9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB1w_NtB1w_17TaffyLayoutEngine14compute_layouts_0EEB1y_",
+        "sample_weight_ns": 232000000,
+        "percent_of_main_weight": 2.32
+      },
+      {
+        "symbol": "_RNvXsT_NtCsdlnXFo8vLID_4gpui5styleNtB5_5StyleNtCschVpZj1e9RT_26refineable_gpui_unofficial10Refineable6refine",
+        "sample_weight_ns": 202000000,
+        "percent_of_main_weight": 2.02
+      },
+      {
+        "symbol": "_RINvNtNtCskV7B1maoAHE_5taffy7compute7flexbox19compute_preliminaryINtNtNtB6_4tree10taffy_tree9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB1E_NtB1E_17TaffyLayoutEngine14compute_layouts_0EEB1G_",
+        "sample_weight_ns": 165000000,
+        "percent_of_main_weight": 1.65
+      },
+      {
+        "symbol": "_RNvMs_NtCsdlnXFo8vLID_4gpui11bounds_treeINtB4_10BoundsTreeNtNtB6_8geometry12ScaledPixelsE6insertB6_",
+        "sample_weight_ns": 161000000,
+        "percent_of_main_weight": 1.61
+      },
+      {
+        "symbol": "_malloc_zone_malloc",
+        "sample_weight_ns": 147000000,
+        "percent_of_main_weight": 1.47
+      },
+      {
+        "symbol": "_RNvMsF_NtNtNtCsengqQnxOdLc_9gpui_luma5theme10stylesheet8geometryNtB5_16SharedStylesheet13with_baseline",
+        "sample_weight_ns": 132000000,
+        "percent_of_main_weight": 1.32
+      },
+      {
+        "symbol": "_platform_memcmp",
+        "sample_weight_ns": 129000000,
+        "percent_of_main_weight": 1.29
+      },
+      {
+        "symbol": "_RNvXsx_CsrMWfurANms_8smallvecINtB5_8SmallVecAij6_ENtNtCsjIpoRzUjyHQ_4core5clone5Clone5cloneCsdlnXFo8vLID_4gpui",
+        "sample_weight_ns": 112000000,
+        "percent_of_main_weight": 1.12
+      },
+      {
+        "symbol": "_RNvXs0_NtNtNtCsjIpoRzUjyHQ_4core4iter8adapters3mapINtB5_3MapINtNtB7_9enumerate9EnumerateINtNtB7_6filter6FilterIBN_NtNtNtCskV7B1maoAHE_5taffy4tree10taffy_tree18TaffyTreeChildIterNCINvNtNtB1U_7compute5block18generate_item_listINtB1Q_9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB3T_NtB3T_17TaffyLayoutEngine14compute_layouts_0EE0ENCB2R_s_0EENCB2R_s0_0ENtNtNtB9_6traits8iterator8Iterator4nextB3V_",
+        "sample_weight_ns": 110000000,
+        "percent_of_main_weight": 1.1
+      },
+      {
+        "symbol": "_RNvXsx_NtNtCsengqQnxOdLc_9gpui_luma5theme6tokensINtB5_12ControlSizesNtNtNtB7_10stylesheet8geometry24SharedGeometryStylesheetENtNtCsjIpoRzUjyHQ_4core5clone5Clone5cloneB9_",
+        "sample_weight_ns": 106000000,
+        "percent_of_main_weight": 1.06
+      },
+      {
+        "symbol": "_RINvYINtNtNtCsjIpoRzUjyHQ_4core3str4iter5SplitNtB8_12IsWhitespaceENtNtNtNtBa_4iter6traits8iterator8Iterator8try_folduNCINvNvB12_4find5checkReQNtB8_10IsNotEmptyE0INtNtNtBa_3ops12control_flow11ControlFlowB2d_EECsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 105000000,
+        "percent_of_main_weight": 1.05
+      }
+    ],
+    "inclusive_sdk_symbols": [
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEE14request_layoutCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 2037000000,
+        "percent_of_main_weight": 20.41
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject5paintCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 1748000000,
+        "percent_of_main_weight": 17.51
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject8prepaintCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 1606000000,
+        "percent_of_main_weight": 16.09
+      },
+      {
+        "symbol": "_RNvNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn8controls9textfield31textfield_palette_base_for_size",
+        "sample_weight_ns": 899000000,
+        "percent_of_main_weight": 9.01
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableNtNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea7control7element15TextAreaElementENtB5_13ElementObject8prepaintBZ_",
+        "sample_weight_ns": 881000000,
+        "percent_of_main_weight": 8.83
+      },
+      {
+        "symbol": "_RNvXs_NtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea7control7elementNtB4_15TextAreaElementNtNtCsdlnXFo8vLID_4gpui7element7Element8prepaint",
+        "sample_weight_ns": 873000000,
+        "percent_of_main_weight": 8.75
+      },
+      {
+        "symbol": "_RNvXs1_NtNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn8controls9templates8textareaNtB5_26ShadcnPrimaryTextAreaThemeNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea5theme13TextAreaTheme12resolve_look",
+        "sample_weight_ns": 854000000,
+        "percent_of_main_weight": 8.56
+      },
+      {
+        "symbol": "_RNvNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn8controls8textarea13textarea_look",
+        "sample_weight_ns": 851000000,
+        "percent_of_main_weight": 8.53
+      },
+      {
+        "symbol": "_RNvNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn10stylesheet7resolve24resolve_stylesheet_color",
+        "sample_weight_ns": 760000000,
+        "percent_of_main_weight": 7.61
+      },
+      {
+        "symbol": "_RNvMs_NtCsiIf5SwwEVQj_21gpui_luma_look_shadcn10provenanceNtB4_12LookResolver19resolve_source_decl",
+        "sample_weight_ns": 752000000,
+        "percent_of_main_weight": 7.53
+      },
+      {
+        "symbol": "_RNvNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn8controls9textfield25resolve_textfield_palette",
+        "sample_weight_ns": 728000000,
+        "percent_of_main_weight": 7.29
+      },
+      {
+        "symbol": "_RNvNtNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn10stylesheet7resolve11color_rules28resolve_textfield_color_rule",
+        "sample_weight_ns": 687000000,
+        "percent_of_main_weight": 6.88
+      },
+      {
+        "symbol": "_RINvNtNtCsdlnXFo8vLID_4gpui4view8any_view6renderNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7control16TextFieldControlECs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 663000000,
+        "percent_of_main_weight": 6.64
+      },
+      {
+        "symbol": "_RNCINvXs9_NtCsdlnXFo8vLID_4gpui3appNtB8_3AppNtBa_10AppContext13update_entityNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7control16TextFieldControlNtNtBa_7element10AnyElementNCINvNtNtBa_4view8any_view6renderB1c_E0E0Cs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 659000000,
+        "percent_of_main_weight": 6.6
+      },
+      {
+        "symbol": "_RNvXs3_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7controlNtB5_16TextFieldControlNtNtCsdlnXFo8vLID_4gpui7element6Render6render",
+        "sample_weight_ns": 658000000,
+        "percent_of_main_weight": 6.59
+      }
+    ]
+  },
+  {
+    "scene": "forms",
+    "look": "sdk",
+    "size": 100,
+    "mode": "--drive",
+    "window_ns": [
+      2000000000,
+      12000000000
+    ],
+    "main_samples": 8270,
+    "main_sample_weight_ns": 8270000000,
+    "all_thread_sample_weight_ns": 8399000000,
+    "estimated_main_cpu_percent": 82.7,
+    "leaf_symbols": [
+      {
+        "symbol": "_platform_memmove",
+        "sample_weight_ns": 1462000000,
+        "percent_of_main_weight": 17.68
+      },
+      {
+        "symbol": "_xzm_free_main",
+        "sample_weight_ns": 426000000,
+        "percent_of_main_weight": 5.15
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "sample_weight_ns": 291000000,
+        "percent_of_main_weight": 3.52
+      },
+      {
+        "symbol": "_RINvNtNtCskV7B1maoAHE_5taffy7compute5block13compute_innerINtNtNtB6_4tree10taffy_tree9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB1w_NtB1w_17TaffyLayoutEngine14compute_layouts_0EEB1y_",
+        "sample_weight_ns": 261000000,
+        "percent_of_main_weight": 3.16
+      },
+      {
+        "symbol": "_RNvXsT_NtCsdlnXFo8vLID_4gpui5styleNtB5_5StyleNtCschVpZj1e9RT_26refineable_gpui_unofficial10Refineable6refine",
+        "sample_weight_ns": 174000000,
+        "percent_of_main_weight": 2.1
+      },
+      {
+        "symbol": "<deduplicated_symbol>",
+        "sample_weight_ns": 171000000,
+        "percent_of_main_weight": 2.07
+      },
+      {
+        "symbol": "_RINvNtNtCskV7B1maoAHE_5taffy7compute7flexbox19compute_preliminaryINtNtNtB6_4tree10taffy_tree9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB1E_NtB1E_17TaffyLayoutEngine14compute_layouts_0EEB1G_",
+        "sample_weight_ns": 153000000,
+        "percent_of_main_weight": 1.85
+      },
+      {
+        "symbol": "_RNvXsx_CsrMWfurANms_8smallvecINtB5_8SmallVecAij6_ENtNtCsjIpoRzUjyHQ_4core5clone5Clone5cloneCsdlnXFo8vLID_4gpui",
+        "sample_weight_ns": 148000000,
+        "percent_of_main_weight": 1.79
+      },
+      {
+        "symbol": "_RNvMsF_NtNtNtCsengqQnxOdLc_9gpui_luma5theme10stylesheet8geometryNtB5_16SharedStylesheet13with_baseline",
+        "sample_weight_ns": 129000000,
+        "percent_of_main_weight": 1.56
+      },
+      {
+        "symbol": "_RNvMs_NtCsdlnXFo8vLID_4gpui11bounds_treeINtB4_10BoundsTreeNtNtB6_8geometry12ScaledPixelsE6insertB6_",
+        "sample_weight_ns": 128000000,
+        "percent_of_main_weight": 1.55
+      },
+      {
+        "symbol": "_RNvXs0_NtNtNtCsjIpoRzUjyHQ_4core4iter8adapters3mapINtB5_3MapINtNtB7_9enumerate9EnumerateINtNtB7_6filter6FilterIBN_NtNtNtCskV7B1maoAHE_5taffy4tree10taffy_tree18TaffyTreeChildIterNCINvNtNtB1U_7compute5block18generate_item_listINtB1Q_9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB3T_NtB3T_17TaffyLayoutEngine14compute_layouts_0EE0ENCB2R_s_0EENCB2R_s0_0ENtNtNtB9_6traits8iterator8Iterator4nextB3V_",
+        "sample_weight_ns": 121000000,
+        "percent_of_main_weight": 1.46
+      },
+      {
+        "symbol": "_RNvMNtNtNtCsengqQnxOdLc_9gpui_luma5theme10stylesheet7recipesNtB2_14PaletteRecipes7palette",
+        "sample_weight_ns": 121000000,
+        "percent_of_main_weight": 1.46
+      },
+      {
+        "symbol": "_RNvXsx_NtNtCsengqQnxOdLc_9gpui_luma5theme6tokensINtB5_12ControlSizesNtNtNtB7_10stylesheet8geometry24SharedGeometryStylesheetENtNtCsjIpoRzUjyHQ_4core5clone5Clone5cloneB9_",
+        "sample_weight_ns": 119000000,
+        "percent_of_main_weight": 1.44
+      },
+      {
+        "symbol": "_RINvMs1_NtCsib8wo0YhOiF_9hashbrown3mapINtB6_7HashMapTNtNtCsdlnXFo8vLID_4gpui7element15GlobalElementIdNtNtCsjIpoRzUjyHQ_4core3any6TypeIdENtNtBT_6window15ElementStateBoxNtCs1YoqICQmn3_10rustc_hash13FxBuildHasherE12remove_entryBO_EBT_",
+        "sample_weight_ns": 111000000,
+        "percent_of_main_weight": 1.34
+      },
+      {
+        "symbol": "_malloc_zone_malloc",
+        "sample_weight_ns": 110000000,
+        "percent_of_main_weight": 1.33
+      }
+    ],
+    "inclusive_sdk_symbols": [
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject5paintCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 1636000000,
+        "percent_of_main_weight": 19.78
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject8prepaintCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 1438000000,
+        "percent_of_main_weight": 17.39
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEE14request_layoutCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 1362000000,
+        "percent_of_main_weight": 16.47
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableNtNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea7control7element15TextAreaElementENtB5_13ElementObject8prepaintBZ_",
+        "sample_weight_ns": 823000000,
+        "percent_of_main_weight": 9.95
+      },
+      {
+        "symbol": "_RNvXs_NtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea7control7elementNtB4_15TextAreaElementNtNtCsdlnXFo8vLID_4gpui7element7Element8prepaint",
+        "sample_weight_ns": 811000000,
+        "percent_of_main_weight": 9.81
+      },
+      {
+        "symbol": "_RNvMs1_NtNtCsengqQnxOdLc_9gpui_luma5theme10stylesheetNtB5_16CommonStylesheet15shared_geometry",
+        "sample_weight_ns": 388000000,
+        "percent_of_main_weight": 4.69
+      },
+      {
+        "symbol": "_RINvNtNtCsdlnXFo8vLID_4gpui4view8any_view6renderNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7control16TextFieldControlECs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 372000000,
+        "percent_of_main_weight": 4.5
+      },
+      {
+        "symbol": "_RNvXs3_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7controlNtB5_16TextFieldControlNtNtCsdlnXFo8vLID_4gpui7element6Render6render",
+        "sample_weight_ns": 370000000,
+        "percent_of_main_weight": 4.47
+      },
+      {
+        "symbol": "_RNCINvXs9_NtCsdlnXFo8vLID_4gpui3appNtB8_3AppNtBa_10AppContext13update_entityNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7control16TextFieldControlNtNtBa_7element10AnyElementNCINvNtNtBa_4view8any_view6renderB1c_E0E0Cs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 370000000,
+        "percent_of_main_weight": 4.47
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementINtNtNtB7_3app10entity_map6EntityINtNtNtNtCsengqQnxOdLc_9gpui_luma8controls6button7control6ButtonNtNtNtB1R_6choice6switch10SwitchDataEEEE14request_layoutB1T_",
+        "sample_weight_ns": 351000000,
+        "percent_of_main_weight": 4.24
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementINtNtNtB7_3app10entity_map6EntityINtNtNtNtCsengqQnxOdLc_9gpui_luma8controls6button7control6ButtonNtNtNtB1R_6choice8checkbox12CheckboxDataEEEE14request_layoutB1T_",
+        "sample_weight_ns": 330000000,
+        "percent_of_main_weight": 3.99
+      },
+      {
+        "symbol": "_RNvXs_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea5themeNtB4_20DefaultTextAreaThemeNtB4_13TextAreaTheme12resolve_look",
+        "sample_weight_ns": 329000000,
+        "percent_of_main_weight": 3.98
+      },
+      {
+        "symbol": "_RINvNtNtCsdlnXFo8vLID_4gpui4view8any_view6renderNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea7control8TextAreaECs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 306000000,
+        "percent_of_main_weight": 3.7
+      },
+      {
+        "symbol": "_RNvMNtNtNtCsengqQnxOdLc_9gpui_luma5theme10stylesheet7recipesNtB2_14PaletteRecipes7palette",
+        "sample_weight_ns": 306000000,
+        "percent_of_main_weight": 3.7
+      },
+      {
+        "symbol": "_RNCINvXs9_NtCsdlnXFo8vLID_4gpui3appNtB8_3AppNtBa_10AppContext13update_entityNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea7control8TextAreaNtNtBa_7element10AnyElementNCINvNtNtBa_4view8any_view6renderB1c_E0E0Cs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 305000000,
+        "percent_of_main_weight": 3.69
+      }
+    ]
+  },
+  {
+    "scene": "forms",
+    "look": "radix",
+    "size": 100,
+    "mode": "--drive",
+    "window_ns": [
+      2000000000,
+      12000000000
+    ],
+    "main_samples": 9996,
+    "main_sample_weight_ns": 9996000000,
+    "all_thread_sample_weight_ns": 10064000000,
+    "estimated_main_cpu_percent": 99.96,
+    "leaf_symbols": [
+      {
+        "symbol": "_platform_memmove",
+        "sample_weight_ns": 1659000000,
+        "percent_of_main_weight": 16.6
+      },
+      {
+        "symbol": "_RNvXs4_NtNtCsengqQnxOdLc_9gpui_luma5theme10stylesheetNtB5_16CommonStylesheetNtNtCsjIpoRzUjyHQ_4core5clone5Clone5clone",
+        "sample_weight_ns": 1517000000,
+        "percent_of_main_weight": 15.18
+      },
+      {
+        "symbol": "_xzm_free_main",
+        "sample_weight_ns": 1064000000,
+        "percent_of_main_weight": 10.64
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "sample_weight_ns": 848000000,
+        "percent_of_main_weight": 8.48
+      },
+      {
+        "symbol": "<deduplicated_symbol>",
+        "sample_weight_ns": 365000000,
+        "percent_of_main_weight": 3.65
+      },
+      {
+        "symbol": "_malloc_zone_malloc",
+        "sample_weight_ns": 240000000,
+        "percent_of_main_weight": 2.4
+      },
+      {
+        "symbol": "_free",
+        "sample_weight_ns": 204000000,
+        "percent_of_main_weight": 2.04
+      },
+      {
+        "symbol": "_RNvMs_NtCsdlnXFo8vLID_4gpui11bounds_treeINtB4_10BoundsTreeNtNtB6_8geometry12ScaledPixelsE6insertB6_",
+        "sample_weight_ns": 191000000,
+        "percent_of_main_weight": 1.91
+      },
+      {
+        "symbol": "_RINvNtNtCskV7B1maoAHE_5taffy7compute5block13compute_innerINtNtNtB6_4tree10taffy_tree9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB1w_NtB1w_17TaffyLayoutEngine14compute_layouts_0EEB1y_",
+        "sample_weight_ns": 153000000,
+        "percent_of_main_weight": 1.53
+      },
+      {
+        "symbol": "_RINvNtNtCskV7B1maoAHE_5taffy7compute7flexbox19compute_preliminaryINtNtNtB6_4tree10taffy_tree9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB1E_NtB1E_17TaffyLayoutEngine14compute_layouts_0EEB1G_",
+        "sample_weight_ns": 113000000,
+        "percent_of_main_weight": 1.13
+      },
+      {
+        "symbol": "_RNvMsF_NtNtNtCsengqQnxOdLc_9gpui_luma5theme10stylesheet8geometryNtB5_16SharedStylesheet13with_baseline",
+        "sample_weight_ns": 102000000,
+        "percent_of_main_weight": 1.02
+      },
+      {
+        "symbol": "_RNvMs8_NtCsdlnXFo8vLID_4gpui3appNtB5_3App13flush_effects",
+        "sample_weight_ns": 101000000,
+        "percent_of_main_weight": 1.01
+      },
+      {
+        "symbol": "_RNvXsT_NtCsdlnXFo8vLID_4gpui5styleNtB5_5StyleNtCschVpZj1e9RT_26refineable_gpui_unofficial10Refineable6refine",
+        "sample_weight_ns": 100000000,
+        "percent_of_main_weight": 1.0
+      },
+      {
+        "symbol": "DYLD-STUB$$memcpy",
+        "sample_weight_ns": 94000000,
+        "percent_of_main_weight": 0.94
+      },
+      {
+        "symbol": "_RNvXsx_CsrMWfurANms_8smallvecINtB5_8SmallVecAij6_ENtNtCsjIpoRzUjyHQ_4core5clone5Clone5cloneCsdlnXFo8vLID_4gpui",
+        "sample_weight_ns": 88000000,
+        "percent_of_main_weight": 0.88
+      }
+    ],
+    "inclusive_sdk_symbols": [
+      {
+        "symbol": "_RNvXs4_NtNtCsengqQnxOdLc_9gpui_luma5theme10stylesheetNtB5_16CommonStylesheetNtNtCsjIpoRzUjyHQ_4core5clone5Clone5clone",
+        "sample_weight_ns": 3287000000,
+        "percent_of_main_weight": 32.88
+      },
+      {
+        "symbol": "_RNvMs1_NtCsbNppPRRYqD2_20gpui_luma_look_radix4lookNtB5_4Look17common_stylesheet",
+        "sample_weight_ns": 3173000000,
+        "percent_of_main_weight": 31.74
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEE14request_layoutCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 2471000000,
+        "percent_of_main_weight": 24.72
+      },
+      {
+        "symbol": "_RNvXs_NtCsbNppPRRYqD2_20gpui_luma_look_radix8textareaNtB4_20TextAreaThemeAdapterNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea5theme13TextAreaTheme12resolve_look",
+        "sample_weight_ns": 1509000000,
+        "percent_of_main_weight": 15.1
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject8prepaintCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 1294000000,
+        "percent_of_main_weight": 12.95
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject5paintCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 1016000000,
+        "percent_of_main_weight": 10.16
+      },
+      {
+        "symbol": "_RNvNtCsbNppPRRYqD2_20gpui_luma_look_radix10typography11font_family",
+        "sample_weight_ns": 947000000,
+        "percent_of_main_weight": 9.47
+      },
+      {
+        "symbol": "_RNCINvXs9_NtCsdlnXFo8vLID_4gpui3appNtB8_3AppNtBa_10AppContext13update_entityNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7control16TextFieldControlNtNtBa_7element10AnyElementNCINvNtNtBa_4view8any_view6renderB1c_E0E0Cs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 887000000,
+        "percent_of_main_weight": 8.87
+      },
+      {
+        "symbol": "_RINvNtNtCsdlnXFo8vLID_4gpui4view8any_view6renderNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7control16TextFieldControlECs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 887000000,
+        "percent_of_main_weight": 8.87
+      },
+      {
+        "symbol": "_RNvXs3_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7controlNtB5_16TextFieldControlNtNtCsdlnXFo8vLID_4gpui7element6Render6render",
+        "sample_weight_ns": 884000000,
+        "percent_of_main_weight": 8.84
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableNtNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea7control7element15TextAreaElementENtB5_13ElementObject8prepaintBZ_",
+        "sample_weight_ns": 877000000,
+        "percent_of_main_weight": 8.77
+      },
+      {
+        "symbol": "_RNvXs_NtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea7control7elementNtB4_15TextAreaElementNtNtCsdlnXFo8vLID_4gpui7element7Element8prepaint",
+        "sample_weight_ns": 870000000,
+        "percent_of_main_weight": 8.7
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementINtNtNtB7_3app10entity_map6EntityINtNtNtNtCsengqQnxOdLc_9gpui_luma8controls6button7control6ButtonNtNtNtB1R_6choice6switch10SwitchDataEEEE14request_layoutB1T_",
+        "sample_weight_ns": 838000000,
+        "percent_of_main_weight": 8.38
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementINtNtNtB7_3app10entity_map6EntityINtNtNtNtCsengqQnxOdLc_9gpui_luma8controls6button7control6ButtonNtNtNtB1R_6choice8checkbox12CheckboxDataEEEE14request_layoutB1T_",
+        "sample_weight_ns": 819000000,
+        "percent_of_main_weight": 8.19
+      },
+      {
+        "symbol": "_RINvNtNtCsdlnXFo8vLID_4gpui4view8any_view6renderNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text8textarea7control8TextAreaECs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 802000000,
+        "percent_of_main_weight": 8.02
+      }
+    ]
+  },
+  {
+    "scene": "navigation",
+    "look": "sdk",
+    "size": 1000,
+    "mode": "--drive",
+    "window_ns": [
+      2000000000,
+      12000000000
+    ],
+    "main_samples": 7068,
+    "main_sample_weight_ns": 7068000000,
+    "all_thread_sample_weight_ns": 7286000000,
+    "estimated_main_cpu_percent": 70.68,
+    "leaf_symbols": [
+      {
+        "symbol": "_platform_memmove",
+        "sample_weight_ns": 1118000000,
+        "percent_of_main_weight": 15.82
+      },
+      {
+        "symbol": "_RINvNtNtCskV7B1maoAHE_5taffy7compute7flexbox19compute_preliminaryINtNtNtB6_4tree10taffy_tree9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB1E_NtB1E_17TaffyLayoutEngine14compute_layouts_0EEB1G_",
+        "sample_weight_ns": 355000000,
+        "percent_of_main_weight": 5.02
+      },
+      {
+        "symbol": "_xzm_free_main",
+        "sample_weight_ns": 326000000,
+        "percent_of_main_weight": 4.61
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "sample_weight_ns": 237000000,
+        "percent_of_main_weight": 3.35
+      },
+      {
+        "symbol": "_RNvXsx_CsrMWfurANms_8smallvecINtB5_8SmallVecAij6_ENtNtCsjIpoRzUjyHQ_4core5clone5Clone5cloneCsdlnXFo8vLID_4gpui",
+        "sample_weight_ns": 205000000,
+        "percent_of_main_weight": 2.9
+      },
+      {
+        "symbol": "_RINvMs1_NtCsib8wo0YhOiF_9hashbrown3mapINtB6_7HashMapTNtNtCsdlnXFo8vLID_4gpui7element15GlobalElementIdNtNtCsjIpoRzUjyHQ_4core3any6TypeIdENtNtBT_6window15ElementStateBoxNtCs1YoqICQmn3_10rustc_hash13FxBuildHasherE12remove_entryBO_EBT_",
+        "sample_weight_ns": 148000000,
+        "percent_of_main_weight": 2.09
+      },
+      {
+        "symbol": "_RINvNtNtCskV7B1maoAHE_5taffy7compute5block13compute_innerINtNtNtB6_4tree10taffy_tree9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB1w_NtB1w_17TaffyLayoutEngine14compute_layouts_0EEB1y_",
+        "sample_weight_ns": 143000000,
+        "percent_of_main_weight": 2.02
+      },
+      {
+        "symbol": "_RNvXs0_NtNtNtCsjIpoRzUjyHQ_4core4iter8adapters3mapINtB5_3MapINtNtB7_6filter6FilterIBX_IBN_INtNtB7_9enumerate9EnumerateNtNtNtCskV7B1maoAHE_5taffy4tree10taffy_tree18TaffyTreeChildIterENCINvNtNtB1Y_7compute7flexbox29generate_anonymous_flex_itemsINtB1U_9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB4b_NtB4b_17TaffyLayoutEngine14compute_layouts_0EE0ENCB2W_s_0ENCB2W_s0_0ENCB2W_s1_0ENtNtNtB9_6traits8iterator8Iterator4nextB4d_",
+        "sample_weight_ns": 141000000,
+        "percent_of_main_weight": 1.99
+      },
+      {
+        "symbol": "_RNvMs4_NtCsdlnXFo8vLID_4gpui11text_systemNtB5_10TextSystem12line_wrapper",
+        "sample_weight_ns": 140000000,
+        "percent_of_main_weight": 1.98
+      },
+      {
+        "symbol": "_RNvXsT_NtCsdlnXFo8vLID_4gpui5styleNtB5_5StyleNtCschVpZj1e9RT_26refineable_gpui_unofficial10Refineable6refine",
+        "sample_weight_ns": 127000000,
+        "percent_of_main_weight": 1.8
+      },
+      {
+        "symbol": "_RNCNvMs8_NtNtCskV7B1maoAHE_5taffy4tree10taffy_treeINtB7_9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB14_NtB14_17TaffyLayoutEngine14compute_layouts_0E20compute_child_layout0B16_",
+        "sample_weight_ns": 125000000,
+        "percent_of_main_weight": 1.77
+      },
+      {
+        "symbol": "_RNvXs3_NtNtCsjIpoRzUjyHQ_4core4hash3sipINtB5_6HasherNtB5_11Sip13RoundsENtB7_6Hasher5writeCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 123000000,
+        "percent_of_main_weight": 1.74
+      },
+      {
+        "symbol": "_RINvYNtNtNtCs1SSuMAdGM58_3std4hash6random11RandomStateNtNtCsjIpoRzUjyHQ_4core4hash11BuildHasher8hash_oneReECsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 112000000,
+        "percent_of_main_weight": 1.58
+      },
+      {
+        "symbol": "_RNvMNtNtNtCsengqQnxOdLc_9gpui_luma5theme10stylesheet7recipesNtB2_14PaletteRecipes7palette",
+        "sample_weight_ns": 110000000,
+        "percent_of_main_weight": 1.56
+      },
+      {
+        "symbol": "<deduplicated_symbol>",
+        "sample_weight_ns": 106000000,
+        "percent_of_main_weight": 1.5
+      }
+    ],
+    "inclusive_sdk_symbols": [
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementINtNtNtB7_3app10entity_map6EntityNtNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10navigation7sidebar6engine7control18SidebarPanelEngineEEE14request_layoutCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 2426000000,
+        "percent_of_main_weight": 34.32
+      },
+      {
+        "symbol": "_RNCNvXse_NtCsdlnXFo8vLID_4gpui4viewINtB7_11ViewElementINtNtNtB9_3app10entity_map6EntityNtNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10navigation7sidebar6engine7control18SidebarPanelEngineEENtNtB9_7element7Element14request_layout0Cs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 1509000000,
+        "percent_of_main_weight": 21.35
+      },
+      {
+        "symbol": "_RNvXsa_NtCsdlnXFo8vLID_4gpui4viewINtNtNtB7_3app10entity_map6EntityNtNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10navigation7sidebar6engine7control18SidebarPanelEngineENtB5_4View6renderCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 1509000000,
+        "percent_of_main_weight": 21.35
+      },
+      {
+        "symbol": "_RNCINvXs9_NtCsdlnXFo8vLID_4gpui3appNtB8_3AppNtBa_10AppContext13update_entityNtNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10navigation7sidebar6engine7control18SidebarPanelEngineNtNtBa_7element10AnyElementNCNvXsa_NtBa_4viewINtNtB8_10entity_map6EntityB1c_ENtB3n_4View6render0E0Cs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 1508000000,
+        "percent_of_main_weight": 21.34
+      },
+      {
+        "symbol": "_RNvXs_NtNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10navigation7sidebar6engine7control6renderNtB6_18SidebarPanelEngineNtNtCsdlnXFo8vLID_4gpui7element6Render6render",
+        "sample_weight_ns": 1508000000,
+        "percent_of_main_weight": 21.34
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject5paintCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 1504000000,
+        "percent_of_main_weight": 21.28
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtCsengqQnxOdLc_9gpui_luma6motion11drop_layout5ScopeNtCsMjtPOqLb9_34gpui_shared_string_gpui_unofficial12SharedStringEENtB5_13ElementObject5paintBU_",
+        "sample_weight_ns": 1411000000,
+        "percent_of_main_weight": 19.96
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementINtNtNtB7_3app10entity_map6EntityNtNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10navigation7sidebar6engine7control18SidebarPanelEngineEEENtB5_13ElementObject5paintCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 1411000000,
+        "percent_of_main_weight": 19.96
+      },
+      {
+        "symbol": "_RNvXs2_NtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10navigation7sidebar6engine8templateNtB5_26ThemedSidebarPanelTemplateNtB5_20SidebarPanelTemplate6render",
+        "sample_weight_ns": 1405000000,
+        "percent_of_main_weight": 19.88
+      },
+      {
+        "symbol": "_RINvNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10navigation7sidebar6engine8template13render_regionINtNtNtNtCsjIpoRzUjyHQ_4core4iter8adapters6cloned6ClonedINtNtNtB1H_5slice4iter4IterINtNtCs6zY7rJBZy9D_5alloc2rc2RcDG1_INtNtNtB1H_3ops8function2FnTRL2_bQL1_NtNtCsdlnXFo8vLID_4gpui6window6WindowQL0_NtNtB47_3app3AppEEp6OutputuEL_EEEIB1z_IB2t_IB2U_DG1_IB3t_TRL2_NtNtB47_11interactive14MouseDownEventQL1_B43_QL0_B4I_EEp6OutputuEL_EEEIB1z_IB2t_IB2U_DG1_IB3t_TRL2_NtB5K_12MouseUpEventQL1_B43_QL0_B4I_EEp6OutputuEL_EEEB6Q_IB1z_IB2t_IB2U_DG1_IB3t_TRL2_NtB5K_10ClickEventQL1_B43_QL0_B4I_EEp6OutputuEL_EEEEBc_",
+        "sample_weight_ns": 1403000000,
+        "percent_of_main_weight": 19.85
+      },
+      {
+        "symbol": "_RINvNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10navigation7sidebar6engine8template11render_nodeINtNtNtNtCsjIpoRzUjyHQ_4core4iter8adapters6cloned6ClonedINtNtNtB1F_5slice4iter4IterINtNtCs6zY7rJBZy9D_5alloc2rc2RcDG1_INtNtNtB1F_3ops8function2FnTRL2_bQL1_NtNtCsdlnXFo8vLID_4gpui6window6WindowQL0_NtNtB45_3app3AppEEp6OutputuEL_EEEIB1x_IB2r_IB2S_DG1_IB3r_TRL2_NtNtB45_11interactive14MouseDownEventQL1_B41_QL0_B4G_EEp6OutputuEL_EEEIB1x_IB2r_IB2S_DG1_IB3r_TRL2_NtB5I_12MouseUpEventQL1_B41_QL0_B4G_EEp6OutputuEL_EEEB6O_IB1x_IB2r_IB2S_DG1_IB3r_TRL2_NtB5I_10ClickEventQL1_B41_QL0_B4G_EEp6OutputuEL_EEEEBc_",
+        "sample_weight_ns": 1372000000,
+        "percent_of_main_weight": 19.41
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtCsengqQnxOdLc_9gpui_luma6motion11drop_layout4ItemNtCsMjtPOqLb9_34gpui_shared_string_gpui_unofficial12SharedStringEENtB5_13ElementObject5paintBU_",
+        "sample_weight_ns": 1321000000,
+        "percent_of_main_weight": 18.69
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEE14request_layoutCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 1140000000,
+        "percent_of_main_weight": 16.13
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtCsengqQnxOdLc_9gpui_luma6motion11drop_layout5ScopeNtCsMjtPOqLb9_34gpui_shared_string_gpui_unofficial12SharedStringEE14request_layoutBU_",
+        "sample_weight_ns": 916000000,
+        "percent_of_main_weight": 12.96
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtCsengqQnxOdLc_9gpui_luma6motion11drop_layout4ItemNtCsMjtPOqLb9_34gpui_shared_string_gpui_unofficial12SharedStringEE14request_layoutBU_",
+        "sample_weight_ns": 676000000,
+        "percent_of_main_weight": 9.56
+      }
+    ]
+  },
+  {
+    "scene": "color",
+    "look": "sdk",
+    "size": 10,
+    "mode": "--drive",
+    "window_ns": [
+      2000000000,
+      12000000000
+    ],
+    "main_samples": 2961,
+    "main_sample_weight_ns": 2961000000,
+    "all_thread_sample_weight_ns": 3294000000,
+    "estimated_main_cpu_percent": 29.61,
+    "leaf_symbols": [
+      {
+        "symbol": "_RINvMsv_NtCsdlnXFo8vLID_4gpui6windowNtB6_6Window10paint_pathNtNtB8_5color4HslaECsc0RIG5qu2fb_15gpui_luma_color",
+        "sample_weight_ns": 550000000,
+        "percent_of_main_weight": 18.57
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "sample_weight_ns": 234000000,
+        "percent_of_main_weight": 7.9
+      },
+      {
+        "symbol": "_xzm_free_main",
+        "sample_weight_ns": 230000000,
+        "percent_of_main_weight": 7.77
+      },
+      {
+        "symbol": "_platform_memmove",
+        "sample_weight_ns": 197000000,
+        "percent_of_main_weight": 6.65
+      },
+      {
+        "symbol": "_RNvMs6_NtCsik7MChvWVah_17lyon_tessellation4fillNtB5_15FillTessellator14process_events",
+        "sample_weight_ns": 164000000,
+        "percent_of_main_weight": 5.54
+      },
+      {
+        "symbol": "_xzm_free",
+        "sample_weight_ns": 92000000,
+        "percent_of_main_weight": 3.11
+      },
+      {
+        "symbol": "<deduplicated_symbol>",
+        "sample_weight_ns": 74000000,
+        "percent_of_main_weight": 2.5
+      },
+      {
+        "symbol": "_RNvXsd_NtCs18rOfvs7dxU_9lyon_path7builderINtB5_7WithSvgNtNtB7_4path11BuilderImplENtB5_14SvgPathBuilder6arc_toCsdlnXFo8vLID_4gpui",
+        "sample_weight_ns": 74000000,
+        "percent_of_main_weight": 2.5
+      },
+      {
+        "symbol": "__sincosf_stret",
+        "sample_weight_ns": 70000000,
+        "percent_of_main_weight": 2.36
+      },
+      {
+        "symbol": "xzm_malloc_zone_malloc_type_realloc",
+        "sample_weight_ns": 59000000,
+        "percent_of_main_weight": 1.99
+      },
+      {
+        "symbol": "_malloc_zone_malloc",
+        "sample_weight_ns": 58000000,
+        "percent_of_main_weight": 1.96
+      },
+      {
+        "symbol": "_RNvMs0_NtCshEOfZaDVyTv_26gpui_apple_gpui_unofficial14metal_rendererNtB5_13MetalRenderer12render_frame",
+        "sample_weight_ns": 52000000,
+        "percent_of_main_weight": 1.76
+      },
+      {
+        "symbol": "_free",
+        "sample_weight_ns": 50000000,
+        "percent_of_main_weight": 1.69
+      },
+      {
+        "symbol": "_RNvMs_NtCsdlnXFo8vLID_4gpui11bounds_treeINtB4_10BoundsTreeNtNtB6_8geometry12ScaledPixelsE6insertB6_",
+        "sample_weight_ns": 46000000,
+        "percent_of_main_weight": 1.55
+      },
+      {
+        "symbol": "_RNvMs_NtCsik7MChvWVah_17lyon_tessellation11event_queueNtB4_10EventQueue10merge_sort",
+        "sample_weight_ns": 44000000,
+        "percent_of_main_weight": 1.49
+      }
+    ],
+    "inclusive_sdk_symbols": [
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject5paintCsc0RIG5qu2fb_15gpui_luma_color",
+        "sample_weight_ns": 2279000000,
+        "percent_of_main_weight": 76.97
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements6canvas6CanvasuEENtB5_13ElementObject5paintCsc0RIG5qu2fb_15gpui_luma_color",
+        "sample_weight_ns": 2206000000,
+        "percent_of_main_weight": 74.5
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject5paintCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 2031000000,
+        "percent_of_main_weight": 68.59
+      },
+      {
+        "symbol": "_RNSNvYNCNvNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls5range6slider6domain25render_domain_track_layers_0INtNtNtCsjIpoRzUjyHQ_4core3ops8function6FnOnceTINtNtCsdlnXFo8vLID_4gpui8geometry6BoundsNtB2p_6PixelsEuQNtNtB2r_6window6WindowQNtNtB2r_3app3AppEE9call_once6vtableBg_",
+        "sample_weight_ns": 1994000000,
+        "percent_of_main_weight": 67.34
+      },
+      {
+        "symbol": "_RNvXs_NtNtCsc0RIG5qu2fb_15gpui_luma_color10color_ring15domain_rendererNtB4_23ColorRingDomainRendererNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls5range6slider6domain19DomainTrackRenderer5paint",
+        "sample_weight_ns": 1994000000,
+        "percent_of_main_weight": 67.34
+      },
+      {
+        "symbol": "_RNvXs0_NtNtCsc0RIG5qu2fb_15gpui_luma_color10color_ring9delegatesNtB5_15HueRingDelegateNtNtB7_5types22ColorRingTrackDelegate18paint_domain_track",
+        "sample_weight_ns": 1991000000,
+        "percent_of_main_weight": 67.24
+      },
+      {
+        "symbol": "_RINvMsv_NtCsdlnXFo8vLID_4gpui6windowNtB6_6Window10paint_pathNtNtB8_5color4HslaECsc0RIG5qu2fb_15gpui_luma_color",
+        "sample_weight_ns": 592000000,
+        "percent_of_main_weight": 19.99
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementNtNtNtNtCsc0RIG5qu2fb_15gpui_luma_color11color_field5field4view10ColorFieldEENtB5_13ElementObject5paintB1l_",
+        "sample_weight_ns": 260000000,
+        "percent_of_main_weight": 8.78
+      },
+      {
+        "symbol": "_RNvNtCsc0RIG5qu2fb_15gpui_luma_color5style26active_color_control_theme",
+        "sample_weight_ns": 229000000,
+        "percent_of_main_weight": 7.73
+      },
+      {
+        "symbol": "_RNvNtNtNtCsc0RIG5qu2fb_15gpui_luma_color11color_field5field12paint_vector21paint_corner_occluder",
+        "sample_weight_ns": 204000000,
+        "percent_of_main_weight": 6.89
+      },
+      {
+        "symbol": "_RNSNvYNCNCNvXs1_NtNtNtCsc0RIG5qu2fb_15gpui_luma_color11color_field5field4viewNtBe_10ColorFieldNtNtCsdlnXFo8vLID_4gpui7element10RenderOnce6renders2_0s_0INtNtNtCsjIpoRzUjyHQ_4core3ops8function6FnOnceTINtNtB1y_8geometry6BoundsNtB3d_6PixelsEuQNtNtB1y_6window6WindowQNtNtB1y_3app3AppEE9call_once6vtableBk_",
+        "sample_weight_ns": 204000000,
+        "percent_of_main_weight": 6.89
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementNtNtNtNtCsc0RIG5qu2fb_15gpui_luma_color11color_field5field4view10ColorFieldEE14request_layoutB1l_",
+        "sample_weight_ns": 187000000,
+        "percent_of_main_weight": 6.32
+      },
+      {
+        "symbol": "_RNvMs8_NtNtCsengqQnxOdLc_9gpui_luma5theme6tokensNtB5_11ThemeTokens5light",
+        "sample_weight_ns": 172000000,
+        "percent_of_main_weight": 5.81
+      },
+      {
+        "symbol": "_RINvNtNtCsdlnXFo8vLID_4gpui4view8any_view6renderNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls5range6slider7control13SliderControlECs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 163000000,
+        "percent_of_main_weight": 5.5
+      },
+      {
+        "symbol": "_RNvXs_NtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls5range6slider7control6renderNtB6_13SliderControlNtNtCsdlnXFo8vLID_4gpui7element6Render6render",
+        "sample_weight_ns": 162000000,
+        "percent_of_main_weight": 5.47
+      }
+    ]
+  },
+  {
+    "scene": "plot",
+    "look": "sdk",
+    "size": 100000,
+    "mode": "--drive",
+    "window_ns": [
+      2000000000,
+      12000000000
+    ],
+    "main_samples": 2946,
+    "main_sample_weight_ns": 2946000000,
+    "all_thread_sample_weight_ns": 3120000000,
+    "estimated_main_cpu_percent": 29.46,
+    "leaf_symbols": [
+      {
+        "symbol": "_RNvMs3_NtCsik7MChvWVah_17lyon_tessellation6strokeNtB5_17StrokeBuilderImpl21fixed_width_step_impl",
+        "sample_weight_ns": 703000000,
+        "percent_of_main_weight": 23.86
+      },
+      {
+        "symbol": "_RNCNCNvNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render8geometry9line_runss_0s_0B9_",
+        "sample_weight_ns": 461000000,
+        "percent_of_main_weight": 15.65
+      },
+      {
+        "symbol": "_RNCINvNvXsi_NtNtNtCsjIpoRzUjyHQ_4core4iter8adapters7flattenINtBa_13FlattenCompatppENtNtNtBe_6traits8iterator8Iterator8try_fold7flattenINtNtNtBg_5slice4iter4IterNtNtNtCslJ3wz7kMzvy_14gpui_luma_plot4data6sample6SampleEuINtNtNtBg_3ops12control_flow11ControlFlowB2y_ENCINvNtBc_6filter15filter_try_foldRB2y_uB3t_NCNvNtNtB2E_6render8geometry12scale_rangess0_0NCINvNtBc_6copied13copy_try_foldB2y_uB3t_NCINvNvB1j_4find5checkB2y_QNCINvB4Z_6rangesINtB4i_6FilterINtBa_7FlatMapINtNtBc_10filter_map9FilterMapINtNtBc_5chain5ChainIB7Y_INtNtBc_3map3MapIB29_NtNtNtB2E_5plots4line9LineLayerENvMB8J_B8H_6seriesEIB8n_IB29_NtNtB8L_4area9AreaLayerENvMB9I_B9G_6seriesEEIB8n_IB29_NtNtB8L_3bar8BarLayerENvMs1_BaA_Bay_6seriesEENCB4X_0ERSB2y_NCB4X_s_0EB4V_EE0E0E0E0E0B2E_",
+        "sample_weight_ns": 294000000,
+        "percent_of_main_weight": 9.98
+      },
+      {
+        "symbol": "_RINvXs1_NtNtNtCsjIpoRzUjyHQ_4core4iter8adapters6filterINtB6_6FilterINtNtB8_7flatten7FlatMapINtNtB8_10filter_map9FilterMapINtNtB8_5chain5ChainIB1W_INtNtB8_3map3MapINtNtNtBc_5slice4iter4IterNtNtNtCslJ3wz7kMzvy_14gpui_luma_plot5plots4line9LineLayerENvMB32_B30_6seriesEIB2l_IB2B_NtNtB34_4area9AreaLayerENvMB4r_B4p_6seriesEEIB2l_IB2B_NtNtB34_3bar8BarLayerENvMs1_B5j_B5h_6seriesEENCNvNtNtB36_6render8geometry12scale_ranges0ERSNtNtNtB36_4data6sample6SampleNCB62_s_0ENCB62_s0_0ENtNtNtBa_6traits8iterator8Iterator8try_folduNCINvNtB8_6copied13copy_try_foldB6K_uINtNtNtBc_3ops12control_flow11ControlFlowB6K_ENCINvNvB7y_4find5checkB6K_QNCINvB64_6rangesBQ_E0E0E0B8R_EB36_",
+        "sample_weight_ns": 241000000,
+        "percent_of_main_weight": 8.18
+      },
+      {
+        "symbol": "_RNvNtCsik7MChvWVah_17lyon_tessellation6stroke22add_join_base_vertices",
+        "sample_weight_ns": 238000000,
+        "percent_of_main_weight": 8.08
+      },
+      {
+        "symbol": "_RNvXs7_NtCsik7MChvWVah_17lyon_tessellation16geometry_builderINtB5_14BuffersBuilderINtNtCs9ZJ82AzvmX1_6euclid5point7Point2DfNtB1n_11UnknownUnitEtNCNvMs5_NtCsdlnXFo8vLID_4gpui12path_builderNtB2q_11PathBuilder15tessellate_fill0ENtB5_15GeometryBuilder12add_triangleB2s_",
+        "sample_weight_ns": 208000000,
+        "percent_of_main_weight": 7.06
+      },
+      {
+        "symbol": "_RNvXs9_NtCsik7MChvWVah_17lyon_tessellation16geometry_builderINtB5_14BuffersBuilderINtNtCs9ZJ82AzvmX1_6euclid5point7Point2DfNtB1n_11UnknownUnitEtNCNvMs5_NtCsdlnXFo8vLID_4gpui12path_builderNtB2q_11PathBuilder17tessellate_stroke0ENtB5_21StrokeGeometryBuilder17add_stroke_vertexB2s_",
+        "sample_weight_ns": 166000000,
+        "percent_of_main_weight": 5.63
+      },
+      {
+        "symbol": "_RNvNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render4line15append_boundary",
+        "sample_weight_ns": 131000000,
+        "percent_of_main_weight": 4.45
+      },
+      {
+        "symbol": "_platform_memmove",
+        "sample_weight_ns": 86000000,
+        "percent_of_main_weight": 2.92
+      },
+      {
+        "symbol": "_RNvNtCsik7MChvWVah_17lyon_tessellation6stroke15tessellate_join",
+        "sample_weight_ns": 82000000,
+        "percent_of_main_weight": 2.78
+      },
+      {
+        "symbol": "_RNvNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render8geometry9line_runs",
+        "sample_weight_ns": 63000000,
+        "percent_of_main_weight": 2.14
+      },
+      {
+        "symbol": "_RNvNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render8geometry12scale_ranges",
+        "sample_weight_ns": 47000000,
+        "percent_of_main_weight": 1.6
+      },
+      {
+        "symbol": "_RNvMs5_NtCsdlnXFo8vLID_4gpui12path_builderNtB5_11PathBuilder17tessellate_stroke",
+        "sample_weight_ns": 45000000,
+        "percent_of_main_weight": 1.53
+      },
+      {
+        "symbol": "_RNvXso_NtCs18rOfvs7dxU_9lyon_path4pathNtB5_4IterNtNtNtNtCsjIpoRzUjyHQ_4core4iter6traits8iterator8Iterator4next",
+        "sample_weight_ns": 29000000,
+        "percent_of_main_weight": 0.98
+      },
+      {
+        "symbol": "__bzero",
+        "sample_weight_ns": 17000000,
+        "percent_of_main_weight": 0.58
+      }
+    ],
+    "inclusive_sdk_symbols": [
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementNtNtNtCslJ3wz7kMzvy_14gpui_luma_plot5views9cartesian18CartesianChartViewEENtB5_13ElementObject5paintB1j_",
+        "sample_weight_ns": 1660000000,
+        "percent_of_main_weight": 56.35
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject5paintCslJ3wz7kMzvy_14gpui_luma_plot",
+        "sample_weight_ns": 1660000000,
+        "percent_of_main_weight": 56.35
+      },
+      {
+        "symbol": "_RNSNvYNCNvNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render9cartesian16cartesian_canvass_0INtNtNtCsjIpoRzUjyHQ_4core3ops8function6FnOnceTINtNtCsdlnXFo8vLID_4gpui8geometry6BoundsNtB26_6PixelsENtB8_17CartesianPrepaintQNtNtB28_6window6WindowQNtNtB28_3app3AppEE9call_once6vtableBc_",
+        "sample_weight_ns": 1657000000,
+        "percent_of_main_weight": 56.25
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements6canvas6CanvasNtNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render9cartesian17CartesianPrepaintEENtB5_13ElementObject5paintB1q_",
+        "sample_weight_ns": 1657000000,
+        "percent_of_main_weight": 56.25
+      },
+      {
+        "symbol": "_RNvNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render4line10paint_line",
+        "sample_weight_ns": 1653000000,
+        "percent_of_main_weight": 56.11
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements6canvas6CanvasNtNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render9cartesian17CartesianPrepaintEENtB5_13ElementObject8prepaintB1q_",
+        "sample_weight_ns": 1178000000,
+        "percent_of_main_weight": 39.99
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject8prepaintCslJ3wz7kMzvy_14gpui_luma_plot",
+        "sample_weight_ns": 1178000000,
+        "percent_of_main_weight": 39.99
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementNtNtNtCslJ3wz7kMzvy_14gpui_luma_plot5views9cartesian18CartesianChartViewEENtB5_13ElementObject8prepaintB1j_",
+        "sample_weight_ns": 1178000000,
+        "percent_of_main_weight": 39.99
+      },
+      {
+        "symbol": "_RNSNvYNCNvNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render9cartesian16cartesian_canvas0INtNtNtCsjIpoRzUjyHQ_4core3ops8function6FnOnceTINtNtCsdlnXFo8vLID_4gpui8geometry6BoundsNtB24_6PixelsEQNtNtB26_6window6WindowQNtNtB26_3app3AppEE9call_once6vtableBc_",
+        "sample_weight_ns": 1177000000,
+        "percent_of_main_weight": 39.95
+      },
+      {
+        "symbol": "_RNCNvNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render9cartesian16cartesian_canvas0B7_",
+        "sample_weight_ns": 1175000000,
+        "percent_of_main_weight": 39.88
+      },
+      {
+        "symbol": "_RNvXs0_NtNtNtCsjIpoRzUjyHQ_4core4iter8adapters3mapINtB5_3MapINtNtB7_10filter_map9FilterMapINtNtNtBb_5slice4iter4IterNtNtNtCslJ3wz7kMzvy_14gpui_luma_plot5plots4line9LineLayerENCNvNtNtB1W_6render8geometry6layout0ENCB2O_s_0ENtNtNtB9_6traits8iterator8Iterator4nextB1W_",
+        "sample_weight_ns": 572000000,
+        "percent_of_main_weight": 19.42
+      },
+      {
+        "symbol": "_RNvNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render8geometry9line_runs",
+        "sample_weight_ns": 572000000,
+        "percent_of_main_weight": 19.42
+      },
+      {
+        "symbol": "_RINvXs1_NtNtNtCsjIpoRzUjyHQ_4core4iter8adapters6filterINtB6_6FilterINtNtB8_7flatten7FlatMapINtNtB8_10filter_map9FilterMapINtNtB8_5chain5ChainIB1W_INtNtB8_3map3MapINtNtNtBc_5slice4iter4IterNtNtNtCslJ3wz7kMzvy_14gpui_luma_plot5plots4line9LineLayerENvMB32_B30_6seriesEIB2l_IB2B_NtNtB34_4area9AreaLayerENvMB4r_B4p_6seriesEEIB2l_IB2B_NtNtB34_3bar8BarLayerENvMs1_B5j_B5h_6seriesEENCNvNtNtB36_6render8geometry12scale_ranges0ERSNtNtNtB36_4data6sample6SampleNCB62_s_0ENCB62_s0_0ENtNtNtBa_6traits8iterator8Iterator8try_folduNCINvNtB8_6copied13copy_try_foldB6K_uINtNtNtBc_3ops12control_flow11ControlFlowB6K_ENCINvNvB7y_4find5checkB6K_QNCINvB64_6rangesBQ_E0E0E0B8R_EB36_",
+        "sample_weight_ns": 535000000,
+        "percent_of_main_weight": 18.16
+      },
+      {
+        "symbol": "_RNCNCNvNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render8geometry9line_runss_0s_0B9_",
+        "sample_weight_ns": 506000000,
+        "percent_of_main_weight": 17.18
+      },
+      {
+        "symbol": "_RNvNtNtCslJ3wz7kMzvy_14gpui_luma_plot6render8geometry12scale_ranges",
+        "sample_weight_ns": 466000000,
+        "percent_of_main_weight": 15.82
+      }
+    ]
+  },
+  {
+    "scene": "forms",
+    "look": "shadcn",
+    "size": 100,
+    "mode": "--idle",
+    "window_ns": [
+      2000000000,
+      12000000000
+    ],
+    "main_samples": 131,
+    "main_sample_weight_ns": 131000000,
+    "all_thread_sample_weight_ns": 149000000,
+    "estimated_main_cpu_percent": 1.31,
+    "leaf_symbols": [
+      {
+        "symbol": "_RNCNvMst_NtCsdlnXFo8vLID_4gpui6windowNtB7_6Window3news8_0B9_",
+        "sample_weight_ns": 9000000,
+        "percent_of_main_weight": 6.87
+      },
+      {
+        "symbol": "_RNvMs8_NtCsdlnXFo8vLID_4gpui3appNtB5_3App13flush_effects",
+        "sample_weight_ns": 9000000,
+        "percent_of_main_weight": 6.87
+      },
+      {
+        "symbol": "_xzm_free_main",
+        "sample_weight_ns": 5000000,
+        "percent_of_main_weight": 3.82
+      },
+      {
+        "symbol": "_platform_memmove",
+        "sample_weight_ns": 5000000,
+        "percent_of_main_weight": 3.82
+      },
+      {
+        "symbol": "__kdebug_trace64",
+        "sample_weight_ns": 4000000,
+        "percent_of_main_weight": 3.05
+      },
+      {
+        "symbol": "@objc _NSSwiftProcessInfo.thermalState.getter",
+        "sample_weight_ns": 4000000,
+        "percent_of_main_weight": 3.05
+      },
+      {
+        "symbol": "<deduplicated_symbol>",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RNvMNtNtNtNtCs1SSuMAdGM58_3std3sys3pal4unix4timeNtB2_8Timespec3now",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RNvXs0_NvMs_NtNtCs6zY7rJBZy9D_5alloc3ffi5c_strNtBa_7CString3newReNtB5_11SpecNewImpl13spec_new_impl",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "dyld4::APIs::_dyld_is_memory_immutable(void const*, unsigned long)",
+        "sample_weight_ns": 2000000,
+        "percent_of_main_weight": 1.53
+      },
+      {
+        "symbol": "__bsdthread_ctl",
+        "sample_weight_ns": 2000000,
+        "percent_of_main_weight": 1.53
+      },
+      {
+        "symbol": "_RNvXs_NtCs14ceH7u1w6r_26gpui_macos_gpui_unofficial8platformNtB4_11MacPlatformNtNtCsdlnXFo8vLID_4gpui8platform8Platform13thermal_state",
+        "sample_weight_ns": 2000000,
+        "percent_of_main_weight": 1.53
+      },
+      {
+        "symbol": "_RNvNtCs14ceH7u1w6r_26gpui_macos_gpui_unofficial6window4step",
+        "sample_weight_ns": 2000000,
+        "percent_of_main_weight": 1.53
+      },
+      {
+        "symbol": "_RNvXs0_NtCsa0diYJ1YJ5W_4objc6encodeNtB5_8EncodingNtNtCsjIpoRzUjyHQ_4core3cmp9PartialEq2eq",
+        "sample_weight_ns": 2000000,
+        "percent_of_main_weight": 1.53
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "sample_weight_ns": 2000000,
+        "percent_of_main_weight": 1.53
+      }
+    ],
+    "inclusive_sdk_symbols": [
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEE14request_layoutCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 8000000,
+        "percent_of_main_weight": 6.11
+      },
+      {
+        "symbol": "_RNvNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn8controls9textfield31textfield_palette_base_for_size",
+        "sample_weight_ns": 4000000,
+        "percent_of_main_weight": 3.05
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementINtNtNtB7_3app10entity_map6EntityINtNtNtNtCsengqQnxOdLc_9gpui_luma8controls6button7control6ButtonNtNtNtB1R_6choice6switch10SwitchDataEEEE14request_layoutB1T_",
+        "sample_weight_ns": 4000000,
+        "percent_of_main_weight": 3.05
+      },
+      {
+        "symbol": "_RNvXs3_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7controlNtB5_16TextFieldControlNtNtCsdlnXFo8vLID_4gpui7element6Render6render",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RNCINvXs9_NtCsdlnXFo8vLID_4gpui3appNtB8_3AppNtBa_10AppContext13update_entityNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7control16TextFieldControlNtNtBa_7element10AnyElementNCINvNtNtBa_4view8any_view6renderB1c_E0E0Cs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RINvNtNtCsdlnXFo8vLID_4gpui4view8any_view6renderNtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield7control16TextFieldControlECs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RNvNtNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn10stylesheet7resolve11color_rules28resolve_textfield_color_rule",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RNvNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn10stylesheet7resolve24resolve_stylesheet_color",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RNvNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn8controls9textfield25resolve_textfield_palette",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RNvMs_NtCsiIf5SwwEVQj_21gpui_luma_look_shadcn10provenanceNtB4_12LookResolver19resolve_source_decl",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject8prepaintCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject5paintCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 3000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RNvNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn8controls9textfield26textfield_palette_for_size",
+        "sample_weight_ns": 2000000,
+        "percent_of_main_weight": 1.53
+      },
+      {
+        "symbol": "_RNvXs1_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls4text9textfield8templateNtB5_23ThemedTextFieldTemplateNtB5_17TextFieldTemplate23resolve_look_with_scale",
+        "sample_weight_ns": 2000000,
+        "percent_of_main_weight": 1.53
+      },
+      {
+        "symbol": "_RNvNtNtCsiIf5SwwEVQj_21gpui_luma_look_shadcn8controls9textfield14textfield_look",
+        "sample_weight_ns": 2000000,
+        "percent_of_main_weight": 1.53
+      }
+    ]
+  },
+  {
+    "scene": "collections",
+    "look": "sdk",
+    "size": 10000,
+    "mode": "--drive",
+    "window_ns": [
+      2000000000,
+      12000000000
+    ],
+    "main_samples": 1918,
+    "main_sample_weight_ns": 1918000000,
+    "all_thread_sample_weight_ns": 2341000000,
+    "estimated_main_cpu_percent": 19.18,
+    "leaf_symbols": [
+      {
+        "symbol": "_platform_memmove",
+        "sample_weight_ns": 233000000,
+        "percent_of_main_weight": 12.15
+      },
+      {
+        "symbol": "_xzm_xzone_malloc_tiny",
+        "sample_weight_ns": 83000000,
+        "percent_of_main_weight": 4.33
+      },
+      {
+        "symbol": "_RNvMs_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7controlINtB4_15TreeViewControluE19expand_progress_forCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 72000000,
+        "percent_of_main_weight": 3.75
+      },
+      {
+        "symbol": "_RNvMs_NtCsdlnXFo8vLID_4gpui11bounds_treeINtB4_10BoundsTreeNtNtB6_8geometry12ScaledPixelsE6insertB6_",
+        "sample_weight_ns": 57000000,
+        "percent_of_main_weight": 2.97
+      },
+      {
+        "symbol": "_RINvNtNtCskV7B1maoAHE_5taffy7compute7flexbox19compute_preliminaryINtNtNtB6_4tree10taffy_tree9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB1E_NtB1E_17TaffyLayoutEngine14compute_layouts_0EEB1G_",
+        "sample_weight_ns": 45000000,
+        "percent_of_main_weight": 2.35
+      },
+      {
+        "symbol": "_xzm_free_main",
+        "sample_weight_ns": 44000000,
+        "percent_of_main_weight": 2.29
+      },
+      {
+        "symbol": "_RNvMs_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7controlINtB4_15TreeViewControluE23branch_children_visibleCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 40000000,
+        "percent_of_main_weight": 2.09
+      },
+      {
+        "symbol": "_RINvNtNtCskV7B1maoAHE_5taffy7compute5block13compute_innerINtNtNtB6_4tree10taffy_tree9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB1w_NtB1w_17TaffyLayoutEngine14compute_layouts_0EEB1y_",
+        "sample_weight_ns": 38000000,
+        "percent_of_main_weight": 1.98
+      },
+      {
+        "symbol": "_RNvXsT_NtCsdlnXFo8vLID_4gpui5styleNtB5_5StyleNtCschVpZj1e9RT_26refineable_gpui_unofficial10Refineable6refine",
+        "sample_weight_ns": 38000000,
+        "percent_of_main_weight": 1.98
+      },
+      {
+        "symbol": "_RNCNvMs8_NtNtCskV7B1maoAHE_5taffy4tree10taffy_treeINtB7_9TaffyViewNtNtCsdlnXFo8vLID_4gpui5taffy11NodeContextNCNvMB14_NtB14_17TaffyLayoutEngine14compute_layouts_0E20compute_child_layout0B16_",
+        "sample_weight_ns": 35000000,
+        "percent_of_main_weight": 1.82
+      },
+      {
+        "symbol": "_RNvMs_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7controlINtB4_15TreeViewControluE11is_expandedCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 33000000,
+        "percent_of_main_weight": 1.72
+      },
+      {
+        "symbol": "_RINvNvMNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view10projectionNtB5_10Projection5visit4walkuNCINvMNtNtB7_7control10projectionINtB1T_15TreeViewControluE20visit_projected_rowsNCNvMs_B1T_B2i_18desired_flat_count0E0ECs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 33000000,
+        "percent_of_main_weight": 1.72
+      },
+      {
+        "symbol": "_RNvMNtNtNtCsengqQnxOdLc_9gpui_luma5theme10stylesheet7recipesNtB2_14PaletteRecipes7palette",
+        "sample_weight_ns": 33000000,
+        "percent_of_main_weight": 1.72
+      },
+      {
+        "symbol": "_RNvMNtCsdlnXFo8vLID_4gpui5taffyNtB2_17TaffyLayoutEngine13layout_bounds",
+        "sample_weight_ns": 31000000,
+        "percent_of_main_weight": 1.62
+      },
+      {
+        "symbol": "<deduplicated_symbol>",
+        "sample_weight_ns": 31000000,
+        "percent_of_main_weight": 1.62
+      }
+    ],
+    "inclusive_sdk_symbols": [
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtCsengqQnxOdLc_9gpui_luma6motion11drop_layout5ScopeNtCsMjtPOqLb9_34gpui_shared_string_gpui_unofficial12SharedStringEENtB5_13ElementObject8prepaintCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 1033000000,
+        "percent_of_main_weight": 53.86
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementINtNtNtB7_3app10entity_map6EntityINtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7control15TreeViewControluEEEENtB5_13ElementObject8prepaintCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 718000000,
+        "percent_of_main_weight": 37.43
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtCsengqQnxOdLc_9gpui_luma6motion11drop_layout4ItemNtCsMjtPOqLb9_34gpui_shared_string_gpui_unofficial12SharedStringEENtB5_13ElementObject14layout_as_rootCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 403000000,
+        "percent_of_main_weight": 21.01
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementINtNtNtB7_3app10entity_map6EntityINtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection5table7control12TableControlNtNtB1P_5model10TableLabelEEEENtB5_13ElementObject8prepaintCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 322000000,
+        "percent_of_main_weight": 16.79
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtB7_8elements3div8StatefulNtBQ_3DivEENtB5_13ElementObject8prepaintCsengqQnxOdLc_9gpui_luma",
+        "sample_weight_ns": 322000000,
+        "percent_of_main_weight": 16.79
+      },
+      {
+        "symbol": "_RNvXs8_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtNtCsengqQnxOdLc_9gpui_luma6motion11drop_layout5ScopeNtCsMjtPOqLb9_34gpui_shared_string_gpui_unofficial12SharedStringEENtB5_13ElementObject5paintCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 218000000,
+        "percent_of_main_weight": 11.37
+      },
+      {
+        "symbol": "_RNvMs7_NtCsdlnXFo8vLID_4gpui7elementINtB5_8DrawableINtNtB7_4view11ViewElementINtNtNtB7_3app10entity_map6EntityINtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7control15TreeViewControluEEEE14request_layoutCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 205000000,
+        "percent_of_main_weight": 10.69
+      },
+      {
+        "symbol": "_RNCNvXse_NtCsdlnXFo8vLID_4gpui4viewINtB7_11ViewElementINtNtNtB9_3app10entity_map6EntityINtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7control15TreeViewControluEEENtNtB9_7element7Element14request_layout0Cs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 194000000,
+        "percent_of_main_weight": 10.11
+      },
+      {
+        "symbol": "_RNvXsa_NtCsdlnXFo8vLID_4gpui4viewINtNtNtB7_3app10entity_map6EntityINtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7control15TreeViewControluEENtB5_4View6renderCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 193000000,
+        "percent_of_main_weight": 10.06
+      },
+      {
+        "symbol": "_RNCINvXs9_NtCsdlnXFo8vLID_4gpui3appNtB8_3AppNtBa_10AppContext13update_entityINtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7control15TreeViewControluENtNtBa_7element10AnyElementNCINvNtNtBa_4view8any_view6renderB1c_E0E0Cs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 193000000,
+        "percent_of_main_weight": 10.06
+      },
+      {
+        "symbol": "_RNvXs1_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7controlINtB5_15TreeViewControluENtNtCsdlnXFo8vLID_4gpui7element6Render6renderCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 191000000,
+        "percent_of_main_weight": 9.96
+      },
+      {
+        "symbol": "_RNvMs_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7controlINtB4_15TreeViewControluE18desired_flat_countCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 182000000,
+        "percent_of_main_weight": 9.49
+      },
+      {
+        "symbol": "_RINvNvMNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view10projectionNtB5_10Projection5visit4walkuNCINvMNtNtB7_7control10projectionINtB1T_15TreeViewControluE20visit_projected_rowsNCNvMs_B1T_B2i_18desired_flat_count0E0ECs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 170000000,
+        "percent_of_main_weight": 8.86
+      },
+      {
+        "symbol": "_RNCINvMs0_NtNtCsdlnXFo8vLID_4gpui3app7contextINtB8_7ContextINtNtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7control15TreeViewControluEE9processorjNtNtBc_7element10AnyElementNvMs_BY_BV_10render_rowE0Cs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 170000000,
+        "percent_of_main_weight": 8.86
+      },
+      {
+        "symbol": "_RNvMs_NtNtNtNtCsengqQnxOdLc_9gpui_luma8controls10collection9tree_view7controlINtB4_15TreeViewControluE10render_rowCs9usPnfFrIGq_13luma_sdk_perf",
+        "sample_weight_ns": 169000000,
+        "percent_of_main_weight": 8.81
+      }
+    ]
+  }
+]

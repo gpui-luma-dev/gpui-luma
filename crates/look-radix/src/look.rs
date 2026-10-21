@@ -157,7 +157,7 @@ struct LookState {
     classic_shadow: RwLock<Option<ClassicButtonParams>>,
     button_recipes: RwLock<Arc<crate::button_recipes::Recipes>>,
     tabs_style: RwLock<Option<crate::tabs::TabsStyle>>,
-    common_stylesheet: RwLock<gpui_luma::theme::stylesheet::CommonStylesheet>,
+    common_stylesheet: RwLock<Arc<gpui_luma::theme::stylesheet::CommonStylesheet>>,
     /// Bumped by look setters; polling does not schedule GPUI redraws.
     revision: RwLock<u64>,
 }
@@ -190,7 +190,7 @@ impl Look {
                 classic_shadow: RwLock::new(None),
                 button_recipes: RwLock::new(Arc::new(crate::button_recipes::embedded().clone())),
                 tabs_style: RwLock::new(None),
-                common_stylesheet: RwLock::new(embedded_common_stylesheet().clone()),
+                common_stylesheet: RwLock::new(Arc::new(embedded_common_stylesheet().clone())),
                 revision: RwLock::new(0),
             }),
         }
@@ -220,7 +220,7 @@ impl Look {
         *forked.state.custom_inputs.write().unwrap_or_else(|p| p.into_inner()) =
             *self.state.custom_inputs.read().unwrap_or_else(|p| p.into_inner());
         *forked.state.common_stylesheet.write().unwrap_or_else(|poisoned| poisoned.into_inner()) =
-            self.common_stylesheet();
+            self.stylesheet_snapshot();
         *forked.state.button_recipes.write().unwrap_or_else(|p| p.into_inner()) = self.button_recipes();
         forked
     }
@@ -233,7 +233,7 @@ impl Look {
     }
 
     pub fn motion_defaults(&self) -> gpui_luma::theme::MotionDefaults {
-        let mut defaults = self.common_stylesheet().motion_defaults();
+        let mut defaults = self.stylesheet_snapshot().motion_defaults();
         let edits = self.state.motion.read().unwrap_or_else(|p| p.into_inner()).clone();
         edits.apply(&mut defaults);
         defaults
@@ -255,6 +255,12 @@ impl Look {
 
     /// Common SDK configuration. Clones share edits; forks copy independently.
     pub fn common_stylesheet(&self) -> gpui_luma::theme::stylesheet::CommonStylesheet {
+        self.stylesheet_snapshot().as_ref().clone()
+    }
+
+    // Immutable snapshots keep render-time reads cheap without holding a lock while
+    // resolving controls. Setters replace the Arc; existing readers stay valid.
+    pub(crate) fn stylesheet_snapshot(&self) -> Arc<gpui_luma::theme::stylesheet::CommonStylesheet> {
         self.state.common_stylesheet.read().unwrap_or_else(|poisoned| poisoned.into_inner()).clone()
     }
 
@@ -274,7 +280,7 @@ impl Look {
             }
         }
         numeric.apply_to(&mut stylesheet.slider);
-        *self.state.common_stylesheet.write().unwrap_or_else(|poisoned| poisoned.into_inner()) = stylesheet;
+        *self.state.common_stylesheet.write().unwrap_or_else(|poisoned| poisoned.into_inner()) = Arc::new(stylesheet);
         self.bump_revision();
     }
 
@@ -584,6 +590,30 @@ fn mode_from_u8(value: u8) -> ThemeMode {
 mod tests {
     use super::*;
     use gpui_luma::color::gpui_bridge;
+
+    #[test]
+    fn shared_stylesheet_readers_survive_replacement_and_fork_edits() {
+        let look = Look::built_in();
+        let clone = look.clone();
+        let fork = look.fork();
+        let old = look.stylesheet_snapshot();
+        let original = old.tokens.typography.font.sans.family.clone();
+        let revision = look.revision();
+        let mut edited = look.common_stylesheet();
+        edited.tokens.typography.font.sans.family = "Replacement Sans".into();
+        // Editing the public owned copy must not mutate live readers.
+        assert_eq!(look.stylesheet_snapshot().tokens.typography.font.sans.family, original);
+        look.set_common_stylesheet(edited);
+        assert!(look.revision() > revision);
+        assert_eq!(clone.stylesheet_snapshot().tokens.typography.font.sans.family, "Replacement Sans");
+        assert_eq!(old.tokens.typography.font.sans.family, original);
+        assert_eq!(fork.stylesheet_snapshot().tokens.typography.font.sans.family, original);
+        let current = look.stylesheet_snapshot();
+        look.set_mode(ThemeMode::Dark);
+        assert!(Arc::ptr_eq(&current, &look.stylesheet_snapshot()));
+        fork.set_common_stylesheet(Default::default());
+        assert_eq!(look.stylesheet_snapshot().tokens.typography.font.sans.family, "Replacement Sans");
+    }
 
     #[test]
     fn source_roles_and_custom_seeds_survive_forks_and_failed_updates() {
