@@ -23,6 +23,7 @@ env:
 jobs:
   scope:
     name: Classify changes
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     outputs:
       native: ${{ steps.scope.outputs.native }}
@@ -47,6 +48,7 @@ jobs:
 
   fmt:
     name: Format check
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -67,6 +69,7 @@ jobs:
     needs: scope
     if: ${{ !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.native == 'true') }}
     name: Clippy
+    timeout-minutes: 30
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -87,6 +90,7 @@ jobs:
     needs: scope
     if: ${{ !cancelled() }}
     name: Test & Doc-tests
+    timeout-minutes: 40
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -104,6 +108,7 @@ jobs:
       # Keep this check name stable: docs-only runs compile snippets here while
       # skipping native test suites, preserving existing required-check coverage.
       - name: Test library crates
+        timeout-minutes: 25
         if: needs.scope.result != 'success' || needs.scope.outputs.native == 'true'
         run: >-
           cargo test --locked --lib --bins --tests --all-features
@@ -116,6 +121,7 @@ jobs:
 
       # Only run doc-tests on library packages that actually contain documentation
       - name: Documentation tests
+        timeout-minutes: 10
         if: needs.scope.result != 'success' || needs.scope.outputs.native == 'true'
         run: >-
           cargo test --locked --doc --all-features
@@ -125,4 +131,53 @@ jobs:
           --package gpui-luma-plot
 
       - name: Compile control documentation examples
+        timeout-minutes: 10
         run: python3 scripts/check_control_docs.py
+
+  test_queue:
+    name: Test queue guard
+    needs: scope
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    permissions:
+      actions: write
+    steps:
+      # Execution timeouts do not bound waiting for a macOS runner. This uses
+      # a separate Linux runner and never checks out or executes PR source.
+      - name: Bound test runner wait to 15 minutes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: python
+        run: |
+          import json
+          import os
+          import time
+          import urllib.request
+
+          base = f"{os.environ['GITHUB_API_URL']}/repos/{os.environ['GITHUB_REPOSITORY']}"
+          run_id = os.environ["GITHUB_RUN_ID"]
+          attempt = os.environ["GITHUB_RUN_ATTEMPT"]
+          headers = {"Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                     "Accept": "application/vnd.github+json"}
+
+          def request(path, method="GET"):
+              with urllib.request.urlopen(
+                  urllib.request.Request(base + path, headers=headers, method=method), timeout=30
+              ) as response:
+                  body = response.read()
+                  return json.loads(body) if body else None
+
+          deadline = time.monotonic() + 15 * 60
+          while True:
+              jobs = request(f"/actions/runs/{run_id}/attempts/{attempt}/jobs?per_page=100")["jobs"]
+              test = next((job for job in jobs if job["name"] == "Test & Doc-tests"), None)
+              if test and test["status"] in ("in_progress", "completed"):
+                  print(f"Test job is {test['status']}; execution timeout now applies.", flush=True)
+                  break
+              if time.monotonic() >= deadline:
+                  print("::error::Test job did not start within 15 minutes. Cancelling CI; retry when runners are available.", flush=True)
+                  request(f"/actions/runs/{run_id}/cancel", method="POST")
+                  raise SystemExit(1)
+              print("Waiting for the macOS test runner...", flush=True)
+              time.sleep(30)
