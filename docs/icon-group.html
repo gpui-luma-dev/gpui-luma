@@ -22,7 +22,7 @@
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
 <main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Icon Group</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">An icon toolbar preset.</p><section id="preview"><h2>Try it</h2><p>Interact with the control below. This preview runs the exact code sample shown on this page.</p><div class="live-example live-example--tall"><iframe data-luma-example src="examples/embed.html?id=icon-group-basic" title="Live icon group code sample" loading="lazy"></iframe></div><p class="small"><a href="examples/embed.html?id=icon-group-basic" target="_blank" rel="noopener">Open example separately ↗</a></p></section><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust" data-live-example="icon-group-basic">use gpui_luma_look_radix as radix;
 use gpui::{Context, IntoElement, Styled};
-use gpui_luma::controls::control_group::ControlGroupItem;
+use gpui_luma::controls::control_group::{ControlGroupItem, ControlGroupItemLike};
 
 struct Example {
     control: gpui_luma::controls::control_group::ControlGroup&lt;gpui_luma::controls::control_group::ControlGroupItem&gt;,
@@ -33,9 +33,18 @@ impl Example {
     fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
         let look = cx.try_global::&lt;radix::Look&gt;().cloned().unwrap_or_else(radix::Look::built_in);
         let control = radix::icon_group_builder::&lt;ControlGroupItem&gt;(&amp;look, "tools", gpui_luma::theme::ControlSize::Md)
-            .items([ControlGroupItem::new("select").label("Select")])
+            .items([
+                ControlGroupItem::new("select").label("Select"),
+                ControlGroupItem::new("move").label("Move"),
+                ControlGroupItem::new("zoom").label("Zoom"),
+            ])
             .item_template(std::sync::Arc::new(|model, _, _| {
-                gpui::svg().path("assets/lucide/mouse-pointer.svg").size(gpui::px(16.0))
+                let icon = match model.item.id().as_ref() {
+                    "move" =&gt; "assets/lucide/move.svg",
+                    "zoom" =&gt; "assets/lucide/zoom-in.svg",
+                    _ =&gt; "assets/lucide/mouse-pointer.svg",
+                };
+                gpui::svg().path(icon).size(gpui::px(16.0))
                     .text_color(model.foreground.unwrap_or_else(gpui::transparent_black)).into_any_element()
             }))
             .on_value_changed(cx, |app, _, _, selected_ids, cx| {
