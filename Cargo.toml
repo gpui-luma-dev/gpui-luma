@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+  "apps/docs-embed",
   "crates/sdk",
   "crates/luma-color",
   "crates/look-shadcn",

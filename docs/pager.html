@@ -20,30 +20,85 @@
 <div data-site-mobile-nav></div>
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
-<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Pager</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">Navigate pages of records.</p><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust">use gpui_luma_look_radix as radix;
-use gpui::{Context};
+<main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><span>Controls</span></div><h1>Pager</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div><p class="intro">Navigate pages of records.</p><section id="preview"><h2>Try it</h2><p>Try minimal and numeric pagination, including the 10, 25, and 50 item page sizes used in Luma Studio. Both pagers share the same current page. This preview runs the exact code sample shown on this page.</p><div class="live-example live-example--chart"><iframe data-luma-example src="examples/embed.html?id=pager-basic" title="Live pager code sample" loading="lazy"></iframe></div><p class="small"><a href="examples/embed.html?id=pager-basic" target="_blank" rel="noopener">Open example separately ↗</a></p></section><section id="use"><h2>Basic use</h2><div class="codebox"><div class="codebar"><span>Radix · integration snippet</span><button class="copy" aria-label="Copy Radix · integration snippet">Copy</button></div><pre><code class="language-rust" data-live-example="pager-basic">use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma_look_radix as radix;
+use gpui_luma::controls::pager::{Pager, PagerStyle};
+use gpui_luma::controls::selector::{Selector, SelectorItem};
 
 struct Example {
-    control: gpui_luma::controls::pager::Pager,
+    control: Pager,
+    numeric: Pager,
+    page_size_select: Entity&lt;Selector&gt;,
     page: usize,
+    page_size: usize,
 }
 
 impl Example {
     fn new(cx: &amp;mut Context&lt;Self&gt;) -&gt; Self {
-        let look = radix::Look::built_in();
-        let control = radix::pager_builder(&amp;look, "results")
-            .page_count(12)
-            .current_page(0)
-            .on_page_changed(cx, |app, page, cx| {
-                app.page = page;
-                cx.notify();
+        let look = cx.try_global::&lt;radix::Look&gt;().cloned().unwrap_or_else(radix::Look::built_in);
+        let mut make_pager = |id, style| {
+            radix::pager_builder(&amp;look, id)
+                .style(style).page_count(12).current_page(0)
+                .page_size(10).page_size_options([10, 25, 50])
+                .numeric_slot_count(5)
+                .on_page_changed(cx, |app: &amp;mut Self, page, cx| {
+                    app.page = page;
+                    app.sync(cx);
+                })
+                .on_page_size_changed(cx, |app: &amp;mut Self, size, cx| {
+                    app.page_size = size;
+                    app.page = app.page.min(app.page_count() - 1);
+                    app.sync(cx);
+                })
+                .spawn(cx)
+        };
+        let control = make_pager("minimal", PagerStyle::Minimal);
+        let numeric = make_pager("numeric", PagerStyle::Numeric);
+        let page_size_select = radix::Selector::new("page-size").label("Items per page")
+            .items([
+                SelectorItem::new("10").label("10 per page"),
+                SelectorItem::new("25").label("25 per page"),
+                SelectorItem::new("50").label("50 per page"),
+            ])
+            .selected_id("10")
+            .on_value_changed(cx, |app: &amp;mut Self, id, _, cx| {
+                app.page_size = match id.as_ref() { "25" =&gt; 25, "50" =&gt; 50, _ =&gt; 10 };
+                app.page = app.page.min(app.page_count() - 1);
+                app.sync(cx);
             })
             .spawn(cx);
-
-        Self { control, page: 0 }
+        Self { control, numeric, page_size_select, page: 0, page_size: 10 }
     }
-}</code></pre></div><p class="small">Integration snippet, checked against the current SDK and Radix crates. <code>cx</code> is the initialized owner context. The control retains its callbacks; callback owners are held weakly. Render <code>self.control.clone()</code> in the owner’s view.</p></section><section id="radix"><h2>Radix styling</h2><p><code>pager_builder(&amp;look, id)</code> supplies Radix pagination chrome and shared button templates for Minimal, MinimalEdge, and Numeric layouts. SDK page and page-size callbacks retain their existing contracts.</p><p>Pass an explicit <code>Look</code>, including forks. Theme adapters retain that binding; notify affected controls and their owners after palette, mode, or stylesheet edits. Resolved look values are snapshots and must be resolved again during render.</p><p>See the <a href="look-radix.html#support">Radix control support table</a> for adapter and utility status.</p></section><section id="sdk"><h2>SDK behavior & customization</h2><p>PageChanged and PageSizeChanged coordinate application paging. Keep row data and paging state in sync.</p><p class="small">Relevant contracts: <code>PagerTemplateParameters</code>, <code>PagerRenderModel</code>, <code>PagerTemplateHandlers</code>, <code>PagerTemplateModifier</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="events"><h2>Events</h2><p>Callbacks follow the existing SDK event stream. Registrations append, hold the owner weakly, and live until the control is released. <code>cx.notify()</code> requests an owner redraw. Compound payloads are borrowed; scalar values are passed by value.</p><div class="event-table"><table><thead><tr><th scope="col">Event / payload</th><th scope="col">Callback</th></tr></thead><tbody><tr><td><code>PageChanged { page: usize }</code></td><td><code>.on_page_changed(cx, |app, page, cx| { … })</code></td></tr><tr><td><code>PageSizeChanged { page_size: usize }</code></td><td><code>.on_page_size_changed(cx, |app, page_size, cx| { … })</code></td></tr><tr><td><code>PageSizeOpenChanged { open: bool }</code></td><td><code>.on_page_size_open_changed(cx, |app, open, cx| { … })</code></td></tr><tr><td><code>EnabledChanged { enabled: bool }</code></td><td><code>.on_enabled_changed(cx, |app, enabled, cx| { … })</code></td></tr></tbody></table></div><p class="small">Use <code>.on_event(cx, |app, event, cx| { … })</code> for all events. Factory-created controls support the same callbacks through <code>PagerEventExt</code>. Existing <code>cx.subscribe</code> observers remain supported.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/navigation/pager/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/pager.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#events">Events</a><a href="#use">Basic use</a><a href="#radix">Radix styling</a><a href="#sdk">SDK behavior</a><a href="#source">Source</a></nav>
+
+    fn page_count(&amp;self) -&gt; usize {
+        120_usize.div_ceil(self.page_size)
+    }
+
+    fn sync(&amp;mut self, cx: &amp;mut Context&lt;Self&gt;) {
+        for pager in [&amp;self.control, &amp;self.numeric] {
+            pager.update(cx, |pager, cx| {
+                pager.set_page_count(self.page_count(), cx);
+                pager.set_page_size(self.page_size, cx);
+                pager.set_page(self.page, cx);
+            });
+        }
+        cx.notify();
+    }
+}
+
+impl Render for Example {
+    fn render(&amp;mut self, _: &amp;mut Window, _: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
+        div().w_full().max_w(px(600.0)).flex().flex_col().gap_4()
+            .child(div().w(px(180.0)).child(self.page_size_select.clone()))
+            .child("Minimal")
+            .child(self.control.clone())
+            .child("Numeric")
+            .child(self.numeric.clone())
+            .child(format!("Page {} of {} · {} items per page · 120 items", self.page + 1, self.page_count(), self.page_size))
+    }
+}
+</code></pre></div><p class="small">Integration snippet, checked against the current SDK and Radix crates. <code>cx</code> is the initialized owner context. The control retains its callbacks; callback owners are held weakly. Render <code>self.control.clone()</code> in the owner’s view.</p></section><section id="radix"><h2>Radix styling</h2><p><code>pager_builder(&amp;look, id)</code> supplies Radix pagination chrome and shared button templates for Minimal, MinimalEdge, and Numeric layouts. SDK page and page-size callbacks retain their existing contracts.</p><p>Pass an explicit <code>Look</code>, including forks. Theme adapters retain that binding; notify affected controls and their owners after palette, mode, or stylesheet edits. Resolved look values are snapshots and must be resolved again during render.</p><p>See the <a href="look-radix.html#support">Radix control support table</a> for adapter and utility status.</p></section><section id="sdk"><h2>SDK behavior & customization</h2><p>PageChanged and PageSizeChanged coordinate application paging. Keep row data and paging state in sync.</p><p class="small">Relevant contracts: <code>PagerTemplateParameters</code>, <code>PagerRenderModel</code>, <code>PagerTemplateHandlers</code>, <code>PagerTemplateModifier</code>.</p><p>Use the module’s template contract for structural changes. Builder modifiers and item templates vary by control.</p></section><section id="events"><h2>Events</h2><p>Callbacks follow the existing SDK event stream. Registrations append, hold the owner weakly, and live until the control is released. <code>cx.notify()</code> requests an owner redraw. Compound payloads are borrowed; scalar values are passed by value.</p><div class="event-table"><table><thead><tr><th scope="col">Event / payload</th><th scope="col">Callback</th></tr></thead><tbody><tr><td><code>PageChanged { page: usize }</code></td><td><code>.on_page_changed(cx, |app, page, cx| { … })</code></td></tr><tr><td><code>PageSizeChanged { page_size: usize }</code></td><td><code>.on_page_size_changed(cx, |app, page_size, cx| { … })</code></td></tr><tr><td><code>PageSizeOpenChanged { open: bool }</code></td><td><code>.on_page_size_open_changed(cx, |app, open, cx| { … })</code></td></tr><tr><td><code>EnabledChanged { enabled: bool }</code></td><td><code>.on_enabled_changed(cx, |app, enabled, cx| { … })</code></td></tr></tbody></table></div><p class="small">Use <code>.on_event(cx, |app, event, cx| { … })</code> for all events. Factory-created controls support the same callbacks through <code>PagerEventExt</code>. Existing <code>cx.subscribe</code> observers remain supported.</p></section><section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/sdk/src/controls/navigation/pager/mod.rs">SDK module</a> · <a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/look-radix/src/pager.rs">Radix adapter</a></p></section><footer data-site-footer></footer></main>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#events">Events</a><a href="#preview">Try it</a><a href="#use">Basic use</a><a href="#radix">Radix styling</a><a href="#sdk">SDK behavior</a><a href="#source">Source</a></nav>
 </div>
 </body>
 </html>

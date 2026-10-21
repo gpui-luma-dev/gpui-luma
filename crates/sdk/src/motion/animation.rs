@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use web_time::{Duration, Instant};
 use std::sync::Arc;
 use super::{MotionState, RunningMotion, Transition};
 use gpui::{Context, Pixels, Window, px};

@@ -2,8 +2,8 @@
 use std::{
     cell::{Cell, RefCell},
     rc::{Rc, Weak},
-    time::Instant,
 };
+use web_time::Instant;
 use gpui::{App, EntityId, Pixels, Point, ScrollHandle, Window, px};
 use crate::motion::{Transition, MotionState, RunningMotion};
 

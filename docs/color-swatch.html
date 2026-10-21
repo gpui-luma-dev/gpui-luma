@@ -21,7 +21,7 @@
 <div class="layout">
 <aside class="sidebar" data-site-sidebar aria-label="Documentation navigation"></aside>
 <main id="main"><div class="breadcrumb"><span>SDK</span><span aria-hidden="true">/</span><a href="colors.html">Color controls</a></div><h1>Color Swatch</h1><p class="intro">Preview a retained source color, or use a swatch as an SDK button.</p>
-<section id="use"><h2>Preview and clickable swatch</h2><div class="codebox"><div class="codebar"><span>Static preview and picker trigger</span><button class="copy" aria-label="Copy Static preview and picker trigger">Copy</button></div><pre><code class="language-rust">use std::sync::Arc;
+<section id="preview"><h2>Try it</h2><p>Interact with the control below. This preview runs the exact code sample shown on this page.</p><div class="live-example live-example--tall"><iframe data-luma-example src="examples/embed.html?id=color-swatch-basic" title="Live color swatch code sample" loading="lazy"></iframe></div><p class="small"><a href="examples/embed.html?id=color-swatch-basic" target="_blank" rel="noopener">Open example separately ↗</a></p></section><section id="use"><h2>Preview and clickable swatch</h2><div class="codebox"><div class="codebar"><span>Static preview and picker trigger</span><button class="copy" aria-label="Copy Static preview and picker trigger">Copy</button></div><pre><code class="language-rust" data-live-example="color-swatch-basic">use std::sync::Arc;
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::color::ColorValue;
 use gpui_luma::controls::button::Button;
@@ -49,7 +49,7 @@ impl Example {
 impl Render for Example {
     fn render(&amp;mut self, _: &amp;mut Window, _: &amp;mut Context&lt;Self&gt;) -&gt; impl IntoElement {
         div().flex().items_center().gap(px(8.0))
-            .child(ColorSwatch::new(self.source).checkerboard(true).height(px(30.0)))
+            .child(div().w(px(80.0)).child(ColorSwatch::new(self.source).checkerboard(true).height(px(30.0))))
             .child(self.button.clone())
     }
 }</code></pre></div></section>
@@ -67,7 +67,7 @@ impl Render for Example {
 </div><p>Update the typed payload with <code>button.update(cx, |button, cx| button.set_data(data, cx))</code> when the selected source color changes. Keep the source color in the owner model too, so previews and picker content share the same value. See <a href="colors.html#compose">picker composition</a> and <a href="button.html#events">Button events</a>.</p></section>
 <section id="source"><h2>Source</h2><p><a class="source-link" href="https://github.com/gpui-luma-dev/gpui-luma/blob/main/crates/luma-color/src/swatch.rs">Implementation</a></p></section>
 <footer data-site-footer></footer></main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#use">Preview and clickable swatch</a><a href="#appearance">Appearance and source colors</a><a href="#events">Button events and updates</a><a href="#source">Source</a></nav>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#preview">Try it</a><a href="#use">Preview and clickable swatch</a><a href="#appearance">Appearance and source colors</a><a href="#events">Button events and updates</a><a href="#source">Source</a></nav>
 </div>
 </body>
 </html>

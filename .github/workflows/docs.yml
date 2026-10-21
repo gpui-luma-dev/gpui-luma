@@ -1,0 +1,103 @@
+name: Check and deploy documentation site
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ["docs/**", "apps/docs-embed/**", "apps/common/assets/**", "crates/**", "Cargo.*", ".github/workflows/docs.yml"]
+  push:
+    branches: [main]
+    paths: ["docs/**", "apps/docs-embed/**", "apps/common/assets/**", "crates/**", "Cargo.*", ".github/workflows/docs.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  # Replace obsolete PR checks; allow a production deployment to finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Browser checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: docs-wasm-check
+      - name: Check browser application
+        run: cargo clippy --locked -p luma-docs-embed --target wasm32-unknown-unknown -- -D warnings
+      - name: Test runtime packaging
+        run: python3 -B -m unittest discover -s apps/docs-embed -p 'test_*.py'
+      - name: Check documentation JavaScript
+        run: |
+          node --check docs/site.js
+          node --check docs/examples/embed.js
+
+  build:
+    name: Build deployment runtime
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: docs-wasm-release
+      - name: Resolve wasm-bindgen version
+        id: bindgen
+        run: |
+          version=$(python3 -c 'import tomllib; print(next(p["version"] for p in tomllib.load(open("Cargo.lock", "rb"))["package"] if p["name"] == "wasm-bindgen"))')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Cache matching wasm-bindgen CLI
+        id: bindgen-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/luma-wasm-bindgen
+          key: wasm-bindgen-cli-${{ runner.os }}-${{ runner.arch }}-${{ steps.bindgen.outputs.version }}
+      - name: Install matching wasm-bindgen CLI
+        if: steps.bindgen-cache.outputs.cache-hit != 'true'
+        env:
+          BINDGEN_VERSION: ${{ steps.bindgen.outputs.version }}
+        run: cargo install wasm-bindgen-cli --version "$BINDGEN_VERSION" --locked --root "$HOME/.cache/luma-wasm-bindgen"
+      - name: Add wasm-bindgen to PATH
+        run: echo "$HOME/.cache/luma-wasm-bindgen/bin" >> "$GITHUB_PATH"
+      - name: Build site with browser runtime
+        run: sh apps/docs-embed/build.sh
+      - name: Verify deployment includes browser runtime
+        run: |
+          python3 -B apps/docs-embed/package_runtime.py --check
+          test -s docs/CNAME
+      - uses: actions/upload-artifact@v6
+        with:
+          name: docs-site
+          path: docs/
+          if-no-files-found: error
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy site with WASM examples
+        id: deployment
+        uses: actions/deploy-pages@v4

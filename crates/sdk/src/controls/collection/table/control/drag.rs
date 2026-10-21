@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use web_time::{Duration, Instant};
 use gpui::{
     Axis, Bounds, Context, CursorStyle, Div, IntoElement, ListOffset, Pixels, Point, Render, SharedString, Stateful,
     Window, div, prelude::*, px,

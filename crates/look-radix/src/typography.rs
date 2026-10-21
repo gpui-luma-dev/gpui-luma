@@ -13,6 +13,20 @@ pub(crate) fn label_typography(size: ControlSize) -> LumaTextStyle {
     }
 }
 
-pub(crate) fn font_family(_look: &Look) -> SharedString {
-    SharedString::from("System UI")
+pub(crate) fn font_family(look: &Look) -> SharedString {
+    look.common_stylesheet().tokens.typography.font.sans.family.into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn label_font_follows_the_look_stylesheet() {
+        let look = Look::built_in();
+        let mut stylesheet = look.common_stylesheet();
+        stylesheet.tokens.typography.font.sans.family = "Embedded Sans".into();
+        look.set_common_stylesheet(stylesheet);
+        assert_eq!(font_family(&look).as_ref(), "Embedded Sans");
+    }
 }

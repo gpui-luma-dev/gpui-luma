@@ -23,6 +23,30 @@ env:
   CARGO_PROFILE_DEV_PACKAGE_GPUI_UNOFFICIAL_OPT_LEVEL: "0"
 
 jobs:
+  scope:
+    name: Classify changes
+    runs-on: ubuntu-latest
+    outputs:
+      native: ${{ steps.scope.outputs.native }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      - name: Fetch comparison base
+        env:
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -n "$CI_BASE_SHA" ] && [ "$CI_BASE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            if ! git cat-file -e "$CI_BASE_SHA^{commit}" 2>/dev/null; then
+              git fetch --no-tags --depth=1 origin "$CI_BASE_SHA" || echo "Base unavailable; running full CI"
+            fi
+          fi
+      - name: Select native checks
+        id: scope
+        env:
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python3 -B scripts/ci_scope.py
+
   fmt:
     name: Format check
     runs-on: ubuntu-latest
@@ -35,13 +59,15 @@ jobs:
         with:
           components: rustfmt
 
-      - name: Test release failure handling
-        run: python3 -B -m unittest discover -s scripts -p 'test_release.py'
+      - name: Test CI and release helpers
+        run: python3 -B -m unittest discover -s scripts -p 'test_*.py'
 
       - name: Format check
         run: cargo fmt --all --check
 
   clippy:
+    needs: scope
+    if: ${{ !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.native == 'true') }}
     name: Clippy
     runs-on: macos-latest
     steps:
@@ -60,6 +86,8 @@ jobs:
         run: cargo clippy --locked --workspace --all-targets --all-features
 
   test:
+    needs: scope
+    if: ${{ !cancelled() }}
     name: Test & Doc-tests
     runs-on: macos-latest
     steps:
@@ -75,7 +103,10 @@ jobs:
       # Exercise library behavior without linking every demo and shell test binary.
       # Workspace Clippy above still checks every app target and feature.
       # Excludes benchmarks from test builds (--lib --bins --tests).
+      # Keep this check name stable: docs-only runs compile snippets here while
+      # skipping native test suites, preserving existing required-check coverage.
       - name: Test library crates
+        if: needs.scope.result != 'success' || needs.scope.outputs.native == 'true'
         run: >-
           cargo test --locked --lib --bins --tests --all-features
           --package gpui-luma
@@ -86,6 +117,7 @@ jobs:
 
       # Only run doc-tests on library packages that actually contain documentation
       - name: Documentation tests
+        if: needs.scope.result != 'success' || needs.scope.outputs.native == 'true'
         run: >-
           cargo test --locked --doc --all-features
           --package gpui-luma
@@ -97,4 +129,5 @@ jobs:
         run: python3 scripts/check_control_docs.py
 
       - name: Test plot sample app (headless)
+        if: needs.scope.result != 'success' || needs.scope.outputs.native == 'true'
         run: cargo test --locked --package luma-plot-viz --all-features

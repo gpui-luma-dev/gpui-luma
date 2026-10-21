@@ -612,3 +612,60 @@ mod motion_tests {
         });
     }
 }
+
+#[cfg(all(test, feature = "test-support"))]
+mod dispatch_tests {
+    use super::*;
+    use crate::infra::menu_item::MenuItem;
+    use gpui::TestAppContext;
+    use std::{cell::RefCell, rc::Rc};
+
+    #[test]
+    fn clicking_menu_outside_target_selects_before_dismissal_and_outside_click_still_closes() {
+        let mut app = TestAppContext::single();
+        let (menu, cx) = app.add_window_view(|window, cx| {
+            window.activate_window();
+            ContextMenu::from_builder(
+                ContextMenu::new("context-menu-regression")
+                    .label("Target")
+                    .item(MenuItem::new("copy").label("Copy"))
+                    .motion_enabled(false),
+                cx,
+            )
+        });
+        let selected = Rc::new(RefCell::new(Vec::new()));
+        let _subscription = cx.update(|_, cx| {
+            let selected = selected.clone();
+            cx.subscribe(&menu, move |_, event: &ContextMenuEvent, _| {
+                if let ContextMenuEvent::Select { item_id, .. } = event {
+                    selected.borrow_mut().push(item_id.clone());
+                }
+            })
+        });
+        let position = point(px(300.0), px(160.0));
+        cx.update(|_, cx| {
+            menu.update(cx, |menu, cx| {
+                menu.open_menu_at(position, None, cx);
+                cx.notify();
+            })
+        });
+        cx.run_until_parked();
+        // The item is deliberately outside the target's bounds. Dismissing
+        // against the target would close on mouse-down and lose this click.
+        cx.simulate_click(point(px(320.0), px(180.0)), Default::default());
+        cx.run_until_parked();
+        assert_eq!(*selected.borrow(), vec![SharedString::from("copy")]);
+        cx.update(|_, cx| {
+            assert!(menu.read(cx).menu_position.is_none());
+            menu.update(cx, |menu, cx| {
+                menu.open_menu_at(position, None, cx);
+                cx.notify();
+            });
+        });
+        cx.run_until_parked();
+        cx.simulate_click(point(px(600.0), px(400.0)), Default::default());
+        cx.run_until_parked();
+        cx.update(|_, cx| assert!(menu.read(cx).menu_position.is_none()));
+        assert_eq!(selected.borrow().len(), 1);
+    }
+}

@@ -183,7 +183,6 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             })
             .id(model.id.clone())
             .relative()
-            .on_mouse_down_out(root_mouse_down_out)
             .child(target);
         if has_custom_content {
             root = root.w_full().min_h(relative(1.0));
@@ -205,7 +204,10 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
                 .snap_to_window_with_margin(px(look.window_margin))
                 .anchor(Anchor::TopLeft)
                 .position(position)
-                .child(div().opacity(model.presence.opacity()).child(menu));
+                // Dismiss relative to the menu surface. Its deferred bounds are
+                // outside the target, so attaching this to the target closes
+                // the menu on mouse-down before a menu item's click can run.
+                .child(div().opacity(model.presence.opacity()).on_mouse_down_out(root_mouse_down_out).child(menu));
 
             root = root.child(deferred(overlay).with_priority(1));
         }

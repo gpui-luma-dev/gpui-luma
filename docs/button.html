@@ -25,9 +25,14 @@
 <h1>Button</h1><div class="look-badges" role="group" aria-label="Available Looks"><a class="look-badge look-badge--shadcn" href="look-shadcn.html#support" aria-label="look-shadcn styling support">look-shadcn</a><a class="look-badge look-badge--radix" href="look-radix.html#support" aria-label="look-radix styling support">look-radix</a></div>
 <p class="intro">One action, clearly expressed. Create a button, respond to activation, and give it a look.</p>
 <div class="meta"><code>gpui_luma::controls::button</code><span>Native GPUI control</span></div>
+<section id="preview"><h2>Try it</h2>
+<p>Run the Radix code sample below. Click Save, or focus it and press Enter or Space, to update the save count.</p>
+<div class="live-example"><iframe data-luma-example src="examples/embed.html?id=button-basic" title="Live Radix Save button code sample" loading="lazy"></iframe></div>
+<p class="small">Live GPUI rendering in your browser. <a href="examples/embed.html?id=button-basic" target="_blank" rel="noopener">Open example separately ↗</a></p>
+</section>
 <section id="create"><h2><span class="number">01</span>Create a button</h2>
 <p>Create the SDK button through the Radix builder. The SDK owns its state and events; Radix supplies presentation.</p>
-<div class="codebox"><div class="codebar"><span>Rust · SDK button via Radix</span><button class="copy" aria-label="Copy SDK button example">Copy</button></div><pre><code class="language-rust">use gpui::{Context, Entity};
+<div class="codebox"><div class="codebar"><span>Rust · SDK button via Radix</span><button class="copy" aria-label="Copy SDK button example">Copy</button></div><pre><code class="language-rust" data-live-example="button-basic">use gpui::{Context, Entity};
 use gpui_luma::controls::button::Button;
 use gpui_luma::infra::presenter::HasPresenter;
 use gpui_luma_look_radix as radix;
@@ -55,7 +60,7 @@ impl Example {
         Self { control, save_requests: 0, focused: false }
     }
 }</code></pre></div>
-<p class="small">This checked integration example assumes an initialized Luma application. Render <code>self.control.clone()</code> from the owner’s view.</p>
+<p class="small">The live preview compiles this exact code block. Its host initializes Luma, fonts, the Radix look, and keyboard bindings, then renders <code>self.control.clone()</code> with the save count and focus state.</p>
 <div class="callout"><p><strong>Behavior lives in the SDK.</strong> A look supplies styling and templates. Its builder still creates the same SDK button entity.</p></div>
 </section>
 <section id="factory"><h2>Buttons from shared factories</h2><p>Import <code>ButtonEventExt</code> to attach the same callbacks to an existing SDK Button entity. The methods return that entity and retain the callbacks automatically.</p><div class="codebox"><div class="codebar"><span>Rust · Existing Button entity</span><button class="copy" aria-label="Copy factory callback example">Copy</button></div><pre><code class="language-rust">use gpui_luma::controls::button::ButtonEventExt;
@@ -80,7 +85,7 @@ fn bind_factory_button(control: Entity&lt;Button&gt;, cx: &amp;mut Context&lt;Ex
 </section>
 <footer data-site-footer></footer>
 </main>
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#create">Create a button</a><a href="#factory">Factory Buttons</a><a href="#events">Events</a><a href="#disabled">Disable an action</a><a href="#behavior">Interaction notes</a></nav>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#preview">Try it</a><a href="#create">Create a button</a><a href="#factory">Factory Buttons</a><a href="#events">Events</a><a href="#disabled">Disable an action</a><a href="#behavior">Interaction notes</a></nav>
 </div>
 </body>
 </html>
