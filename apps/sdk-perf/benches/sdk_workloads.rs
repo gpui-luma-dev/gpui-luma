@@ -160,6 +160,9 @@ fn run(kind: SceneKind, look: LookKind, count: usize, cycles: usize, out: &mut d
     // A bounded idle interval with no requested animation is not native idle CPU.
     cx.executor().advance_clock(Duration::from_secs(1));
     cx.run_until_parked();
+    // add_window_view registers its context for explicit on_quit cleanup.
+    app.quit();
+    app.run_until_parked();
     Ok(())
 }
 
