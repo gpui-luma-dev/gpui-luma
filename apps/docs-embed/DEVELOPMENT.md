@@ -57,6 +57,13 @@ Chart tab changes release the previous iframe document; plots retain pointer inp
 
 ## Validation
 
+Run `just pre-pr-checks` before publishing a PR. It includes the native library,
+WASM, documentation example, JavaScript, workflow, and Python checks. Install
+Node.js and actionlint on `PATH` and the `wasm32-unknown-unknown` Rust target.
+It does not launch applications or build the deployment runtime.
+
+For focused runtime validation and deployment packaging:
+
 ```sh
 cargo fmt --all --check
 cargo clippy --locked -p luma-docs-embed --target wasm32-unknown-unknown -- -D warnings
