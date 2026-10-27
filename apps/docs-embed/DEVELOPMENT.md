@@ -13,7 +13,7 @@ Requirements: Rust, Python 3, the `wasm32-unknown-unknown` target, and a
 
 ```sh
 rustup target add wasm32-unknown-unknown
-cargo install wasm-bindgen-cli --version 0.2.126 --locked
+cargo install wasm-bindgen-cli --version 0.2.129 --locked
 sh apps/docs-embed/build.sh
 just docs-serve
 ```
