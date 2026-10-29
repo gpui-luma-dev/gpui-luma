@@ -1,12 +1,17 @@
 # Live documentation examples
 
-The documentation runs primary controls, color controls, and plots in a GPUI-owned
+The documentation runs primary controls, color controls, and plots in an xgpui-owned
 canvas. Each marked `data-live-example="<control>-basic"` Rust block in `docs/`
 is the source of truth: `build.rs` decodes it into an include, so the browser runs
 the displayed constructor and callbacks. `src/web.rs` provides application setup,
 bounds, theme synchronization, and callback readouts.
 
 ## Build and preview
+
+The workspace uses the published `xgpui` and `xgpui-platform` 1.0.0 crates.
+See [xgpui](https://xgpui.dev/) for framework documentation.
+This browser app uses `xgpui-web` 1.0.0, aliased as `gpui_web`; Rust imports
+retain the `gpui` name through the workspace dependency alias.
 
 Requirements: Rust, Python 3, the `wasm32-unknown-unknown` target, and a
 `wasm-bindgen-cli` version matching `wasm-bindgen` in `Cargo.lock`.
