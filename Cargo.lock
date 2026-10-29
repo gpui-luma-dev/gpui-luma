@@ -2089,7 +2089,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "fasteval",
@@ -2105,7 +2105,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-color"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "gpui-luma",
@@ -2118,7 +2118,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-look-radix"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "gpui-luma",
@@ -2129,7 +2129,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-look-shadcn"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "gpui-luma",
@@ -2142,7 +2142,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-plot"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "gpui-luma",
  "xgpui",
@@ -2867,7 +2867,7 @@ dependencies = [
 
 [[package]]
 name = "luma-plot-viz"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "gpui-luma",
