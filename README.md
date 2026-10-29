@@ -1,13 +1,17 @@
 # gpui-luma
 
-GPUI component library with a lookless control SDK, Shadcn and Radix look adapters,
-color controls, and desktop example apps. Documentation is hosted at
+Component library built on [xgpui](https://xgpui.dev/), with a lookless
+control SDK, Shadcn and Radix look adapters, color controls, and desktop example apps. Documentation is hosted at
 [gpui-luma.dev](https://gpui-luma.dev). Source lives at
 [gpui-luma-dev/gpui-luma](https://github.com/gpui-luma-dev/gpui-luma).
 
 Requires a recent Rust stable toolchain (`rust-toolchain.toml` tracks `stable`).
 
 ## Build an app
+
+Luma now uses xgpui 1.0.0 instead of gpui-unofficial. The dependency aliases
+`gpui` and `gpui_platform` keep existing Rust imports unchanged. Browser builds
+use `xgpui-web`, aliased as `gpui_web`.
 
 Use the published crates directly; a GitHub checkout is only needed to run the
 repository’s example apps or contribute to the libraries.
@@ -16,8 +20,8 @@ repository’s example apps or contribute to the libraries.
 cargo new my-luma-app
 cd my-luma-app
 cargo add gpui-luma@0.2 gpui-luma-look-shadcn@0.2
-cargo add gpui-unofficial@=1.24.2 --rename gpui
-cargo add gpui-platform-gpui-unofficial@=1.24.2 --rename gpui_platform --features font-kit
+cargo add xgpui@=1.0.0 --rename gpui
+cargo add xgpui-platform@=1.0.0 --rename gpui_platform --features font-kit
 ```
 
 Add the [complete app example](https://gpui-luma.dev/#sample) to `src/main.rs`, then
@@ -29,6 +33,8 @@ Use `0.2` for Luma dependencies to accept compatible `0.2.x` releases. Run
 
 ```toml
 [dependencies]
+gpui = { package = "xgpui", version = "=1.0.0" }
+gpui_platform = { package = "xgpui-platform", version = "=1.0.0", features = ["font-kit"] }
 gpui-luma = "0.2"
 gpui-luma-look-shadcn = "0.2"
 # Alternatively: gpui-luma-look-radix = "0.2"

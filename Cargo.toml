@@ -44,11 +44,11 @@ gpui-luma-look-shadcn = { version = "0.2.3", path = "crates/look-shadcn" }
 gpui-luma-look-radix = { version = "0.2.3", path = "crates/look-radix" }
 gpui-luma-plot = { version = "0.2.3", path = "crates/plot" }
 luma-app-common = { path = "apps/common" }
-gpui = { package = "gpui-unofficial", version = "=1.25.3" }
+gpui = { package = "xgpui", version = "=1.0.0" }
 lucide-svg-static = { package = "lucide-static-svg", version = "1.45.0" }
 gpui_platform = {
-  package = "gpui-platform-gpui-unofficial",
-  version = "=1.25.3",
+  package = "xgpui-platform",
+  version = "=1.0.0",
   features = ["font-kit"],
 }
 image = "0.25"
@@ -94,10 +94,10 @@ opt-level = 1
 [profile.dev.package.luma-shell-vscode]
 opt-level = 1
 
-[profile.dev.package.gpui-unofficial]
+[profile.dev.package.xgpui]
 opt-level = 3
 
-[profile.dev.package.gpui-platform-gpui-unofficial]
+[profile.dev.package.xgpui-platform]
 opt-level = 3
 
 [profile.dev.package.smol]
