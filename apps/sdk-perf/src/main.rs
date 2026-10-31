@@ -21,7 +21,12 @@ fn main() -> anyhow::Result<()> {
             gpui_luma::key_handling::bind_default_control_keys(cx);
             let bounds = Bounds::centered(None, size(px(1200.0), px(800.0)), cx);
             let handle = cx.open_window(
-                WindowOptions { window_bounds: Some(WindowBounds::Windowed(bounds)), ..Default::default() },
+                WindowOptions {
+                    window_bounds: Some(WindowBounds::Windowed(bounds)),
+                    #[cfg(target_os = "macos")]
+                    window_background: gpui::WindowBackgroundAppearance::Blurred,
+                    ..Default::default()
+                },
                 |_, cx| {
                     // Inputs above are validated; dataset IDs in the fixture are fixed.
                     cx.new(|cx| Scene::new(kind, look, count, cx).expect("validated profiling fixture"))
