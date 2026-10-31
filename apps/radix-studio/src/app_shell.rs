@@ -11,6 +11,8 @@ pub fn open(cx: &mut App) -> anyhow::Result<()> {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             titlebar: Some(TitleBar::title_bar_options()),
             app_owns_titlebar_drag: true,
+            #[cfg(target_os = "macos")]
+            window_background: gpui::WindowBackgroundAppearance::Blurred,
             ..Default::default()
         },
         |window, cx| cx.new(|cx| RadixStudioApp::new(window, cx)),
