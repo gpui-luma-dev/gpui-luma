@@ -77,8 +77,9 @@ cd gpui-luma
 **Use release builds for optimal app performance. Debug builds are intended for
 development and can make rendering and interactions noticeably slower.**
 
-The [justfile](justfile) runs apps in release mode by default. Use the `-debug`
-recipe for a faster development build. Without `just`, run the corresponding
+The [justfile](justfile) runs apps and explicit builds in release mode by default.
+Use `just --set profile dev <recipe>` for a development build. Run `just` to list
+recipes without launching an app. Without `just`, run the corresponding
 `cargo run -p <package> --release` command.
 
 **Luma Studio** — Shadcn look workbench (control docs, theme inspection):
@@ -86,8 +87,8 @@ recipe for a faster development build. Without `just`, run the corresponding
 ![Luma Studio](docs/screenshots/luma-shadcn.png)
 
 ```bash
-just luma-studio
-# Debug: just luma-studio-debug
+just app-studio
+# Debug: just --set profile dev app-studio
 ```
 
 **Luma Radix Studio** — Radix style guide, custom palette editor, and control previews:
@@ -95,8 +96,8 @@ just luma-studio
 ![Luma Radix Studio](docs/screenshots/luma-radix.png)
 
 ```bash
-just luma-radix
-# Debug: just luma-radix-debug
+just app-radix
+# Debug: just --set profile dev app-radix
 ```
 
 **Luma Plot Viz** — chart galleries using `gpui-luma-plot` and the SDK’s built-in styling, with line, area, bar, pie, radar, and radial examples:
@@ -104,29 +105,29 @@ just luma-radix
 ![Luma Plot Viz showing bar charts in dark mode](docs/screenshots/luma-plot.png)
 
 ```bash
-just luma-plot
-# Debug: just luma-plot-debug
+just app-plot
+# Debug: just --set profile dev app-plot
 ```
 
 Additional examples (also release builds by default):
 
 ```bash
-just neumorphic-demo
+just app-neumorphic
 just shell-detached
-just shell-titlebar
+just shell-split-titlebar
 just shell-vscode
 just shell-2026
 ```
 
-For profiling, use `just luma-studio-perf` to enable the Metal HUD, or
-`just luma-studio-trace` to run a debug build with Rust backtraces.
+For profiling, use `just perf-studio` to enable the Metal HUD, or
+`just --set profile dev app-studio-backtrace` to run a debug build with Rust backtraces.
 
 The shell demos accept `default` or a built-in Shadcn theme ID,
-such as `retro-arcade`, as their first argument. The justfile recipes pass
-`default`; choose a theme with Cargo directly:
+such as `retro-arcade`, as their first argument. Recipes forward arguments to the
+app and use the default theme when none is provided:
 
 ```bash
-cargo run -p luma-shell-vscode --release -- retro-arcade
+just shell-vscode retro-arcade
 ```
 
 ## Prebuilt executables
@@ -142,20 +143,24 @@ artifacts are retained for seven days.
 From the repository root, use the library checks during development:
 
 ```bash
-just check
-just build
-just test-sdk
-just clippy-sdk
-just doc-test
+just sdk-check
+just sdk-build
+just sdk-test
+just sdk-clippy
+just sdk-doc-test
 ```
 
-These target Cargo’s default members: the five library crates. For the full
-workspace, use `just check-all`, `just build-all`, or `just ci` (format check,
-workspace Clippy, and workspace tests). Run `just format` to format the workspace.
+Check, build, and Clippy target Cargo’s five default library members. The test
+recipes use CI’s selected library suites; `sdk-test` also includes `luma-app-common`.
+For the full workspace, use `just workspace-check`, `just workspace-build`, or
+`just workspace-test`. Run `just apps-build` to compile all native apps without
+launching them. `just ci` runs formatting, Python helper tests, workspace Clippy,
+selected library tests and doc-tests, and control documentation checks. Run
+`just fmt` to format the workspace.
 Before sending a PR, run:
 
 ```bash
-just pre-pr-checks
+just pre-pr
 ```
 
 This runs formatting, workflow lint, native and WASM Clippy, library tests and

@@ -23,7 +23,7 @@ sh apps/docs-embed/build.sh
 just docs-serve
 ```
 
-Open <http://127.0.0.1:8766/button.html>. `just docs-embed` builds the runtime;
+Open <http://127.0.0.1:8766/button.html>. `just docs-build` builds the runtime;
 `sh apps/docs-embed/build.sh dev` uses a faster development profile. Native-only
 linker flags must be cleared for WASM; for example, use
 `env -u RUSTFLAGS sh apps/docs-embed/build.sh` if the environment adds `-lc++`.
@@ -62,7 +62,7 @@ Chart tab changes release the previous iframe document; plots retain pointer inp
 
 ## Validation
 
-Run `just pre-pr-checks` before publishing a PR. It includes the native library,
+Run `just pre-pr` before publishing a PR. It includes the native library,
 WASM, documentation example, JavaScript, workflow, and Python checks. Install
 Node.js and actionlint on `PATH` and the `wasm32-unknown-unknown` Rust target.
 It does not launch applications or build the deployment runtime.
