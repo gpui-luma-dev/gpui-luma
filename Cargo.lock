@@ -857,25 +857,9 @@ checksum = "f6140449f97a6e97f9511815c5632d84c8aacf8ac271ad77c559218161a1373c"
 dependencies = [
  "bitflags 1.3.2",
  "block",
- "cocoa-foundation 0.1.2",
+ "cocoa-foundation",
  "core-foundation 0.9.4",
  "core-graphics 0.23.2",
- "foreign-types",
- "libc",
- "objc",
-]
-
-[[package]]
-name = "cocoa"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f79398230a6e2c08f5c9760610eb6924b52aa9e7950a619602baba59dcbbdbb2"
-dependencies = [
- "bitflags 2.13.2",
- "block",
- "cocoa-foundation 0.2.0",
- "core-foundation 0.10.1",
- "core-graphics 0.24.0",
  "foreign-types",
  "libc",
  "objc",
@@ -891,20 +875,6 @@ dependencies = [
  "block",
  "core-foundation 0.9.4",
  "core-graphics-types 0.1.3",
- "libc",
- "objc",
-]
-
-[[package]]
-name = "cocoa-foundation"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e14045fb83be07b5acf1c0884b2180461635b433455fa35d1cd6f17f1450679d"
-dependencies = [
- "bitflags 2.13.2",
- "block",
- "core-foundation 0.10.1",
- "core-graphics-types 0.2.0",
  "libc",
  "objc",
 ]
@@ -2089,7 +2059,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "fasteval",
@@ -2105,7 +2075,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-color"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "gpui-luma",
@@ -2118,7 +2088,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-look-radix"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "gpui-luma",
@@ -2129,7 +2099,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-look-shadcn"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "gpui-luma",
@@ -2142,7 +2112,7 @@ dependencies = [
 
 [[package]]
 name = "gpui-luma-plot"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "gpui-luma",
  "xgpui",
@@ -2867,7 +2837,7 @@ dependencies = [
 
 [[package]]
 name = "luma-plot-viz"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "anyhow",
  "gpui-luma",
@@ -3129,21 +3099,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
 dependencies = [
  "autocfg",
-]
-
-[[package]]
-name = "metal"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7047791b5bc903b8cd963014b355f71dc9864a9a0b727057676c1dcae5cbc15"
-dependencies = [
- "bitflags 2.13.2",
- "block",
- "core-graphics-types 0.2.0",
- "foreign-types",
- "log",
- "objc",
- "paste",
 ]
 
 [[package]]
@@ -3605,7 +3560,9 @@ checksum = "a0125f776a10d00af4152d74616409f0d4a2053a6f57fa5b7d6aa2854ac04794"
 dependencies = [
  "bitflags 2.13.2",
  "block2 0.6.2",
+ "dispatch2",
  "objc2 0.6.4",
+ "objc2-core-foundation",
  "objc2-foundation 0.3.2",
 ]
 
@@ -3629,9 +3586,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96c1358452b371bf9f104e21ec536d37a650eb10f7ee379fff67d2e08d537f1f"
 dependencies = [
  "bitflags 2.13.2",
+ "block2 0.6.2",
+ "libc",
  "objc2 0.6.4",
  "objc2-core-foundation",
  "objc2-core-graphics",
+ "objc2-core-video",
  "objc2-foundation 0.3.2",
  "objc2-metal 0.3.2",
 ]
@@ -6766,9 +6726,9 @@ checksum = "bec9e4a500ca8864c5b47b8b482a73d62e4237670e5b5f1d6b9e3cae50f28f2b"
 
 [[package]]
 name = "xgpui"
-version = "1.0.0"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56ed15bfa2c95f329f996feb8a016d1f0f6b7a21f4e45850a34e9cd88455c112"
+checksum = "e0fd1b4c5020119f23df04ad2a49d68d603d58b8e0fc0e79f3aa920184d9b68d"
 dependencies = [
  "accesskit",
  "anyhow",
@@ -6835,9 +6795,9 @@ dependencies = [
 
 [[package]]
 name = "xgpui-apple"
-version = "1.0.0"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9954de9ded6d2da1cb9183507ccc3b98fc51ce8e02879500eb0a7272875c70b"
+checksum = "b6f1e2089360d38491d1d860532b1101c7dae481a305015818e5826c0d309ad5"
 dependencies = [
  "anyhow",
  "async-task",
@@ -6858,9 +6818,9 @@ dependencies = [
  "libc",
  "log",
  "mach2",
- "metal",
  "objc2 0.6.4",
  "objc2-core-foundation",
+ "objc2-core-graphics",
  "objc2-core-text",
  "objc2-core-video",
  "objc2-foundation 0.3.2",
@@ -6877,9 +6837,9 @@ dependencies = [
 
 [[package]]
 name = "xgpui-linux"
-version = "1.0.0"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e5aac70ce659708e893634d4b895a69754af398e851957c25dd4f7224fdb362"
+checksum = "a9a8c6836e9963ce052740020004efaa9e307829dfd2e22f450fc1d9157ded40"
 dependencies = [
  "accesskit",
  "accesskit_unix",
@@ -6922,15 +6882,14 @@ dependencies = [
 
 [[package]]
 name = "xgpui-macos"
-version = "1.0.0"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c8c0327505ed3049548a998fccbdb7c76845088ca6cc4ab37d42cd23b7296d2"
+checksum = "e913ab71100e8eb154bd731c3d727c42878f6cebd5cafbe86943cc1ffb6ba9e0"
 dependencies = [
  "accesskit",
  "accesskit_macos",
  "anyhow",
  "block2 0.6.2",
- "cocoa 0.26.0",
  "collections-gpui-unofficial",
  "core-foundation 0.10.1",
  "core-foundation-sys",
@@ -6943,7 +6902,6 @@ dependencies = [
  "image",
  "itertools",
  "log",
- "objc",
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
  "objc2-core-video",
@@ -6974,9 +6932,9 @@ dependencies = [
 
 [[package]]
 name = "xgpui-platform"
-version = "1.0.0"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f3d4eedf5df37a7c6b4c9e0f28f63349b16bbc88225b0fa891bc01d7ef75ef6"
+checksum = "34b72794ab57b320da144f9732a492d10c6ec07dc5ab5d32702a35e00494063e"
 dependencies = [
  "anyhow",
  "console_error_panic_hook",
@@ -6989,9 +6947,9 @@ dependencies = [
 
 [[package]]
 name = "xgpui-web"
-version = "1.0.0"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fef9c083ce3826152aa930c2014b3a33ba0ee3705e6eaff3c7809713adc5dc0c"
+checksum = "7c58ab6b5dfdd2db52131e9f02667c621a104f7e3bc64bd38d608e7c54fbe5fe"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -7019,9 +6977,9 @@ dependencies = [
 
 [[package]]
 name = "xgpui-wgpu"
-version = "1.0.0"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13b43c19cd9fce2bfa479808a5634501b4c279641156ccebd9b58528b7941eac"
+checksum = "7e0796a1d2a21ff3fc57f149e61cee360e939e5e7da11b4167d404e8c1bfd77d"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -7046,9 +7004,9 @@ dependencies = [
 
 [[package]]
 name = "xgpui-windows"
-version = "1.0.0"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "012d02a28698a81888a9280a11b136d15e0cebc126fb303b3a058b6c94c71a63"
+checksum = "6cd54d5639ff1643a8a29e1908f02e65bbbfedca1c0c561ba432f9e4c071d7fc"
 dependencies = [
  "accesskit",
  "accesskit_windows",
@@ -7297,7 +7255,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6b338d705ae33a43ca00287c11129303a7a0aa57b101b72a1c08c863f698ac8"
 dependencies = [
  "anyhow",
- "cocoa 0.25.0",
+ "cocoa",
  "core-graphics-helmer-fork",
  "log",
  "objc",
