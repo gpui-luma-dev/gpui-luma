@@ -12,6 +12,8 @@ pub fn open(cx: &mut App) -> anyhow::Result<()> {
             titlebar: Some(TitleBar::title_bar_options()),
             // No custom TitleBar is rendered; let the OS handle title bar dragging.
             app_owns_titlebar_drag: false,
+            #[cfg(target_os = "macos")]
+            window_background: gpui::WindowBackgroundAppearance::Blurred,
             ..Default::default()
         },
         |window, cx| cx.new(|cx| NeumorphicDemoApp::new(window, cx)),

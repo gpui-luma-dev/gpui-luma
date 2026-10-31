@@ -17,6 +17,8 @@ pub fn open(cx: &mut App, theme_choice: ShellThemeChoice) -> anyhow::Result<()> 
             window_min_size: Some(size(px(720.0), px(480.0))),
             titlebar: Some(titlebar),
             app_owns_titlebar_drag: true,
+            #[cfg(target_os = "macos")]
+            window_background: gpui::WindowBackgroundAppearance::Blurred,
             ..Default::default()
         },
         |window, cx| cx.new(|cx| Shell2026App::new(window, cx, theme_choice)),
