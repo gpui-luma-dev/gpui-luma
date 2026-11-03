@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Hsla, KeyDownEvent, MouseButton, MouseDownEvent, Pixels, ScrollWheelEvent,
+    AnyElement, App, Bounds, ClickEvent, Hsla, KeyDownEvent, MouseButton, MouseDownEvent, Pixels, ScrollEvent,
     SharedString, Stateful, Window, div, prelude::*, px,
 };
 
@@ -16,7 +16,7 @@ use crate::controls::textfield::TextFieldState;
 use crate::theme::{ControlSize, LumaTextStyle};
 
 pub type SearchSelectorKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
-pub type SearchSelectorScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+pub type SearchSelectorScrollWheelHandler = Box<dyn Fn(&ScrollEvent, &mut Window, &mut App) + 'static>;
 pub type SearchSelectorTriggerClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type SearchSelectorTriggerHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type SearchSelectorTriggerMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -37,7 +37,7 @@ pub struct SearchSelectorTemplateHandlers {
 }
 
 fn noop_key_down(_: &KeyDownEvent, _: &mut Window, _: &mut App) {}
-fn noop_scroll_wheel(_: &ScrollWheelEvent, _: &mut Window, _: &mut App) {}
+fn noop_scroll_wheel(_: &ScrollEvent, _: &mut Window, _: &mut App) {}
 fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
 fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
 fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
@@ -213,7 +213,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             .flex()
             .flex_col()
             .on_key_down(key_down)
-            .on_scroll_wheel(scroll_wheel)
+            .on_scroll(scroll_wheel)
             .child(
                 div()
                     .on_children_prepainted(move |bounds, window, cx| {

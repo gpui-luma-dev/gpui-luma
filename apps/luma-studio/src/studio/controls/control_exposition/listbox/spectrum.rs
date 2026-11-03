@@ -184,7 +184,7 @@ impl Render for SpectrumListExample {
 
 #[cfg(all(test, feature = "test-support"))]
 mod tests {
-    use gpui::{ScrollDelta, ScrollWheelEvent, TestAppContext, TouchPhase, VisualTestContext, point};
+    use gpui::{ScrollDelta, ScrollEvent, TestAppContext, TouchPhase, VisualTestContext, point};
     use super::*;
 
     fn settle(cx: &mut VisualTestContext) {
@@ -242,10 +242,11 @@ mod tests {
         settle(cx);
         cx.update(|_, app| assert_eq!(view.read(app).list.state.selected_keys().count(), 0));
         for (delta, visible, constructed) in [(-12_000.0, 200..205, 198..207), (-30.0, 200..206, 198..208)] {
-            cx.simulate_event(ScrollWheelEvent {
+            cx.simulate_event(ScrollEvent {
                 position: point(first.left() + px(30.0), first.top() + px(25.0)),
                 delta: ScrollDelta::Pixels(point(px(0.0), px(delta))),
                 modifiers: Default::default(),
+                source: gpui::ScrollSource::Pointer,
                 touch_phase: TouchPhase::Moved,
             });
             settle(cx);

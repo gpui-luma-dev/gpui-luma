@@ -1,6 +1,6 @@
 use gpui_luma::controls::scrollbar;
 use gpui_luma::controls::scrollbar::ScrollbarEventExt;
-use gpui::{App, Context, Entity, FocusHandle, Render, Window, ScrollWheelEvent, MouseButton, div, prelude::*, px};
+use gpui::{App, Context, Entity, FocusHandle, Render, Window, ScrollEvent, MouseButton, div, prelude::*, px};
 use gpui_luma::{
     vstack,
     controls::scrollbar::{Scrollbar, ScrollbarEvent},
@@ -76,7 +76,7 @@ impl ScrollingBars {
     fn pan(&mut self, amount: f64, cx: &mut Context<Self>) {
         self.set_start(self.start + amount, cx);
     }
-    fn wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn wheel(&mut self, event: &ScrollEvent, window: &mut Window, cx: &mut Context<Self>) {
         let Some((_, width)) = self.layout else {
             return;
         };
@@ -190,7 +190,7 @@ impl Render for ScrollingBars {
                     cx.stop_propagation();
                 }),
             )
-            .on_scroll_wheel(cx.listener(Self::wheel))
+            .on_scroll(cx.listener(Self::wheel))
             .on_action(cx.listener(|this, _: &DecreaseValue, _, cx| this.pan(-1.0, cx)))
             .on_action(cx.listener(|this, _: &IncreaseValue, _, cx| this.pan(1.0, cx)))
             .on_action(cx.listener(|this, _: &DecreaseValueLarge, _, cx| this.pan(-SPAN * 0.8, cx)))

@@ -253,7 +253,7 @@ impl Render for TextArea {
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::handle_mouse_up))
             .on_mouse_move(cx.listener(Self::handle_mouse_move))
             .on_click(cx.listener(Self::handle_click))
-            .on_scroll_wheel(cx.listener(Self::handle_scroll_wheel))
+            .on_scroll(cx.listener(Self::handle_scroll_wheel))
             .on_key_down(cx.listener(Self::handle_key_down))
             .on_drag(TextAreaDrag::new(self.model.id.clone()), |drag, _, _, cx| {
                 cx.stop_propagation();

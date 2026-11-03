@@ -3,7 +3,7 @@ use std::{ops::Range, time::Duration};
 
 use gpui::{
     Bounds, ClipboardItem, Context, DragMoveEvent, EntityInputHandler, KeyDownEvent, MouseDownEvent, MouseMoveEvent,
-    MouseUpEvent, Pixels, Point, ScrollWheelEvent, Task, UTF16Selection, Window, px,
+    MouseUpEvent, Pixels, Point, ScrollEvent, Task, UTF16Selection, Window, px,
 };
 
 use super::super::TextAreaTemplateHandlers;
@@ -183,12 +183,7 @@ impl TextArea {
         }
     }
 
-    pub(super) fn handle_scroll_wheel(
-        &mut self,
-        event: &ScrollWheelEvent,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    pub(super) fn handle_scroll_wheel(&mut self, event: &ScrollEvent, window: &mut Window, cx: &mut Context<Self>) {
         let policy = self.model.scroll_interaction;
         let bar = self.scrollbar.read(cx).focus_handle(cx);
         if !self.model.enabled

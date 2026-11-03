@@ -505,7 +505,7 @@ impl<K: Clone + Eq + Hash + 'static> ListBoxScrollHandle<K> {
         let focused = state.is_focused();
         surface
             .on_any_mouse_down(move |_, _, _| pointer_motion.cancel())
-            .on_scroll_wheel(move |event, window, cx| {
+            .on_scroll(move |event, window, cx| {
                 let policy = wheel_policy.get();
                 let focused = wheel_owner
                     .borrow()

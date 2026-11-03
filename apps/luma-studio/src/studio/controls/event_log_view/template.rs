@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{App, Div, KeyDownEvent, MouseButton, MouseDownEvent, ScrollWheelEvent, Stateful, Window, div, prelude::*, px};
+use gpui::{App, Div, KeyDownEvent, MouseButton, MouseDownEvent, ScrollEvent, Stateful, Window, div, prelude::*, px};
 
 use gpui_luma::controls::scroll_container::ScrollContainer;
 use gpui_luma_look_shadcn::LumaTypographyExt;
@@ -8,7 +8,7 @@ use gpui_luma_look_shadcn::LumaTypographyExt;
 use super::model::EventLogViewRenderModel;
 use super::theme::EventLogTheme;
 
-type ScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+type ScrollWheelHandler = Box<dyn Fn(&ScrollEvent, &mut Window, &mut App) + 'static>;
 
 type MouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 type KeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
@@ -80,7 +80,7 @@ impl EventLogViewTemplate for ThemedEventLogViewTemplate {
             .id(model.id.clone())
             .track_focus(model.focus_handle)
             .on_key_down(handlers.key_down)
-            .on_scroll_wheel(handlers.scroll_wheel)
+            .on_scroll(handlers.scroll_wheel)
             .overflow_hidden()
             .rounded(px(look.radius))
             .border(px(look.border_width))

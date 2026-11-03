@@ -1,5 +1,5 @@
 use gpui::{
-    Bounds, ClickEvent, Context, Entity, EventEmitter, IntoElement, KeyDownEvent, Pixels, Render, ScrollWheelEvent,
+    Bounds, ClickEvent, Context, Entity, EventEmitter, IntoElement, KeyDownEvent, Pixels, Render, ScrollEvent,
     SharedString, Subscription, TextRun, Window, font, px,
 };
 use crate::controls::selector_list::{SelectorItem, SelectorPanelClickHandler, SelectorPanelHoverHandler};
@@ -303,7 +303,7 @@ impl AutocompleteControl {
         cx.notify();
     }
 
-    fn handle_popup_scroll_wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_popup_scroll_wheel(&mut self, event: &ScrollEvent, window: &mut Window, cx: &mut Context<Self>) {
         use gpui::Focusable;
         if !self.model.enabled || !self.behavior.state.open || self.behavior.state.filtered.is_empty() {
             return;

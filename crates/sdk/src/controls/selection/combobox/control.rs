@@ -5,7 +5,7 @@ mod click_tests;
 use gpui::App;
 use gpui::{
     Bounds, ClickEvent, Context, Entity, EventEmitter, IntoElement, KeyDownEvent, MouseDownEvent, Pixels, Render,
-    ScrollWheelEvent, SharedString, Subscription, TextRun, Window, font, px,
+    ScrollEvent, SharedString, Subscription, TextRun, Window, font, px,
 };
 
 use crate::controls::selector_list::{SelectorPanelClickHandler, SelectorPanelHoverHandler};
@@ -485,7 +485,7 @@ impl ComboBoxControl {
         cx.notify();
     }
 
-    fn handle_popup_scroll_wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_popup_scroll_wheel(&mut self, event: &ScrollEvent, window: &mut Window, cx: &mut Context<Self>) {
         use gpui::Focusable;
         if !self.model.enabled || !self.behavior.state.open || self.behavior.state.filtered.is_empty() {
             return;
@@ -799,8 +799,7 @@ fn popup_wheel_applies_once_and_pass_through_reaches_page() {
         let bounds = combo.read(app).trigger_bounds.unwrap();
         point(bounds.left() + px(30.0), bounds.bottom() + px(40.0))
     });
-    let event =
-        ScrollWheelEvent { position, delta: ScrollDelta::Pixels(point(px(0.0), px(-25.0))), ..Default::default() };
+    let event = ScrollEvent { position, delta: ScrollDelta::Pixels(point(px(0.0), px(-25.0))), ..Default::default() };
     cx.simulate_event(event.clone());
     cx.run_until_parked();
     cx.update(|window, app| {

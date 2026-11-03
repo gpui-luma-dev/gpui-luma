@@ -135,12 +135,7 @@ where
         cx.notify();
     }
 
-    fn handle_popup_scroll_wheel(
-        &mut self,
-        event: &gpui::ScrollWheelEvent,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_popup_scroll_wheel(&mut self, event: &gpui::ScrollEvent, window: &mut Window, cx: &mut Context<Self>) {
         let policy = self.model.scroll_interaction;
         if !self.model.enabled
             || !self.open

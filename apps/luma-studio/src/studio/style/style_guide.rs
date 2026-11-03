@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use gpui::{
     AnyElement, App, Context, Entity, FontWeight, IntoElement, KeyDownEvent, MouseButton, Pixels, Render, ScrollHandle,
-    ScrollWheelEvent, Window, div, point, prelude::*, px,
+    ScrollEvent, Window, div, point, prelude::*, px,
 };
 use gpui_luma::controls::sidebar::SidebarControl;
 use gpui_luma::controls::tabs::{Tabs, TabsEvent, TabsItem, TabsWidthMode};
@@ -938,7 +938,7 @@ impl StyleGuidePanel {
         let shell = div().relative().w_full().child(content);
 
         if Self::section_allows_interaction(section) {
-            return shell.on_scroll_wheel(cx.listener(Self::handle_section_overlay_scroll_wheel)).into_any_element();
+            return shell.on_scroll(cx.listener(Self::handle_section_overlay_scroll_wheel)).into_any_element();
         }
 
         shell
@@ -955,7 +955,7 @@ impl StyleGuidePanel {
                         window.prevent_default();
                         cx.stop_propagation();
                     })
-                    .on_scroll_wheel(cx.listener(Self::handle_section_overlay_scroll_wheel))
+                    .on_scroll(cx.listener(Self::handle_section_overlay_scroll_wheel))
                     .on_key_down(cx.listener(Self::handle_section_overlay_key_down)),
             )
             .into_any_element()
@@ -1170,7 +1170,7 @@ impl StyleGuidePanel {
 
     fn handle_section_overlay_scroll_wheel(
         &mut self,
-        event: &ScrollWheelEvent,
+        event: &ScrollEvent,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {

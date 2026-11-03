@@ -1,7 +1,7 @@
 use gpui_luma::controls::scrollbar::ScrollbarEventExt;
 use std::sync::Arc;
 
-use gpui::{App, Context, FocusHandle, Focusable, KeyDownEvent, Render, ScrollWheelEvent, Subscription, Window, px};
+use gpui::{App, Context, FocusHandle, Focusable, KeyDownEvent, Render, ScrollEvent, Subscription, Window, px};
 
 use gpui_luma::controls::scroll_container::ScrollContainer;
 use gpui_luma::controls::scrollbar::ScrollbarEvent;
@@ -160,7 +160,7 @@ impl EventLogView {
         self.resolved_look(&scale, false).typography.line_height
     }
 
-    fn handle_scroll_wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_scroll_wheel(&mut self, event: &ScrollEvent, window: &mut Window, cx: &mut Context<Self>) {
         if !self.focus_handle.contains_focused(window, cx) || self.scroll.max_vertical_offset().as_f32() <= 0.5 {
             return;
         }

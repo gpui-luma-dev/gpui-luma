@@ -101,7 +101,7 @@ impl SelectorItemsPanelLook {
 pub type SelectorPanelClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type SelectorPanelHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type SelectorPanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub type SelectorPanelScrollWheelHandler = Box<dyn Fn(&gpui::ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+pub type SelectorPanelScrollWheelHandler = Box<dyn Fn(&gpui::ScrollEvent, &mut Window, &mut App) + 'static>;
 
 /// Unscrolled row geometry, reported by a panel after layout.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -387,7 +387,7 @@ where
             .overflow_hidden()
             .when(policy_routing, |root| root.block_mouse_except_scroll())
             .when(!policy_routing, |root| root.occlude())
-            .when_some(scroll_wheel, |root, handler| root.on_scroll_wheel(handler))
+            .when_some(scroll_wheel, |root, handler| root.on_scroll(handler))
             .on_mouse_down(MouseButton::Left, |_, _, cx| {
                 cx.stop_propagation();
             })

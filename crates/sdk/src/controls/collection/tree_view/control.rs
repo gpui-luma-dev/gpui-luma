@@ -1,5 +1,5 @@
 #[cfg(all(test, feature = "test-support"))]
-use gpui::ScrollWheelEvent;
+use gpui::ScrollEvent;
 use std::{
     cell::RefCell,
     collections::{HashMap, HashSet},

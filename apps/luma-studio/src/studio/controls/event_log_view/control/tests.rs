@@ -40,7 +40,7 @@ fn setup(app: &mut TestAppContext, populated: bool) -> (Entity<Page>, &mut Visua
     (page, cx)
 }
 fn wheel(cx: &mut VisualTestContext, delta: ScrollDelta) {
-    cx.simulate_event(ScrollWheelEvent { position: point(px(20.0), px(20.0)), delta, ..Default::default() });
+    cx.simulate_event(ScrollEvent { position: point(px(20.0), px(20.0)), delta, ..Default::default() });
     cx.run_until_parked();
 }
 fn top(log: &Entity<EventLogView>, cx: &mut VisualTestContext) {

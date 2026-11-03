@@ -112,7 +112,7 @@ impl Render for ScrollingPlot {
                     cx.stop_propagation();
                 }),
             )
-            .on_scroll_wheel(cx.listener(Self::scroll_wheel))
+            .on_scroll(cx.listener(Self::scroll_wheel))
             .on_action(cx.listener(|this, _: &DecreaseValue, _, cx| this.pan(-6.0, cx)))
             .on_action(cx.listener(|this, _: &IncreaseValue, _, cx| this.pan(6.0, cx)))
             .on_action(cx.listener(|this, _: &DecreaseValueLarge, _, cx| this.pan(-WINDOW_SECONDS * 0.8, cx)))

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, AppContext, Context, Entity, Pixels, ScrollWheelEvent, SharedString, div, prelude::*, px};
+use gpui::{AnyElement, AppContext, Context, Entity, Pixels, ScrollEvent, SharedString, div, prelude::*, px};
 
 use crate::controls::scroll_container::{ScrollContainer, ScrollbarAutoHideActivate, ScrollbarVisibility};
 use crate::controls::scrollbar::{Scrollbar, ScrollbarTemplate};
@@ -109,7 +109,7 @@ impl PopupScrollSurface {
         ((content_height.as_f32() / self.row_height.as_f32()).floor() as usize).max(1)
     }
 
-    pub fn scroll_wheel<T: 'static>(&mut self, event: &ScrollWheelEvent, cx: &mut Context<T>) -> bool {
+    pub fn scroll_wheel<T: 'static>(&mut self, event: &ScrollEvent, cx: &mut Context<T>) -> bool {
         if !self.scrolling_enabled {
             return false;
         }
@@ -167,9 +167,9 @@ impl PopupScrollSurface {
     pub fn render_with_scroll_wheel(
         &self,
         content: AnyElement,
-        handler: impl Fn(&ScrollWheelEvent, &mut gpui::Window, &mut gpui::App) + 'static,
+        handler: impl Fn(&ScrollEvent, &mut gpui::Window, &mut gpui::App) + 'static,
     ) -> AnyElement {
-        div().w_full().on_scroll_wheel(handler).child(self.render_without_wheel(content)).into_any_element()
+        div().w_full().on_scroll(handler).child(self.render_without_wheel(content)).into_any_element()
     }
 
     fn quantize_offset(&self, value: f32) -> f32 {

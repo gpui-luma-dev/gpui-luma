@@ -25,7 +25,7 @@ use crate::studio::style::shared::samples::ButtonStateSample;
 use crate::studio::style::shared::shell::section_shell_with_width;
 use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
 
-type MenuPreviewScrollWheelHandler = Arc<dyn Fn(&gpui::ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+type MenuPreviewScrollWheelHandler = Arc<dyn Fn(&gpui::ScrollEvent, &mut Window, &mut App) + 'static>;
 
 pub(crate) fn render_menu_template_state_section(
     look: Arc<ShadcnLook>,
@@ -231,7 +231,7 @@ fn render_floating_menu_size_cell(
         .items_start()
         .justify_center()
         .py(px(8.0))
-        .on_scroll_wheel(move |event, window, cx| cell_scroll_wheel(event, window, cx))
+        .on_scroll(move |event, window, cx| cell_scroll_wheel(event, window, cx))
         .child(
             render_floating_menu(
                 &id,
@@ -242,7 +242,7 @@ fn render_floating_menu_size_cell(
                 floating_menu_noop_hovers(items.len()),
                 floating_menu_noop_clicks(items.len()),
             )
-            .on_scroll_wheel(move |event, window, cx| scroll_wheel(event, window, cx)),
+            .on_scroll(move |event, window, cx| scroll_wheel(event, window, cx)),
         )
         .into_any_element()
 }
@@ -611,7 +611,7 @@ fn render_floating_menu_state_sample(
         .flex_col()
         .items_center()
         .gap(px(7.0))
-        .on_scroll_wheel(move |event, window, cx| sample_scroll_wheel(event, window, cx))
+        .on_scroll(move |event, window, cx| sample_scroll_wheel(event, window, cx))
         .child(
             render_floating_menu(
                 &id,
@@ -622,7 +622,7 @@ fn render_floating_menu_state_sample(
                 floating_menu_noop_hovers(root_count),
                 floating_menu_noop_clicks(root_count),
             )
-            .on_scroll_wheel(move |event, window, cx| scroll_wheel(event, window, cx)),
+            .on_scroll(move |event, window, cx| scroll_wheel(event, window, cx)),
         )
         .child(
             div()

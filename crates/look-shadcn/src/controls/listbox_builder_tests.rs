@@ -244,7 +244,7 @@ fn empty_destination_accepts_append_and_escape_cancels_once() {
 
 #[test]
 fn virtualized_group_drops_use_collection_gaps_after_rows_are_unmounted() {
-    use gpui::{ScrollDelta, ScrollWheelEvent, TouchPhase};
+    use gpui::{ScrollDelta, ScrollEvent, TouchPhase};
     for same_list in [false, true] {
         let mut app = TestAppContext::single();
         let (view, cx) = app.add_window_view(|_, cx| {
@@ -267,10 +267,11 @@ fn virtualized_group_drops_use_collection_gaps_after_rows_are_unmounted() {
             cx.simulate_mouse_down(point(px(30.0), px(25.0)), MouseButton::Left, Default::default());
             cx.simulate_mouse_move(point(px(60.0), px(25.0)), MouseButton::Left, Default::default());
         }
-        cx.simulate_event(ScrollWheelEvent {
+        cx.simulate_event(ScrollEvent {
             position: point(px(target_x), px(25.0)),
             delta: ScrollDelta::Pixels(point(px(0.0), px(-400.0))),
             modifiers: Default::default(),
+            source: gpui::ScrollSource::Pointer,
             touch_phase: TouchPhase::Moved,
         });
         cx.run_until_parked();

@@ -39,7 +39,7 @@ use crate::studio::style::shared::preview_handlers::{input_noop_click, input_noo
 use crate::studio::style::shared::shell::section_shell_with_width;
 use crate::studio::style::shared::shadow_matrix::{ShadowPreviewShape, render_shadow_token_matrix};
 
-type SelectorPreviewScrollWheelHandler = Arc<dyn Fn(&gpui::ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+type SelectorPreviewScrollWheelHandler = Arc<dyn Fn(&gpui::ScrollEvent, &mut Window, &mut App) + 'static>;
 
 #[derive(Clone, Copy)]
 struct SelectorTemplateStateSample {
@@ -412,7 +412,7 @@ fn render_selector_control_cell(
         .gap(px(6.0))
         .child(trigger)
         .when_some(popup, |root, popup| root.child(popup))
-        .on_scroll_wheel(move |event, window, cx| scroll_wheel(event, window, cx))
+        .on_scroll(move |event, window, cx| scroll_wheel(event, window, cx))
         .into_any_element()
 }
 
@@ -749,7 +749,7 @@ fn render_selector_popup_preview(
                 },
                 AutocompleteItemsTemplateHandlers { item_hovers, item_clicks },
             )
-            .on_scroll_wheel({
+            .on_scroll({
                 let scroll_wheel = scroll_wheel.clone();
                 move |event, window, cx| scroll_wheel(event, window, cx)
             })
@@ -787,7 +787,7 @@ fn render_selector_popup_preview(
                 SelectorItemsTemplateHandlers { item_hovers, item_clicks, ..Default::default() },
                 cx,
             )
-            .on_scroll_wheel({
+            .on_scroll({
                 let scroll_wheel = scroll_wheel.clone();
                 move |event, window, cx| scroll_wheel(event, window, cx)
             })
@@ -827,7 +827,7 @@ fn render_selector_popup_preview(
             let search_content = look
                 .input_textfield_template()
                 .render(&search_model, input_textfield_handlers(), window, cx)
-                .on_scroll_wheel({
+                .on_scroll({
                     let scroll_wheel = scroll_wheel.clone();
                     move |event, window, cx| scroll_wheel(event, window, cx)
                 })
@@ -856,7 +856,7 @@ fn render_selector_popup_preview(
 
     div()
         .w(px(popup_look.min_width))
-        .on_scroll_wheel(move |event, window, cx| scroll_wheel(event, window, cx))
+        .on_scroll(move |event, window, cx| scroll_wheel(event, window, cx))
         .child(rows)
         .into_any_element()
 }
@@ -1092,7 +1092,7 @@ fn render_selector_combobox_popup_preview_from_templates(
             ComboBoxItemsTemplateHandlers { item_hovers, item_clicks },
             cx,
         )
-        .on_scroll_wheel({
+        .on_scroll({
             let scroll_wheel = scroll_wheel.clone();
             move |event, window, cx| scroll_wheel(event, window, cx)
         });
@@ -1155,7 +1155,7 @@ fn render_selector_search_selector_popup_preview_from_templates(
             SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
             cx,
         )
-        .on_scroll_wheel({
+        .on_scroll({
             let scroll_wheel = scroll_wheel.clone();
             move |event, window, cx| scroll_wheel(event, window, cx)
         })

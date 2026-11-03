@@ -715,7 +715,7 @@ mod tests {
     #[test]
     fn replacement_clear_empty_disabled_click_and_scroll_cancel_help() {
         use std::{sync::Mutex, time::Duration};
-        use gpui::{MouseDownEvent, MouseMoveEvent, ScrollWheelEvent, point, px};
+        use gpui::{MouseDownEvent, MouseMoveEvent, ScrollEvent, point, px};
         use crate::controls::tooltip::TooltipEvent;
         let mut app = TestAppContext::single();
         let events = Arc::new(Mutex::new(Vec::new()));
@@ -747,7 +747,7 @@ mod tests {
         cx.executor().advance_clock(Duration::from_millis(100));
         cx.run_until_parked();
         assert_eq!(*events.lock().unwrap(), [("replacement", TooltipEvent::Shown)]);
-        cx.simulate_event(ScrollWheelEvent { position: point(px(10.0), px(10.0)), ..Default::default() });
+        cx.simulate_event(ScrollEvent { position: point(px(10.0), px(10.0)), ..Default::default() });
         cx.run_until_parked();
         assert_eq!(events.lock().unwrap().last(), Some(&("replacement", TooltipEvent::Hidden)));
         let count = events.lock().unwrap().len();

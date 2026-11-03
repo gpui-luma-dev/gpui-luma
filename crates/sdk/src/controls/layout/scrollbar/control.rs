@@ -1,7 +1,7 @@
 use gpui::{
     App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
-    MouseUpEvent, Pixels, Point, Render, ScrollDelta, ScrollWheelEvent, SharedString, Subscription, Window, div,
-    prelude::*, px,
+    MouseUpEvent, Pixels, Point, Render, ScrollDelta, ScrollEvent, SharedString, Subscription, Window, div, prelude::*,
+    px,
 };
 
 use super::{
@@ -448,7 +448,7 @@ impl Scrollbar {
         self.set_value_from_position(event.event.position, true, cx);
     }
 
-    fn handle_scroll_wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_scroll_wheel(&mut self, event: &ScrollEvent, window: &mut Window, cx: &mut Context<Self>) {
         if !self.model.enabled || !self.interaction.focus_handle().is_focused(window) {
             return;
         }

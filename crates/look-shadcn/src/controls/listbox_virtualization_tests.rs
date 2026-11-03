@@ -1,6 +1,6 @@
 //! Headless integration coverage for windowed rendering on both axes.
 use std::{cell::RefCell, rc::Rc};
-use gpui::{Bounds, Pixels, ScrollDelta, ScrollWheelEvent, TestAppContext, TouchPhase, VisualTestContext, point};
+use gpui::{Bounds, Pixels, ScrollDelta, ScrollEvent, TestAppContext, TouchPhase, VisualTestContext, point};
 use gpui_luma::controls::listbox::{ListBoxSnapshot, SelectionMode};
 use super::*;
 
@@ -72,10 +72,7 @@ impl Render for Harness {
             )
             .w(px(self.width))
             .flex_shrink_0();
-        div()
-            .id("parent")
-            .child(surface)
-            .on_scroll_wheel(cx.listener(|this, _, _, _| this.parent_wheels += 1))
+        div().id("parent").child(surface).on_scroll(cx.listener(|this, _, _, _| this.parent_wheels += 1))
     }
 }
 
@@ -112,7 +109,7 @@ fn assert_revealed(cx: &mut VisualTestContext, selector: &'static str, horizonta
 }
 
 fn wheel(cx: &mut VisualTestContext, horizontal: bool, delta: f32) {
-    cx.simulate_event(ScrollWheelEvent {
+    cx.simulate_event(ScrollEvent {
         position: point(px(30.0), px(25.0)),
         delta: ScrollDelta::Pixels(if horizontal {
             point(px(delta), px(0.0))
@@ -120,6 +117,7 @@ fn wheel(cx: &mut VisualTestContext, horizontal: bool, delta: f32) {
             point(px(0.0), px(delta))
         }),
         modifiers: Default::default(),
+        source: gpui::ScrollSource::Pointer,
         touch_phase: TouchPhase::Moved,
     });
     settle(cx);

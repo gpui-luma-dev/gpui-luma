@@ -1,4 +1,4 @@
-use gpui::{Context, Pixels, Point, ScrollWheelEvent, Window};
+use gpui::{Context, Pixels, Point, ScrollEvent, Window};
 
 use super::{ScrollingPlot, WINDOW_SECONDS};
 
@@ -21,7 +21,7 @@ impl ScrollingPlot {
         self.set_start(self.start + seconds, cx);
     }
 
-    pub(super) fn scroll_wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+    pub(super) fn scroll_wheel(&mut self, event: &ScrollEvent, window: &mut Window, cx: &mut Context<Self>) {
         let Some(width) = self.diagnostics.read(cx).plot_width() else {
             return;
         };

@@ -51,7 +51,7 @@ fn setup(app: &mut TestAppContext, required: bool) -> (Entity<Page>, &mut Visual
 }
 
 fn wheel(cx: &mut VisualTestContext, y: f32) {
-    cx.simulate_event(ScrollWheelEvent {
+    cx.simulate_event(ScrollEvent {
         position: point(px(20.0), px(30.0)),
         delta: ScrollDelta::Pixels(point(px(0.0), px(y))),
         ..Default::default()
