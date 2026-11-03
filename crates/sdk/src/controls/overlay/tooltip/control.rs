@@ -2,8 +2,8 @@ use std::{rc::Rc, sync::Arc};
 
 use gpui::{
     AnyWindowHandle, AnyTooltip, AppContext, AvailableSpace, Bounds, Context, Div, Entity, HitboxBehavior, IntoElement,
-    App, WeakEntity, MouseDownEvent, MouseMoveEvent, PathBuilder, Pixels, Point, Render, ScrollWheelEvent, Size,
-    Stateful, Subscription, Task, Window, canvas, point, prelude::*, px,
+    App, WeakEntity, MouseDownEvent, MouseMoveEvent, PathBuilder, Pixels, Point, Render, ScrollEvent, Size, Stateful,
+    Subscription, Task, Window, canvas, point, prelude::*, px,
 };
 use crate::theme::InteractionState;
 use crate::infra::attachments::AttachmentTarget;
@@ -164,7 +164,7 @@ impl Attachment {
                         }
                     });
                     let weak = painted_controller.downgrade();
-                    window.on_mouse_event(move |_: &ScrollWheelEvent, phase, window, cx| {
+                    window.on_mouse_event(move |_: &ScrollEvent, phase, window, cx| {
                         if phase.capture()
                             && let Some(entity) = weak.upgrade()
                         {

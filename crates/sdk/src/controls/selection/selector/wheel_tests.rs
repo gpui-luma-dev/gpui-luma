@@ -1,8 +1,6 @@
 //! Actual popup wheel dispatch through a nested document; no native GUI launch.
 use std::{cell::RefCell, rc::Rc};
-use gpui::{
-    Entity, MouseMoveEvent, ScrollDelta, ScrollHandle, ScrollWheelEvent, TestAppContext, VisualTestContext, point, px,
-};
+use gpui::{Entity, MouseMoveEvent, ScrollDelta, ScrollHandle, ScrollEvent, TestAppContext, VisualTestContext, point, px};
 use super::*;
 use crate::interaction::{ScrollBoundaryPolicy, WheelFocusScope, WheelScrollPolicy};
 use crate::interaction_tests::Page;
@@ -47,7 +45,7 @@ fn scroll(selector: &Entity<Selector>, delta: f32, cx: &mut VisualTestContext) {
         let bounds = selector.read(app).popup_scroll.bounds();
         point(bounds.left() + px(20.0), bounds.top() + (bounds.size.height / 2.0).min(px(15.0)))
     });
-    cx.simulate_event(ScrollWheelEvent {
+    cx.simulate_event(ScrollEvent {
         position,
         delta: ScrollDelta::Pixels(point(px(0.0), px(delta))),
         ..Default::default()
@@ -190,7 +188,7 @@ fn short_popup_boundaries_and_closed_disabled_popup_pass_through() {
             }
         });
         cx.run_until_parked();
-        cx.simulate_event(ScrollWheelEvent {
+        cx.simulate_event(ScrollEvent {
             position,
             delta: ScrollDelta::Pixels(point(px(0.0), px(-25.0))),
             ..Default::default()
@@ -279,7 +277,7 @@ fn default_popup_geometry_scrolling_and_reopening_match_the_legacy_native_templa
         open(&page, true, cx);
         let before = cx.debug_bounds("option-2").unwrap();
         let position = before.center();
-        cx.simulate_event(ScrollWheelEvent {
+        cx.simulate_event(ScrollEvent {
             position,
             delta: ScrollDelta::Pixels(point(px(0.0), px(-25.0))),
             ..Default::default()

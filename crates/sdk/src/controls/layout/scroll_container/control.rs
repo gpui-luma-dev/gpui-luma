@@ -4,8 +4,8 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use gpui::{
-    AnyElement, App, AppContext, Bounds, Context, Entity, EntityId, Pixels, ScrollHandle, ScrollWheelEvent,
-    SharedString, Stateful, Task, Window, div, point, prelude::*, px,
+    AnyElement, App, AppContext, Bounds, Context, Entity, EntityId, Pixels, ScrollHandle, ScrollEvent, SharedString,
+    Stateful, Task, Window, div, point, prelude::*, px,
 };
 
 use crate::controls::scrollbar::{Scrollbar, ScrollbarTemplate};
@@ -13,7 +13,7 @@ use crate::controls::scrollbar::{Scrollbar, ScrollbarTemplate};
 use super::model::{ScrollbarAutoHideActivate, ScrollbarPlacement, ScrollbarVisibility};
 use super::template::{notify_host, scrollbar_chrome_visible, viewport_right_inset, wake_on_move};
 
-type ScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+type ScrollWheelHandler = Box<dyn Fn(&ScrollEvent, &mut Window, &mut App) + 'static>;
 
 #[derive(Clone)]
 pub struct ScrollContainer {
@@ -281,7 +281,7 @@ impl ScrollContainer {
     pub fn render_with_scroll_wheel(
         &self,
         content: AnyElement,
-        on_scroll_wheel: impl Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static,
+        on_scroll_wheel: impl Fn(&ScrollEvent, &mut Window, &mut App) + 'static,
     ) -> Stateful<gpui::Div> {
         self.render_internal(content, Some(Box::new(on_scroll_wheel)), true)
     }
@@ -368,7 +368,7 @@ impl ScrollContainer {
             let policy = self.policy.clone();
             let focus_owner = self.focus_owner.clone();
             let scrollbar = self.scrollbar.clone();
-            viewport = viewport.on_scroll_wheel(move |event, window, cx| {
+            viewport = viewport.on_scroll(move |event, window, cx| {
                 use gpui::Focusable;
                 let policy = policy.get();
                 let focused = focus_owner.as_ref().is_some_and(|owner| {

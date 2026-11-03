@@ -1,6 +1,6 @@
 use gpui::{
     App, AppContext, ClickEvent, Context, Entity, EventEmitter, FocusHandle, FocusOutEvent, Focusable, IntoElement,
-    MouseDownEvent, MouseUpEvent, Render, ScrollWheelEvent, SharedString, Subscription, Window, div, prelude::*, px,
+    MouseDownEvent, MouseUpEvent, Render, ScrollEvent, SharedString, Subscription, Window, div, prelude::*, px,
 };
 
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
@@ -441,7 +441,7 @@ where
         self.emit_activate_for_visible_index(visible_index, cx);
     }
 
-    fn handle_scroll_wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_scroll_wheel(&mut self, event: &ScrollEvent, window: &mut Window, cx: &mut Context<Self>) {
         let policy = self.model.scroll_interaction;
         let bar = self.popup_surface.scrollbar().read(cx).focus_handle(cx);
         if !self.model.enabled
@@ -763,7 +763,7 @@ where
             .id(self.model.id.clone())
             .track_focus(&self.focus_handle)
             .key_context(ControlKeyProfile::Selector.context())
-            .on_scroll_wheel(cx.listener(Self::handle_scroll_wheel))
+            .on_scroll(cx.listener(Self::handle_scroll_wheel))
             .on_action(cx.listener(Self::handle_select_previous_item))
             .on_action(cx.listener(Self::handle_select_next_item))
             .on_action(cx.listener(Self::handle_select_first_item))

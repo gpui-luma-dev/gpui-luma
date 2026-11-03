@@ -1,6 +1,6 @@
 //! Headless native event dispatch: assert both viewport offsets, not just handlers.
 use gpui::{
-    App, Context, Entity, FocusHandle, Focusable, Render, ScrollDelta, ScrollHandle, ScrollWheelEvent, TestAppContext,
+    App, Context, Entity, FocusHandle, Focusable, Render, ScrollDelta, ScrollHandle, ScrollEvent, TestAppContext,
     VisualTestContext, Window, div, point, prelude::*, px,
 };
 use crate::interaction::{ScrollBoundaryPolicy, ScrollInteraction, WheelScrollPolicy};
@@ -24,7 +24,7 @@ impl<V: Render + 'static> Render for Page<V> {
     }
 }
 pub(crate) fn wheel(cx: &mut VisualTestContext, x: f32, y: f32) {
-    cx.simulate_event(ScrollWheelEvent {
+    cx.simulate_event(ScrollEvent {
         position: point(px(20.0), px(30.0)),
         delta: ScrollDelta::Pixels(point(px(x), px(y))),
         ..Default::default()

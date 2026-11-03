@@ -1,7 +1,7 @@
 //! Headless TestWindow checks; these never launch Studio or a platform window.
 use std::{cell::Cell, rc::Rc};
 
-use gpui::{Bounds, Pixels, ScrollDelta, ScrollWheelEvent, TestAppContext, TouchPhase, VisualTestContext, div, point};
+use gpui::{Bounds, Pixels, ScrollDelta, ScrollEvent, TestAppContext, TouchPhase, VisualTestContext, div, point};
 use gpui_luma::controls::listbox::{ListBoxEvent, ListBoxSnapshot, SelectionMode};
 
 use std::sync::Arc;
@@ -134,7 +134,7 @@ impl gpui::Render for Harness {
             }
         };
         let parent_wheels = self.parent_wheels.clone();
-        div().id("parent").child(surface).on_scroll_wheel(move |_, _, _| {
+        div().id("parent").child(surface).on_scroll(move |_, _, _| {
             parent_wheels.set(parent_wheels.get() + 1);
         })
     }
@@ -195,10 +195,11 @@ fn inline_and_named_templates_preserve_selection_focus_and_reveal_on_both_axes()
 }
 
 fn wheel(cx: &mut VisualTestContext) {
-    cx.simulate_event(ScrollWheelEvent {
+    cx.simulate_event(ScrollEvent {
         position: point(px(30.0), px(25.0)),
         delta: ScrollDelta::Pixels(point(px(0.0), px(-60.0))),
         modifiers: Default::default(),
+        source: gpui::ScrollSource::Pointer,
         touch_phase: TouchPhase::Moved,
     });
 }

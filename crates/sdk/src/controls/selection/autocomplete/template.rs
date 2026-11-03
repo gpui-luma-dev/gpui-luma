@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Hsla, KeyDownEvent, Pixels, ScrollWheelEvent, SharedString, Stateful, Window,
+    AnyElement, App, Bounds, ClickEvent, Hsla, KeyDownEvent, Pixels, ScrollEvent, SharedString, Stateful, Window,
     anchored, deferred, div, point, prelude::*, px,
 };
 
@@ -12,7 +12,7 @@ use crate::motion::overlay_presence::OverlayPresence;
 use crate::theme::LumaTextStyle;
 
 pub type AutocompleteKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
-pub type AutocompleteScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+pub type AutocompleteScrollWheelHandler = Box<dyn Fn(&ScrollEvent, &mut Window, &mut App) + 'static>;
 pub type AutocompleteClearClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type AutocompleteTriggerBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type AutocompleteTemplateModifier =
@@ -26,7 +26,7 @@ pub struct AutocompleteTemplateHandlers {
 }
 
 fn noop_key_down(_: &KeyDownEvent, _: &mut Window, _: &mut App) {}
-fn noop_scroll_wheel(_: &ScrollWheelEvent, _: &mut Window, _: &mut App) {}
+fn noop_scroll_wheel(_: &ScrollEvent, _: &mut Window, _: &mut App) {}
 fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
 fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
 
@@ -196,7 +196,7 @@ impl AutocompleteTemplate for DefaultAutocompleteTemplate {
             .gap(px(model.geometry.gap))
             .when(has_status_text, |root| root.child(status_row))
             .on_key_down(key_down)
-            .on_scroll_wheel(scroll_wheel)
+            .on_scroll(scroll_wheel)
             .child(
                 div()
                     .on_children_prepainted(move |bounds, window, cx| {

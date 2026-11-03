@@ -198,7 +198,7 @@ fn wheel_keyboard_scrollbar_and_projection_changes_interrupt_motion() {
         cx.run_until_parked();
         frame(cx, 40);
         match input {
-            0 => cx.simulate_event(ScrollWheelEvent {
+            0 => cx.simulate_event(ScrollEvent {
                 position: point(px(30.0), px(30.0)),
                 delta: ScrollDelta::Pixels(point(px(0.0), px(-25.0))),
                 ..Default::default()

@@ -1,7 +1,7 @@
 //! Exercise smooth scrolling through the shared container's public API.
 use gpui::{
-    Context, Render, Window, TestAppContext, VisualTestContext, ScrollWheelEvent, ScrollDelta, TouchPhase, div, px,
-    point, prelude::*,
+    Context, Render, Window, TestAppContext, VisualTestContext, ScrollEvent, ScrollDelta, TouchPhase, div, px, point,
+    prelude::*,
 };
 use gpui_luma::controls::scroll_container::ScrollContainer;
 use crate::ShadcnLook;
@@ -50,10 +50,11 @@ fn scroll_container_smooth_offset_clamps_and_yields_to_wheel_and_immediate_reque
     });
     cx.update(|_, app| view.update(app, |host, cx| host.scroll.set_vertical_offset_smooth(0.0, cx)));
     frames(cx, 2);
-    cx.simulate_event(ScrollWheelEvent {
+    cx.simulate_event(ScrollEvent {
         position: point(px(30.0), px(30.0)),
         delta: ScrollDelta::Pixels(point(px(0.0), px(-12.0))),
         modifiers: Default::default(),
+        source: gpui::ScrollSource::Pointer,
         touch_phase: TouchPhase::Moved,
     });
     cx.run_until_parked();

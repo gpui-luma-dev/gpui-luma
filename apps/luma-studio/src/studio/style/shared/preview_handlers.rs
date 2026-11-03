@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{
     App, Bounds, ClickEvent, DragMoveEvent, KeyDownEvent, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels,
-    ScrollWheelEvent, Window,
+    ScrollEvent, Window,
 };
 use gpui_luma::controls::scrollbar::{
     ScrollbarBoundsHandler, ScrollbarDrag, ScrollbarDragMoveHandler, ScrollbarHoverHandler, ScrollbarMouseDownHandler,
@@ -37,7 +37,7 @@ pub(crate) fn input_noop_key_down(_: &KeyDownEvent, _: &mut Window, _: &mut App)
 
 pub(crate) fn input_noop_scrollbar_drag_move(_: &DragMoveEvent<ScrollbarDrag>, _: &mut Window, _: &mut App) {}
 
-pub(crate) fn input_noop_scroll_wheel(_: &ScrollWheelEvent, _: &mut Window, _: &mut App) {}
+pub(crate) fn input_noop_scroll_wheel(_: &ScrollEvent, _: &mut Window, _: &mut App) {}
 
 pub(crate) fn input_noop_slider_drag_move(_: &DragMoveEvent<SliderDrag>, _: &mut Window, _: &mut App) {}
 

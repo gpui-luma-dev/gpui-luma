@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{
     App, AppContext as _, Bounds, Div, DragMoveEvent, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Stateful,
-    ScrollWheelEvent, Window, canvas, div, px, prelude::*,
+    ScrollEvent, Window, canvas, div, px, prelude::*,
 };
 
 use super::{ScrollbarDrag, ScrollbarOrientation, ScrollbarRenderModel};
@@ -13,7 +13,7 @@ pub type ScrollbarHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'sta
 pub type ScrollbarMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type ScrollbarMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 pub type ScrollbarDragMoveHandler = Box<dyn Fn(&DragMoveEvent<ScrollbarDrag>, &mut Window, &mut App) + 'static>;
-pub type ScrollbarScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+pub type ScrollbarScrollWheelHandler = Box<dyn Fn(&ScrollEvent, &mut Window, &mut App) + 'static>;
 
 pub struct ScrollbarTemplateHandlers {
     pub track_bounds: ScrollbarBoundsHandler,
@@ -229,7 +229,7 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
             .on_mouse_down(MouseButton::Left, mouse_down)
             .on_mouse_up(MouseButton::Left, mouse_up)
             .on_mouse_up_out(MouseButton::Left, mouse_up_out)
-            .on_scroll_wheel(scroll_wheel)
+            .on_scroll(scroll_wheel)
             .on_drag(ScrollbarDrag::new(model.id.clone()), |drag, _, _, cx| {
                 cx.stop_propagation();
                 cx.new(|_| drag.clone())

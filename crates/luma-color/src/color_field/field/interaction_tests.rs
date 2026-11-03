@@ -3,8 +3,7 @@ use crate::color_field::{CircleDomain, PolygonDomain, RectDomain, TriangleDomain
 use crate::color_slider::color_spec::Hsv;
 use gpui::{
     prelude::*, Context, Entity, FocusHandle, Focusable, ScrollHandle, Render, Window, div, px, point, TestAppContext,
-    VisualTestContext, Keystroke, KeyDownEvent, KeyUpEvent, Subscription, MouseMoveEvent, ScrollWheelEvent,
-    ScrollDelta,
+    VisualTestContext, Keystroke, KeyDownEvent, KeyUpEvent, Subscription, MouseMoveEvent, ScrollEvent, ScrollDelta,
 };
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::interaction::PointerFocusPolicy;
@@ -216,7 +215,7 @@ fn pointer_focus_override_and_wheel_preserve_mouse_lifecycle() {
         assert_eq!(log.borrow().iter().filter(|e| matches!(e, ColorFieldEvent::DragStart { .. })).count(), 1);
         assert_eq!(log.borrow().iter().filter(|e| matches!(e, ColorFieldEvent::DragEnd { .. })).count(), 1);
         let value = cx.update(|_, app| field.read(app).hsv);
-        cx.simulate_event(ScrollWheelEvent {
+        cx.simulate_event(ScrollEvent {
             position: point(px(100.0), px(100.0)),
             delta: ScrollDelta::Pixels(point(px(0.0), px(-30.0))),
             ..Default::default()

@@ -1,5 +1,5 @@
 //! Independent desktop input policies. These policies do not change appearance.
-use gpui::{App, FocusHandle, Pixels, ScrollHandle, ScrollWheelEvent, Window};
+use gpui::{App, FocusHandle, Pixels, ScrollHandle, ScrollEvent, Window};
 
 /// Wheel eligibility, independent of keyboard ownership and boundary propagation.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -103,7 +103,7 @@ impl PointerFocusPolicy {
 }
 
 /// Use only the supported axis. Invalid, zero and unsupported-axis input passes through.
-pub(crate) fn wheel_delta(event: &ScrollWheelEvent, line_height: Pixels, horizontal: bool) -> Option<Pixels> {
+pub(crate) fn wheel_delta(event: &ScrollEvent, line_height: Pixels, horizontal: bool) -> Option<Pixels> {
     let delta = event.delta.pixel_delta(line_height);
     if !delta.x.as_f32().is_finite() || !delta.y.as_f32().is_finite() {
         return None;
@@ -136,14 +136,14 @@ pub(crate) fn list_wheel_routing(
     state: gpui::ListState,
     accepts: impl Fn(&Window, &App) -> bool + 'static,
     boundary: ScrollBoundaryPolicy,
-    after_scroll: impl Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static,
+    after_scroll: impl Fn(&ScrollEvent, &mut Window, &mut App) + 'static,
 ) -> impl gpui::IntoElement {
     use gpui::{DispatchPhase, HitboxBehavior, TouchPhase, canvas, prelude::*};
     canvas(
         |bounds, window, _| window.insert_hitbox(bounds, HitboxBehavior::Normal),
         move |_, hitbox, window, _| {
             let mut before = None;
-            window.on_mouse_event(move |event: &ScrollWheelEvent, phase, window, cx| {
+            window.on_mouse_event(move |event: &ScrollEvent, phase, window, cx| {
                 if !hitbox.should_handle_scroll(window) {
                     return;
                 }
@@ -197,10 +197,10 @@ mod tests {
             (f32::NAN, 2.0, false, None),
             (0.0, f32::INFINITY, false, None),
         ] {
-            let event = ScrollWheelEvent { delta: ScrollDelta::Pixels(point(px(x), px(y))), ..Default::default() };
+            let event = ScrollEvent { delta: ScrollDelta::Pixels(point(px(x), px(y))), ..Default::default() };
             assert_eq!(wheel_delta(&event, px(20.0), horizontal), expected.map(px));
         }
-        let event = ScrollWheelEvent { delta: ScrollDelta::Lines(point(0.0, -2.0)), ..Default::default() };
+        let event = ScrollEvent { delta: ScrollDelta::Lines(point(0.0, -2.0)), ..Default::default() };
         assert_eq!(wheel_delta(&event, px(20.0), false), Some(px(-40.0)));
     }
 }

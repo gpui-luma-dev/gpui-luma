@@ -5,8 +5,8 @@ mod click_tests;
 use crate::infra::attachments::{AttachmentHost, AttachmentTarget};
 use gpui::{
     Bounds, ClickEvent, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, KeyDownEvent,
-    MouseDownEvent, Pixels, Render, ScrollWheelEvent, SharedString, Subscription, TextRun, Window, div, font,
-    prelude::*, px,
+    MouseDownEvent, Pixels, Render, ScrollEvent, SharedString, Subscription, TextRun, Window, div, font, prelude::*,
+    px,
 };
 
 use crate::controls::selector_list::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
@@ -547,7 +547,7 @@ impl SearchSelectorControl {
         cx.notify();
     }
 
-    fn handle_popup_scroll_wheel(&mut self, event: &ScrollWheelEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_popup_scroll_wheel(&mut self, event: &ScrollEvent, window: &mut Window, cx: &mut Context<Self>) {
         use gpui::Focusable;
         if !self.model.enabled || !self.behavior.state.open || self.behavior.state.filtered.is_empty() {
             return;

@@ -178,7 +178,7 @@ impl SearchSelectorTemplate for ThemeSearchSelectorTemplate {
             .flex()
             .flex_col()
             .on_key_down(key_down)
-            .on_scroll_wheel(scroll_wheel)
+            .on_scroll(scroll_wheel)
             .child(
                 div()
                     .on_children_prepainted(move |bounds, window, cx| {

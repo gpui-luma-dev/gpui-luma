@@ -1,4 +1,4 @@
-use gpui::{ClickEvent, Context, FocusOutEvent, MouseDownEvent, MouseUpEvent, ScrollWheelEvent, TouchPhase, Window, px};
+use gpui::{ClickEvent, Context, FocusOutEvent, MouseDownEvent, MouseUpEvent, ScrollEvent, TouchPhase, Window, px};
 
 use super::selection::{TableDirection, next_enabled_index};
 use super::{TableControl, TableEvent, TableSelectionMode};
@@ -276,12 +276,7 @@ where
         }
     }
 
-    pub(super) fn handle_scroll_wheel(
-        &mut self,
-        event: &ScrollWheelEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    pub(super) fn handle_scroll_wheel(&mut self, event: &ScrollEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if self.is_paged() || !self.model.enabled {
             return;
         }

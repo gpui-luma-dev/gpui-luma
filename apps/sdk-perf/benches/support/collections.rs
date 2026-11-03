@@ -247,7 +247,7 @@ pub fn setup(
 
 pub fn operate(host: &Entity<Host>, cx: &mut VisualTestContext, phase: &str, count: usize, step: usize) {
     if phase == "wheel" {
-        cx.simulate_event(gpui::ScrollWheelEvent {
+        cx.simulate_event(gpui::ScrollEvent {
             position: point(px(100.0), px(150.0)),
             delta: gpui::ScrollDelta::Pixels(point(px(0.0), px(if step.is_multiple_of(2) { 250.0 } else { -250.0 }))),
             ..Default::default()
