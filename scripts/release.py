@@ -65,16 +65,25 @@ def discover():
             'error': None, 'packages': {name: {'status': 'not checked'} for name in names}}
 
 
-def preflight(report, publish, allow_new):
+def preflight(report, publish, allow_new, require_unpublished=False):
     version = report['version']
     new = []
+    published = []
     for name, state in report['packages'].items():
         exists = download(f'https://crates.io/api/v1/crates/{name}', missing_ok=True) is not None
         released = download(f'https://crates.io/api/v1/crates/{name}/{version}', missing_ok=True) is not None
         state.update(new_crate=not exists, status='already published; verification pending' if released else 'pending')
         if not exists:
             new.append(name)
+        if released:
+            published.append(name)
+        if require_unpublished:
+            print(f'{name} {version}: {"already published" if released else "not published"}', flush=True)
         save(report)
+    if require_unpublished and published:
+        raise ReleaseError(f'Version {version} is already published on crates.io for: ' + ', '.join(published) +
+                           '. Bump workspace.package.version and matching internal dependency versions in Cargo.toml, '
+                           'update Cargo.lock, then rerun just preflight-release. No crates uploaded.')
     pending = any(state['status'] == 'pending' for state in report['packages'].values())
     if publish and pending and not os.environ.get('CARGO_REGISTRY_TOKEN'):
         raise ReleaseError('Missing CARGO_REGISTRY_TOKEN repository secret; no crates uploaded.')
@@ -201,7 +210,11 @@ def summary():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('phase', choices=['preflight', 'publish', 'summary'])
+    parser.add_argument('--require-unpublished', action='store_true',
+                        help='Reject an existing crates.io version when checking a new release candidate')
     args = parser.parse_args()
+    if args.require_unpublished and args.phase != 'preflight':
+        parser.error('--require-unpublished is only valid with preflight')
     if args.phase == 'summary':
         summary()
         return 0
@@ -216,7 +229,7 @@ def main():
         publish = os.environ.get('PUBLISH_RELEASE') == 'true'
         allow_new = os.environ.get('ALLOW_NEW_CRATES') == 'true'
         if args.phase == 'preflight':
-            preflight(report, publish, allow_new)
+            preflight(report, publish, allow_new, require_unpublished=args.require_unpublished)
         else:
             publish_packages(report, publish, allow_new)
         return 0

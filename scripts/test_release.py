@@ -41,6 +41,28 @@ class ReleaseTests(unittest.TestCase):
         del os.environ['CARGO_REGISTRY_TOKEN']
         release.preflight(self.report, publish=False, allow_new=False)
 
+    @patch.object(release, 'download')
+    def test_new_release_rejects_published_version_and_reports_every_crate(self, download):
+        download.side_effect = [b'{}', b'{}', b'{}', None]
+        with patch.object(release.subprocess, 'run') as run:
+            with self.assertRaisesRegex(release.ReleaseError, r'0\.1\.9.*crates.io.*sdk.*Bump'):
+                release.preflight(self.report, False, False, require_unpublished=True)
+            run.assert_not_called()
+        self.assertEqual(download.call_count, 4)
+        self.assertEqual(self.report['packages']['plot']['status'], 'pending')
+
+    @patch.object(release, 'download')
+    def test_new_release_accepts_unpublished_version_without_token(self, download):
+        del os.environ['CARGO_REGISTRY_TOKEN']
+        download.side_effect = [b'{}', None, b'{}', None]
+        release.preflight(self.report, False, False, require_unpublished=True)
+        self.assertTrue(all(state['status'] == 'pending' for state in self.report['packages'].values()))
+
+    @patch.object(release, 'download', return_value=b'{}')
+    def test_resumable_workflow_still_accepts_existing_versions(self, download):
+        release.preflight(self.report, False, False)
+        self.assertTrue(all(state['status'].startswith('already published') for state in self.report['packages'].values()))
+
     @patch.object(release, 'download', return_value=None)
     def test_missing_token_blocks_before_upload(self, download):
         del os.environ['CARGO_REGISTRY_TOKEN']
