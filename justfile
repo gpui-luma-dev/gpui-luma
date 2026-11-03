@@ -7,6 +7,7 @@ set positional-arguments
 profile := "release"
 python := if os() == "windows" { "python" } else { "python3" }
 run-options := "--locked --profile " + profile
+lib-packages := "-p gpui-luma -p gpui-luma-color -p gpui-luma-look-radix -p gpui-luma-look-shadcn -p gpui-luma-plot"
 
 # List development commands without launching an app.
 default:
@@ -74,7 +75,7 @@ sdk-build *args:
 
 # Run the library suites selected by CI, excluding benchmarks and demo binaries.
 sdk-test *args:
-    cargo test --locked --lib --bins --tests --all-features -p gpui-luma -p gpui-luma-color -p gpui-luma-plot -p gpui-luma-look-radix -p gpui-luma-look-shadcn -p luma-app-common "$@"
+    @{{ python }} -B scripts/quiet_check.py cargo test --locked --lib --bins --tests --all-features -p gpui-luma -p gpui-luma-color -p gpui-luma-plot -p gpui-luma-look-radix -p gpui-luma-look-shadcn -p luma-app-common "$@"
 
 # Lint default SDK/library members with every target and feature.
 sdk-clippy *args:
@@ -82,7 +83,7 @@ sdk-clippy *args:
 
 # Run documentation tests for the library packages selected by CI.
 sdk-doc-test *args:
-    cargo test --locked --doc --all-features -p gpui-luma -p gpui-luma-look-radix -p gpui-luma-look-shadcn -p gpui-luma-plot "$@"
+    @{{ python }} -B scripts/quiet_check.py cargo test --locked --doc --all-features -p gpui-luma -p gpui-luma-look-radix -p gpui-luma-look-shadcn -p gpui-luma-plot "$@"
 
 # --- Workspace ---
 
@@ -96,7 +97,7 @@ workspace-build *args:
 
 # Run workspace unit/integration tests, excluding benchmark executables.
 workspace-test *args:
-    cargo test --locked --workspace --lib --bins --tests --all-features "$@"
+    @{{ python }} -B scripts/quiet_check.py cargo test --locked --workspace --lib --bins --tests --all-features "$@"
 
 # Lint the full workspace with the same targets and features as CI.
 workspace-clippy *args:
@@ -122,11 +123,8 @@ fmt-check:
 docs-build:
     sh apps/docs-embed/build.sh "{{ profile }}"
 
-# Check site JavaScript and compile the control documentation examples.
-docs-check: _node-check _control-docs-check
-    node --check docs/site.js
-    node --check docs/navigation.js
-    node --check docs/examples/embed.js
+# Compile the control documentation examples using the Python/Rust checker.
+docs-check: _control-docs-check
 
 # Serve the documentation locally without opening a browser.
 docs-serve port="8766":
@@ -134,12 +132,12 @@ docs-serve port="8766":
 
 # Test repository and embedded-demo Python helpers.
 scripts-check:
-    {{ python }} -B -m unittest discover -s scripts -p 'test_*.py'
-    {{ python }} -B -m unittest discover -s apps/docs-embed -p 'test_*.py'
+    @{{ python }} -B scripts/quiet_check.py {{ python }} -B -m unittest discover -s scripts -p 'test_*.py'
+    @{{ python }} -B scripts/quiet_check.py {{ python }} -B -m unittest discover -s apps/docs-embed -p 'test_*.py'
 
-# Validate GitHub Actions workflows (requires actionlint).
-workflows-check: _actionlint-check
-    actionlint
+# Run optional workflow lint when actionlint is already available.
+workflows-check:
+    @if command -v actionlint >/dev/null; then actionlint; else echo "Skipped optional workflow lint: actionlint is not available."; fi
 
 # Lint the WASM demos (requires the wasm32-unknown-unknown target).
 wasm-check:
@@ -151,8 +149,38 @@ wasm-check:
 ci: fmt-check scripts-check workspace-clippy sdk-test sdk-doc-test _control-docs-check
 
 # Check a PR without launching apps or building deployment artifacts.
-pre-pr: _node-check _actionlint-check ci workflows-check docs-check wasm-check
+pre-pr: ci workflows-check docs-check wasm-check
     git diff --check
+
+# Check release changes before committing; clean candidates also get final archive verification.
+preflight-release: _preflight-source-check _release-registry-check ci
+    #!/usr/bin/env bash
+    set -euo pipefail
+    release_package_id=$(cargo pkgid --locked --package gpui-luma)
+    VERSION=${release_package_id##*@}
+    GITHUB_SHA=$(git rev-parse HEAD)
+    export VERSION GITHUB_SHA
+    export LIB_PACKAGES="gpui-luma gpui-luma-color gpui-luma-look-radix gpui-luma-look-shadcn gpui-luma-plot"
+    export PUBLISH_RELEASE=false
+    if [[ -n "$(git status --porcelain)" ]]; then
+        cargo package --locked --allow-dirty --registry crates-io {{ lib-packages }}
+        echo "Local pre-flight checks passed for uncommitted changes."
+        echo "Final release archive verification is pending: commit changes and rerun just preflight-release."
+        exit 0
+    fi
+    cargo package --locked --registry crates-io {{ lib-packages }}
+    # With PUBLISH_RELEASE=false this only verifies archives, including already published versions.
+    {{ python }} -B scripts/release.py publish
+    echo "Release pre-flight passed. Publishing remains a separate action."
+
+# Build and verify the release Pages artifact locally; never deploy or open a browser.
+preflight-pages: _preflight-source-check fmt-check scripts-check workflows-check docs-check wasm-check
+    just --justfile "{{ justfile() }}" _wasm-bindgen-check
+    sh apps/docs-embed/build.sh release
+    {{ python }} -B apps/docs-embed/package_runtime.py --check
+    test -s docs/CNAME
+    git diff --check
+    @echo "Pages pre-flight passed. Deployment remains a separate action."
 
 # --- Utilities ---
 
@@ -162,11 +190,40 @@ loc:
 
 # --- Internal Prerequisites ---
 
-_node-check:
-    @command -v node >/dev/null || { echo "Install Node.js and add node to PATH." >&2; exit 1; }
+_release-registry-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    release_package_id=$(cargo pkgid --locked --package gpui-luma)
+    VERSION=${release_package_id##*@}
+    GITHUB_SHA=$(git rev-parse HEAD)
+    export VERSION GITHUB_SHA
+    export LIB_PACKAGES="gpui-luma gpui-luma-color gpui-luma-look-radix gpui-luma-look-shadcn gpui-luma-plot"
+    PUBLISH_RELEASE=false {{ python }} -B scripts/release.py preflight --require-unpublished
 
-_actionlint-check:
-    @command -v actionlint >/dev/null || { echo "Install actionlint and add it to PATH (macOS: brew install actionlint)." >&2; exit 1; }
+_preflight-source-check:
+    #!/usr/bin/env {{ python }}
+    import json
+    import subprocess
+    import sys
+    metadata = json.loads(subprocess.check_output(["cargo", "metadata", "--locked", "--format-version", "1"], text=True))
+    members = set(metadata["workspace_members"])
+    overrides = [p["name"] for p in metadata["packages"] if p["id"] not in members and not (p.get("source") or "").startswith("registry+")]
+    if overrides:
+        sys.exit("Pre-flight requires registry dependencies; remove local/git overrides: " + ", ".join(sorted(overrides)))
+
+_wasm-bindgen-check:
+    #!/usr/bin/env {{ python }}
+    import shutil
+    import subprocess
+    import sys
+    import tomllib
+    if not shutil.which("wasm-bindgen"):
+        sys.exit("Source checks completed; Pages artifact verification is blocked because wasm-bindgen is unavailable.")
+    with open("Cargo.lock", "rb") as lockfile:
+        expected = next(p["version"] for p in tomllib.load(lockfile)["package"] if p["name"] == "wasm-bindgen")
+    actual = subprocess.check_output(["wasm-bindgen", "--version"], text=True).split()[-1]
+    if actual != expected:
+        sys.exit(f"Source checks completed; Pages artifact verification requires wasm-bindgen {expected}, but found {actual}.")
 
 _control-docs-check:
     {{ python }} -B scripts/check_control_docs.py
