@@ -18,7 +18,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::table_demo::{Task, build_task_rows, email_column, status_cell, tag_pill};
-use super::inspector::{TableInspectorAdapter, TABLE_INSPECTOR_SPEC};
+use super::inspector::{TableInspectorAdapter, TABLE_INSPECTOR_SPEC, table_motion_report};
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
 
@@ -213,6 +213,9 @@ impl PagingTableControlExposition {
             &TABLE_INSPECTOR_SPEC,
             TableInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(table_motion_report([("Paging", table.read(cx).list().clone())]), cx);
+        });
 
         table.clone().on_event(cx, {
             let event_stream = event_stream.downgrade();

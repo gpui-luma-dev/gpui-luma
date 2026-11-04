@@ -14,8 +14,12 @@ use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector::{ControlGroupMotionReport, control_group_motion_source};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
+use super::theme_inspector::ThemeInspector;
 
 const DENSITY_OPTION_COUNT: usize = 3;
 const PANE_EXAMPLE_GAP: f32 = 24.0;
@@ -48,6 +52,14 @@ const DELIVERY_FOCUS_BORDER_WIDTH: f32 = 2.0;
 const DELIVERY_DISABLED_OPACITY: f32 = 0.56;
 
 pub struct RadioGroupControlExposition {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
+    left_pane: Entity<RadioGroupExpositionLeftPane>,
+    theme_inspector: Entity<ThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+}
+
+struct RadioGroupExpositionLeftPane {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
     vertical_group: RadioGroup<RadioGroupItem>,
@@ -114,31 +126,83 @@ impl RadioGroupControlExposition {
             )
         });
 
-        wire_group(cx, &vertical_group, "vertical", GroupTarget::Vertical, event_stream.clone());
-        wire_group(cx, &horizontal_group, "horizontal", GroupTarget::Horizontal, event_stream.clone());
-        wire_group(cx, &indented_group, "indented", GroupTarget::Indented, event_stream.clone());
-        wire_group(cx, &delivery_group, "delivery", GroupTarget::Delivery, event_stream.clone());
-
-        Self {
-            look,
+        let left_pane = cx.new(|_| RadioGroupExpositionLeftPane {
+            look: look.clone(),
             entry,
-            vertical_group,
-            horizontal_group,
-            indented_group,
-            delivery_group,
+            vertical_group: vertical_group.clone(),
+            horizontal_group: horizontal_group.clone(),
+            indented_group: indented_group.clone(),
+            delivery_group: delivery_group.clone(),
             vertical_choice: Density::Comfortable.id().to_string(),
             horizontal_choice: Density::Comfortable.id().to_string(),
             indented_choice: Density::Comfortable.id().to_string(),
             delivery_choice: DeliveryWindow::Today.id().to_string(),
-            event_stream,
-        }
+            event_stream: event_stream.clone(),
+        });
+        wire_group(cx, left_pane.clone(), &vertical_group, "vertical", GroupTarget::Vertical, event_stream.clone());
+        wire_group(
+            cx,
+            left_pane.clone(),
+            &horizontal_group,
+            "horizontal",
+            GroupTarget::Horizontal,
+            event_stream.clone(),
+        );
+        wire_group(cx, left_pane.clone(), &indented_group, "indented", GroupTarget::Indented, event_stream.clone());
+        wire_group(cx, left_pane.clone(), &delivery_group, "delivery", GroupTarget::Delivery, event_stream);
+
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-radio-group-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &super::inspector::RADIO_GROUP_INSPECTOR_SPEC,
+            super::inspector::MotionOnlyInspector::shared(),
+        );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                Arc::new(ControlGroupMotionReport::new([
+                    ("Vertical default", control_group_motion_source(vertical_group.read(cx).inner_group())),
+                    ("Horizontal default", control_group_motion_source(horizontal_group.read(cx).inner_group())),
+                    ("Horizontal custom indent", control_group_motion_source(indented_group.read(cx).inner_group())),
+                    ("Delivery window", control_group_motion_source(delivery_group.read(cx).inner_group())),
+                ])),
+                cx,
+            );
+        });
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
     }
 
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+impl RadioGroupExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         for group in [&self.vertical_group, &self.horizontal_group, &self.indented_group] {
             group.update(cx, |_, cx| cx.notify());
@@ -159,21 +223,24 @@ enum GroupTarget {
 
 fn wire_group<T: RadioGroupItemLike + 'static>(
     cx: &mut Context<RadioGroupControlExposition>,
+    pane: Entity<RadioGroupExpositionLeftPane>,
     group: &RadioGroup<T>,
     label: &'static str,
     target: GroupTarget,
     event_stream: Entity<ControlEventStream>,
 ) {
-    group.clone().on_event(cx, move |this, event: &RadioGroupEvent, cx| {
+    group.clone().on_event(cx, move |_this, event: &RadioGroupEvent, cx| {
         if let RadioGroupEvent::Change { value } = event {
             let choice = value.as_ref().map_or_else(|| "None".to_string(), ToString::to_string);
-            match target {
-                GroupTarget::Vertical => this.vertical_choice = choice,
-                GroupTarget::Horizontal => this.horizontal_choice = choice,
-                GroupTarget::Indented => this.indented_choice = choice,
-                GroupTarget::Delivery => this.delivery_choice = choice,
-            }
-            cx.notify();
+            pane.update(cx, |pane, cx| {
+                match target {
+                    GroupTarget::Vertical => pane.vertical_choice = choice,
+                    GroupTarget::Horizontal => pane.horizontal_choice = choice,
+                    GroupTarget::Indented => pane.indented_choice = choice,
+                    GroupTarget::Delivery => pane.delivery_choice = choice,
+                }
+                cx.notify();
+            });
         }
         if matches!(target, GroupTarget::Vertical)
             && let Some(line) = format_radio_group_event(label, event)
@@ -184,6 +251,20 @@ fn wire_group<T: RadioGroupItemLike + 'static>(
 }
 
 impl Render for RadioGroupControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        let inspector_split = self.inspector_split.clone();
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-radio-group-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(inspector_split)
+        })
+    }
+}
+
+impl Render for RadioGroupExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let chrome = self.look.chrome();
@@ -227,13 +308,19 @@ impl Render for RadioGroupControlExposition {
                 ))
                 .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                None,
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-radio-group-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    None,
+                    ControlExpositionLayout::BORDERLESS,
+                ))
         })
     }
 }

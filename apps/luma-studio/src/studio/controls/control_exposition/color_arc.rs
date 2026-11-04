@@ -25,6 +25,7 @@ use super::color_exposition_common::{
 };
 use super::event_stream::ControlEventStream;
 use super::inspector::color_chrome::COLOR_ARC_CHROME_PROFILES;
+use super::inspector::slider_motion_report;
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
@@ -419,6 +420,19 @@ impl ColorArcControlExposition {
                 move || left_pane.clone().into_any_element()
             },
         );
+        chrome_inspector.update(cx, |inspector, cx| {
+            let pane = left_pane.read(cx);
+            let samples = [
+                ("Hue Arc", pane.hue_arc.slider.clone()),
+                ("Saturation Arc", pane.saturation_arc.slider.clone()),
+                ("Lightness Arc", pane.lightness_arc.slider.clone()),
+                ("Vector", pane.vector_arc.slider.clone()),
+                ("Raster", pane.raster_arc.slider.clone()),
+                ("Thickness small", pane.thickness_small_arc.slider.clone()),
+                ("Thickness large", pane.thickness_large_arc.slider.clone()),
+            ];
+            inspector.set_motion_report(slider_motion_report(samples), cx);
+        });
 
         Self { look, entry, left_pane, chrome_inspector, inspector_split }
     }

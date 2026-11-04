@@ -15,7 +15,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::inspector::{PopupMenuInspectorAdapter, POPUP_MENU_INSPECTOR_SPEC};
+use super::inspector::{PopupMenuInspectorAdapter, POPUP_MENU_INSPECTOR_SPEC, popup_menu_motion_report};
 use super::standalone_theme_inspectors::PopupMenuThemeInspector;
 use super::template::render_control_exposition_card;
 
@@ -130,6 +130,15 @@ impl PopupMenuControlExposition {
             &POPUP_MENU_INSPECTOR_SPEC,
             PopupMenuInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                popup_menu_motion_report([
+                    ("Smart popup", preview_smart.clone()),
+                    ("Below popup", preview_below.clone()),
+                ]),
+                cx,
+            );
+        });
 
         for preview in [&preview_smart, &preview_below] {
             let event_stream = event_stream.clone();

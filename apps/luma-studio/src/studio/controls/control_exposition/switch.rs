@@ -15,6 +15,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
+use super::inspector::SwitchMotionReport;
 use super::switch_theme_inspector::SwitchThemeInspector;
 use super::template::render_control_exposition_card;
 
@@ -143,6 +144,15 @@ impl SwitchControlExposition {
             &super::inspector::SWITCH_INSPECTOR_SPEC,
             super::inspector::SwitchInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                Arc::new(SwitchMotionReport::new([
+                    ("Primary", primary_switch.clone()),
+                    ("Secondary", secondary_switch.clone()),
+                ])),
+                cx,
+            );
+        });
         bind_switch_events(
             &secondary_switch,
             SwitchVariant::Secondary,

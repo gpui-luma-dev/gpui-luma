@@ -17,7 +17,7 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::input_theme_inspectors::SearchSelectorThemeInspector;
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::inspector::{search_selector_inspector_adapter, SEARCH_SELECTOR_INSPECTOR_SPEC};
+use super::inspector::{search_selector_inspector_adapter, SEARCH_SELECTOR_INSPECTOR_SPEC, search_selector_motion_report};
 use super::template::render_control_exposition_card;
 
 pub struct SearchSelectorControlExposition {
@@ -134,6 +134,9 @@ impl SearchSelectorControlExposition {
             &SEARCH_SELECTOR_INSPECTOR_SPEC,
             search_selector_inspector_adapter(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(search_selector_motion_report([("States", preview.clone())]), cx);
+        });
 
         preview.clone().on_event(cx, {
             let event_stream = event_stream.downgrade();

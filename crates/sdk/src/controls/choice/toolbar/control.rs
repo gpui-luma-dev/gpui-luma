@@ -49,6 +49,10 @@ impl ToolbarControl {
         ToolbarBuilder::new(id)
     }
 
+    pub fn inner_group(&self) -> Entity<ControlGroupControl<ToolbarItem>> {
+        self.group.clone()
+    }
+
     pub(crate) fn from_builder(builder: ToolbarBuilder, cx: &mut Context<Self>) -> Self {
         let model = builder.model.clone();
         let group = ControlGroupControl::new(model.id)

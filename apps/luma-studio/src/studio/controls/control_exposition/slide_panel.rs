@@ -10,8 +10,8 @@ use gpui::{
 use gpui_luma::controls::button::ButtonEventExt;
 use gpui_luma::controls::button::{Button, HasPresenter};
 use gpui_luma::controls::slide_panel::{
-    SlidePanelEdge, SlidePanelOverlayHandlers, SlidePanelResizeDrag, SlidePanelResizeHandlers, SlidePanelSizeConfig,
-    SlidePanelState, SlidePanelTopAnchor, render_slide_panel_overlay,
+    SlidePanelEdge, SlidePanelMotion, SlidePanelOverlayHandlers, SlidePanelResizeDrag, SlidePanelResizeHandlers,
+    SlidePanelSizeConfig, SlidePanelState, SlidePanelTopAnchor, render_slide_panel_overlay,
 };
 use gpui_luma::controls::toggle::{Toggle, ToggleEvent};
 use gpui_luma::{flow, hstack, vstack};
@@ -22,7 +22,11 @@ use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{ViewportInspectorPane, spawn_viewport_inspector, sync_viewport_inspector};
+use super::inspector::{MotionOnlyInspector, SLIDE_PANEL_INSPECTOR_SPEC, slide_panel_motion_report};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
+use super::theme_inspector::ThemeInspector;
 use super::template::render_control_exposition_card;
 
 const SIDE_PANEL_DEFAULT_WIDTH: f32 = 360.0;
@@ -72,6 +76,14 @@ const PROGRESS_PERCENT_SCALE: f32 = 100.0;
 pub struct SlidePanelControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<SlidePanelExpositionLeftPane>,
+    theme_inspector: Entity<ThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+}
+
+struct SlidePanelExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     demo: Entity<SlidePanelDemo>,
     event_stream: Entity<ControlEventStream>,
 }
@@ -90,15 +102,66 @@ impl SlidePanelControlExposition {
         });
 
         let demo = cx.new(|cx| SlidePanelDemo::new(look.clone(), event_stream.clone(), cx));
+        let left_pane = cx.new(|_| SlidePanelExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            demo: demo.clone(),
+            event_stream: event_stream.clone(),
+        });
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-slide-panel-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &SLIDE_PANEL_INSPECTOR_SPEC,
+            MotionOnlyInspector::shared(),
+        );
+        let demo_for_motion = demo.clone();
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                slide_panel_motion_report([(
+                    "Drawer",
+                    Arc::new(move |cx: &App| {
+                        let demo = demo_for_motion.read(cx);
+                        (demo.state.is_motion_enabled(), demo.state.motion_profile())
+                    }) as Arc<dyn Fn(&App) -> (bool, SlidePanelMotion) + Send + Sync>,
+                )]),
+                cx,
+            );
+        });
 
-        Self { look, entry, demo, event_stream }
+        Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
     pub fn entry(&self) -> ControlDocEntry {
         self.entry
     }
 
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
     pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+impl SlidePanelExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.demo.update(cx, |demo, cx| demo.sync_look(cx));
         self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
@@ -107,6 +170,20 @@ impl SlidePanelControlExposition {
 }
 
 impl Render for SlidePanelControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        let inspector_split = self.inspector_split.clone();
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-slide-panel-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(inspector_split)
+        })
+    }
+}
+
+impl Render for SlidePanelExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let look = &self.look;
@@ -119,13 +196,19 @@ impl Render for SlidePanelControlExposition {
                 .child(div().w_full().h(px(420.0)).min_w(px(0.0)).child(self.demo.clone()))
                 .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                None,
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-slide-panel-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    None,
+                    ControlExpositionLayout::BORDERLESS,
+                ))
         })
     }
 }
@@ -202,7 +285,7 @@ impl SlidePanelDemo {
             .spawn(cx);
 
         let this = Self {
-            look,
+            look: look.clone(),
             trigger_left: trigger_left.clone(),
             trigger_right: trigger_right.clone(),
             trigger_top: trigger_top.clone(),
@@ -215,7 +298,8 @@ impl SlidePanelDemo {
             state: SlidePanelState::new(
                 SlidePanelTopAnchor::WindowEdge,
                 SlidePanelSizeConfig::new(SIDE_PANEL_DEFAULT_WIDTH, SIDE_PANEL_MIN_WIDTH, SIDE_PANEL_MAX_WIDTH),
-            ),
+            )
+            .motion_defaults(look.motion_defaults().slide_panel),
             last_action: "Panel closed. Use one of the edge triggers to open a drawer.".to_string(),
             event_stream: event_stream.clone(),
         };

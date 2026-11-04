@@ -18,7 +18,7 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::input_theme_inspectors::SelectorThemeInspector;
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::inspector::{SelectorInspectorAdapter, SELECTOR_INSPECTOR_SPEC};
+use super::inspector::{SelectorInspectorAdapter, SELECTOR_INSPECTOR_SPEC, selector_motion_report};
 use super::template::render_control_exposition_card;
 
 pub struct PopupSelectorControlExposition {
@@ -183,6 +183,9 @@ impl PopupSelectorControlExposition {
             &SELECTOR_INSPECTOR_SPEC,
             SelectorInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(selector_motion_report(previews.clone()), cx);
+        });
 
         for (_, preview) in &previews {
             let event_stream = event_stream.clone();

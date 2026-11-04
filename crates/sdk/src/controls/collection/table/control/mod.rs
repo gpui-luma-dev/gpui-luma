@@ -148,6 +148,11 @@ where
         cx.notify();
     }
 
+    /// Control-wide policy. `false` settles motion immediately and keeps [`Self::motion_profile`].
+    pub fn motion_enabled(&self) -> bool {
+        self.model.motion.enabled()
+    }
+
     pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.motion.set_enabled(enabled);
         self.drop_layout.cancel();

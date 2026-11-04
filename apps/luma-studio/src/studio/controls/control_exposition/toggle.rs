@@ -18,6 +18,7 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
+use super::inspector::StateMotionReport;
 use super::toggle_theme_inspector::ToggleThemeInspector;
 
 pub struct ToggleControlExposition {
@@ -175,6 +176,12 @@ impl ToggleControlExposition {
             )
         });
 
+        let motion_toggles = [
+            ("Primary", primary_toggle.clone()),
+            ("Secondary", secondary_toggle.clone()),
+            ("Primary icon", primary_round_icon_toggle.clone()),
+            ("Secondary icon", secondary_round_icon_toggle.clone()),
+        ];
         let left_pane = cx.new(|cx| {
             wire_toggle(cx, &secondary_toggle, "secondary", ToggleTarget::Secondary, event_stream.clone());
             wire_toggle(cx, &primary_toggle, "primary", ToggleTarget::Primary, event_stream.clone());
@@ -218,6 +225,18 @@ impl ToggleControlExposition {
             &super::inspector::TOGGLE_INSPECTOR_SPEC,
             super::inspector::ToggleInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                Arc::new(StateMotionReport::new(
+                    "State",
+                    motion_toggles,
+                    |toggle| toggle.motion_enabled(),
+                    |toggle| toggle.motion_profile().state.clone(),
+                    |look| look.motion_defaults().toggle.state.clone(),
+                )),
+                cx,
+            );
+        });
 
         Self { look, entry, left_pane, theme_inspector, inspector_split }
     }

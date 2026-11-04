@@ -12,6 +12,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::checkbox_theme_inspector::CheckboxThemeInspector;
+use super::inspector::StateMotionReport;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
@@ -193,6 +194,23 @@ impl CheckboxControlExposition {
             &super::inspector::CHECKBOX_INSPECTOR_SPEC,
             super::inspector::CheckboxInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                Arc::new(StateMotionReport::new(
+                    "State",
+                    [
+                        ("Secondary", secondary_checkbox.clone()),
+                        ("Primary", primary_checkbox.clone()),
+                        ("Indicator only, checked", indicator_only_checked.clone()),
+                        ("Indicator only", indicator_only_unchecked.clone()),
+                    ],
+                    |checkbox| checkbox.motion_enabled(),
+                    |checkbox| checkbox.motion_profile().state.clone(),
+                    |look| look.motion_defaults().checkbox.state.clone(),
+                )),
+                cx,
+            );
+        });
         bind_checkbox_events(
             &secondary_checkbox,
             CheckboxVariant::Secondary,

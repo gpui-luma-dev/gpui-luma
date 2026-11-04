@@ -18,7 +18,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::ControlExpositionLayout;
-use super::inspector::{split_button_inspector_resolver, SPLIT_BUTTON_INSPECTOR_SPEC};
+use super::inspector::{split_button_inspector_resolver, popup_menu_motion_report, SPLIT_BUTTON_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 use crate::studio::controls::catalog::{catalog_entry, ControlDocEntry};
 use super::template::controls_mono_font;
@@ -107,6 +107,7 @@ impl SplitButtonControlExposition {
             })
             .items(split_button_items())
             .spawn(cx);
+        let content_for_motion = content_example.clone();
         let left_pane = cx.new(|_| SplitButtonLeftPane {
             look: look.clone(),
             entry,
@@ -126,6 +127,12 @@ impl SplitButtonControlExposition {
             &SPLIT_BUTTON_INSPECTOR_SPEC,
             split_button_inspector_resolver(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            let mut samples: Vec<(&str, _)> =
+                pairs.iter().map(|pair| (pair.label, pair.control.read(cx).inner_popup())).collect();
+            samples.push(("Icon + Text", content_for_motion.read(cx).inner_popup()));
+            inspector.set_motion_report(popup_menu_motion_report(samples), cx);
+        });
 
         Self {
             look,

@@ -19,7 +19,7 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::standalone_theme_inspectors::StepperThemeInspector;
-use super::inspector::{StepperInspectorAdapter, STEPPER_INSPECTOR_SPEC};
+use super::inspector::{StepperInspectorAdapter, STEPPER_INSPECTOR_SPEC, stepper_motion_report};
 use super::template::render_control_exposition_card;
 
 const DEMO_STEP_COUNT: usize = 4;
@@ -262,7 +262,7 @@ impl StepperControlExposition {
         let left_pane = cx.new(|_| StepperExpositionLeftPane {
             look: look.clone(),
             entry,
-            stepper,
+            stepper: stepper.clone(),
             start_button: start_button.clone(),
             previous_button: previous_button.clone(),
             next_button: next_button.clone(),
@@ -282,6 +282,9 @@ impl StepperControlExposition {
             &STEPPER_INSPECTOR_SPEC,
             StepperInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(stepper_motion_report([("Interactive wizard", stepper)]), cx);
+        });
 
         start_button.clone().on_click(cx, {
             let left_pane = left_pane.downgrade();

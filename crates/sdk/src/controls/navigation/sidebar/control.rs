@@ -51,6 +51,11 @@ impl SidebarControl {
         SidebarControlBuilder::new(id)
     }
 
+    /// Control-wide policy. `false` settles motion immediately and keeps [`Self::motion_profile`].
+    pub fn motion_enabled(&self) -> bool {
+        self.model.motion_enabled
+    }
+
     pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.motion_enabled = enabled;
         self.panel.update(cx, |engine, cx| engine.set_motion_enabled(enabled, cx));

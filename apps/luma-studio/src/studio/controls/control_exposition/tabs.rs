@@ -16,7 +16,7 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::shell_theme_inspectors::TabsThemeInspector;
-use super::inspector::{TabsInspectorAdapter, TABS_INSPECTOR_SPEC};
+use super::inspector::{TabsInspectorAdapter, TabsMotionReport, TABS_INSPECTOR_SPEC};
 use super::template::render_control_exposition_card;
 
 pub struct TabsControlExposition {
@@ -148,6 +148,15 @@ impl TabsControlExposition {
             &TABS_INSPECTOR_SPEC,
             TabsInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                Arc::new(TabsMotionReport::new([
+                    ("Intrinsic width", tabs.clone()),
+                    ("Uniform width", uniform_tabs.clone()),
+                ])),
+                cx,
+            );
+        });
 
         for (entity, label_field, left_pane) in
             [(tabs.clone(), "intrinsic", left_pane.clone()), (uniform_tabs.clone(), "uniform", left_pane.clone())]

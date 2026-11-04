@@ -25,6 +25,7 @@ use super::color_chrome_inspector::ColorChromeInspector;
 use super::color_exposition_common::{detail_row, format_slider_event, render_demo_card, render_demo_section};
 use super::event_stream::ControlEventStream;
 use super::inspector::color_chrome::COLOR_RING_CHROME_PROFILES;
+use super::inspector::slider_motion_report;
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
@@ -390,6 +391,17 @@ impl ColorRingControlExposition {
                 move || left_pane.clone().into_any_element()
             },
         );
+        chrome_inspector.update(cx, |inspector, cx| {
+            let pane = left_pane.read(cx);
+            let samples = [
+                ("Hue", pane.color_ring.slider.clone()),
+                ("Saturation", pane.ring_saturation.slider.clone()),
+                ("Lightness", pane.ring_lightness.slider.clone()),
+                ("Vector", pane.color_ring_vector.slider.clone()),
+                ("Raster", pane.color_ring_raster.slider.clone()),
+            ];
+            inspector.set_motion_report(slider_motion_report(samples), cx);
+        });
 
         Self { look, entry, left_pane, chrome_inspector, inspector_split }
     }

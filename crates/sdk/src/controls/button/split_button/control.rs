@@ -27,6 +27,12 @@ impl SplitButton {
     pub fn new(id: impl Into<SharedString>) -> SplitButtonBuilder {
         SplitButtonBuilder::new(id)
     }
+
+    /// Hosted popup. Disclosure drives the arrow; presence drives the menu.
+    pub fn inner_popup(&self) -> Entity<PopupMenu> {
+        self.popup.clone()
+    }
+
     pub(super) fn from_builder(builder: SplitButtonBuilder, cx: &mut Context<Self>) -> Self {
         let popup = builder.into_popup_builder().spawn(cx);
         let events = cx.subscribe(&popup, |_, _, event, cx| {

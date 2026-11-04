@@ -14,7 +14,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::inspector::{AccordionInspectorAdapter, ACCORDION_INSPECTOR_SPEC};
+use super::inspector::{AccordionInspectorAdapter, ACCORDION_INSPECTOR_SPEC, accordion_motion_report};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
@@ -174,6 +174,16 @@ impl AccordionControlExposition {
             &ACCORDION_INSPECTOR_SPEC,
             AccordionInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                accordion_motion_report([
+                    ("Single expansion", single.clone()),
+                    ("Multiple expansion", multiple.clone()),
+                    ("Context-aware content", interactive.clone()),
+                ]),
+                cx,
+            );
+        });
 
         for entity in [single.clone(), multiple.clone(), interactive.clone()] {
             let event_stream = event_stream.clone();

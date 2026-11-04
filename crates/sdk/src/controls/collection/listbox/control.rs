@@ -64,6 +64,11 @@ impl<M: 'static, T: 'static, K: Clone + Eq + Hash + 'static> ListBoxControl<M, T
         self.set_motion_enabled(enabled);
         self
     }
+    /// Control-wide policy. `false` settles motion immediately and keeps [`Self::motion_profile`].
+    pub fn is_motion_enabled(&self) -> bool {
+        self.motion_config.enabled()
+    }
+
     pub fn set_motion_enabled(&mut self, enabled: bool) {
         self.motion_config.set_enabled(enabled);
         self.scroll.set_motion(self.motion_config.resolve().scroll.enabled(enabled));

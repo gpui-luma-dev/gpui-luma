@@ -71,6 +71,10 @@ struct NotesList {
 }
 
 impl NotesList {
+    pub(super) fn captured_motion(&self) -> (bool, gpui_luma::controls::listbox::ListBoxMotion) {
+        (self.list.is_motion_enabled(), self.list.motion_profile())
+    }
+
     fn new(
         id: &'static str,
         title: &'static str,
@@ -181,6 +185,10 @@ pub(super) struct VariableHeightExample {
 }
 
 impl VariableHeightExample {
+    pub(super) fn captured_motions(&self, cx: &gpui::App) -> [(bool, gpui_luma::controls::listbox::ListBoxMotion); 2] {
+        [self.lists[0].read(cx).captured_motion(), self.lists[1].read(cx).captured_motion()]
+    }
+
     pub fn new(look: Arc<ShadcnLook>, events: Entity<ControlEventStream>, cx: &mut Context<Self>) -> Self {
         let eager = cx.new(|cx| {
             NotesList::new(
