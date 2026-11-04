@@ -67,6 +67,11 @@ pub struct AccordionControl {
 impl EventEmitter<AccordionEvent> for AccordionControl {}
 
 impl AccordionControl {
+    /// Control-wide policy. `false` settles motion immediately and keeps [`Self::motion_profile`].
+    pub fn motion_enabled(&self) -> bool {
+        self.model.motion_enabled
+    }
+
     pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.motion_enabled = enabled;
         for transition in &mut self.transitions {

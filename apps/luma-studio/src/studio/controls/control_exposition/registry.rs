@@ -246,12 +246,16 @@ impl ControlExposition {
             Self::DockPanel(entity) => entity.read(cx).fills_viewport(),
             Self::ColorField(entity) => entity.read(cx).fills_viewport(),
             Self::ColorSlider(entity) => entity.read(cx).fills_viewport(),
+            Self::ColorSliderRevealed(entity) => entity.read(cx).fills_viewport(),
             Self::ColorRing(entity) => entity.read(cx).fills_viewport(),
             Self::ColorArc(entity) => entity.read(cx).fills_viewport(),
             Self::ModalOverlay(entity) => entity.read(cx).fills_viewport(),
             Self::ModelessOverlay(entity) => entity.read(cx).fills_viewport(),
             Self::OverlayPositioning(entity) => entity.read(cx).fills_viewport(),
             Self::DraggableOverlay(entity) => entity.read(cx).fills_viewport(),
+            Self::RadioGroup(entity) => entity.read(cx).fills_viewport(),
+            Self::ToggleGroup(entity) => entity.read(cx).fills_viewport(),
+            Self::SlidePanel(entity) => entity.read(cx).fills_viewport(),
             _ => false,
         }
     }
@@ -294,6 +298,9 @@ impl ControlExposition {
             Self::DockPanel(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::ColorField(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::ColorSlider(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ColorSliderRevealed(entity) => {
+                entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx))
+            }
             Self::ColorRing(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::ColorArc(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             Self::ModalOverlay(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
@@ -302,6 +309,9 @@ impl ControlExposition {
                 entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx))
             }
             Self::DraggableOverlay(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::RadioGroup(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::ToggleGroup(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
+            Self::SlidePanel(entity) => entity.update(cx, |exposition, cx| exposition.request_layout_refresh(cx)),
             _ => {}
         }
     }
@@ -352,6 +362,9 @@ impl ControlExposition {
             Self::DockPanel(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::ColorField(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::ColorSlider(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ColorSliderRevealed(entity) => {
+                entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx))
+            }
             Self::ColorRing(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::ColorArc(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             Self::ModalOverlay(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
@@ -362,6 +375,9 @@ impl ControlExposition {
             Self::DraggableOverlay(entity) => {
                 entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx))
             }
+            Self::RadioGroup(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::ToggleGroup(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
+            Self::SlidePanel(entity) => entity.update(cx, |exposition, cx| exposition.set_viewport_size(size, cx)),
             _ => {}
         }
     }

@@ -15,7 +15,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::inspector::{SliderInspectorAdapter, SLIDER_INSPECTOR_SPEC};
+use super::inspector::{SliderInspectorAdapter, SLIDER_INSPECTOR_SPEC, slider_motion_report};
 use super::standalone_theme_inspectors::SliderThemeInspector;
 use super::template::render_control_exposition_card;
 
@@ -332,6 +332,19 @@ impl SliderControlExposition {
             &SLIDER_INSPECTOR_SPEC,
             SliderInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                slider_motion_report([
+                    ("Fill track", fill_slider.clone()),
+                    ("Reversed fill track", reversed_slider.clone()),
+                    ("Blocked intervals", blocked_slider.clone()),
+                    ("Multi-stop", stops_slider.clone()),
+                    ("Angular dial", angular_slider.clone()),
+                    ("Wrapping dial", wrapping_slider.clone()),
+                ]),
+                cx,
+            );
+        });
 
         wire_value_slider(cx, &fill_slider, "fill", event_stream.clone(), left_pane.clone(), SliderValueTarget::Fill);
         wire_value_slider(

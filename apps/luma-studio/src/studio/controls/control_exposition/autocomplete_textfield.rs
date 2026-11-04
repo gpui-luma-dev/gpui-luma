@@ -11,7 +11,7 @@ use gpui_luma_look_shadcn as shadcn;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::inspector::{AutocompleteInspectorAdapter, AUTOCOMPLETE_INSPECTOR_SPEC};
+use super::inspector::{AutocompleteInspectorAdapter, AUTOCOMPLETE_INSPECTOR_SPEC, autocomplete_motion_report};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::input_theme_inspectors::AutocompleteThemeInspector;
@@ -131,6 +131,9 @@ impl AutocompleteTextFieldControlExposition {
             &AUTOCOMPLETE_INSPECTOR_SPEC,
             AutocompleteInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(autocomplete_motion_report([("Field", preview.clone())]), cx);
+        });
 
         preview.clone().on_event(cx, {
             let event_stream = event_stream.downgrade();

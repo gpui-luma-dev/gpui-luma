@@ -16,8 +16,12 @@ use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::event_stream::ControlEventStream;
+use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
+use super::inspector::{ControlGroupMotionReport, control_group_motion_source};
+use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
+use super::theme_inspector::ThemeInspector;
 
 const STYLE_VARIANTS: [(&str, ShadcnButtonStyle); 4] = [
     ("Primary", ShadcnButtonStyle::Primary),
@@ -44,9 +48,17 @@ struct DemoGroup {
 pub struct ToggleGroupControlExposition {
     look: Arc<ShadcnLook>,
     entry: ControlDocEntry,
+    left_pane: Entity<ToggleGroupExpositionLeftPane>,
+    theme_inspector: Entity<ThemeInspector>,
+    inspector_split: Entity<InspectorSplitShell>,
+    _subscriptions: Vec<Subscription>,
+}
+
+struct ToggleGroupExpositionLeftPane {
+    look: Arc<ShadcnLook>,
+    entry: ControlDocEntry,
     demos: Vec<DemoGroup>,
     event_stream: Entity<ControlEventStream>,
-    _subscriptions: Vec<Subscription>,
 }
 
 impl ToggleGroupControlExposition {
@@ -91,12 +103,19 @@ impl ToggleGroupControlExposition {
             )
         });
 
+        let left_pane = cx.new(|_| ToggleGroupExpositionLeftPane {
+            look: look.clone(),
+            entry,
+            demos: demos.clone(),
+            event_stream: event_stream.clone(),
+        });
         let subscriptions = Vec::new();
         for (index, demo) in demos.iter().enumerate() {
             let group = demo.group.clone();
             let event_stream = event_stream.clone();
-            group.clone().on_event(cx, move |this, event: &IconGroupEvent, cx| {
-                this.apply_event(index, event, cx);
+            let left_pane = left_pane.clone();
+            group.on_event(cx, move |_this, event: &IconGroupEvent, cx| {
+                left_pane.update(cx, |pane, cx| pane.apply_event(index, event, cx));
                 if index == 0
                     && let Some(line) = format_icon_group_event(event)
                 {
@@ -105,7 +124,61 @@ impl ToggleGroupControlExposition {
             });
         }
 
-        Self { look, entry, demos, event_stream, _subscriptions: subscriptions }
+        let ViewportInspectorPane { theme_inspector, inspector_split } = spawn_viewport_inspector(
+            cx,
+            look.clone(),
+            "controls-doc-toggle-group-pane",
+            {
+                let left_pane = left_pane.clone();
+                move || left_pane.clone().into_any_element()
+            },
+            &super::inspector::TOGGLE_GROUP_INSPECTOR_SPEC,
+            super::inspector::MotionOnlyInspector::shared(),
+        );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                Arc::new(ControlGroupMotionReport::new(
+                    demos.iter().map(|demo| (demo.title, control_group_motion_source(demo.group.clone()))),
+                )),
+                cx,
+            );
+        });
+
+        Self { look, entry, left_pane, theme_inspector, inspector_split, _subscriptions: subscriptions }
+    }
+
+    pub fn entry(&self) -> ControlDocEntry {
+        self.entry
+    }
+
+    pub fn fills_viewport(&self) -> bool {
+        true
+    }
+
+    pub fn request_layout_refresh(&mut self, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.request_layout_refresh(cx));
+    }
+
+    pub fn set_viewport_size(&mut self, size: gpui::Size<gpui::Pixels>, cx: &mut Context<Self>) {
+        self.inspector_split.update(cx, |split, cx| split.set_viewport_size(size, cx));
+    }
+
+    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.left_pane.update(cx, |pane, cx| pane.sync_look(look.clone(), cx));
+        sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
+        cx.notify();
+    }
+}
+
+impl ToggleGroupExpositionLeftPane {
+    fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        for demo in &self.demos {
+            demo.group.update(cx, |_, cx| cx.notify());
+        }
+        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
+        cx.notify();
     }
 
     fn apply_event(&mut self, index: usize, event: &IconGroupEvent, cx: &mut Context<Self>) {
@@ -129,22 +202,23 @@ impl ToggleGroupControlExposition {
         };
         cx.notify();
     }
-
-    pub fn entry(&self) -> ControlDocEntry {
-        self.entry
-    }
-
-    pub fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
-        self.look = look.clone();
-        for demo in &self.demos {
-            demo.group.update(cx, |_, cx| cx.notify());
-        }
-        self.event_stream.update(cx, |stream, cx| stream.sync_look(look, cx));
-        cx.notify();
-    }
 }
 
 impl Render for ToggleGroupControlExposition {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        let inspector_split = self.inspector_split.clone();
+        with_look(&self.look, || {
+            div()
+                .id("controls-doc-toggle-group-exposition")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .child(inspector_split)
+        })
+    }
+}
+
+impl Render for ToggleGroupExpositionLeftPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
         with_look(&self.look, || {
             let chrome = self.look.chrome();
@@ -161,13 +235,19 @@ impl Render for ToggleGroupControlExposition {
                 )
                 .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                &self.look,
-                self.entry,
-                preview.into_any_element(),
-                None,
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-toggle-group-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    &self.look,
+                    self.entry,
+                    preview.into_any_element(),
+                    None,
+                    ControlExpositionLayout::BORDERLESS,
+                ))
         })
     }
 }

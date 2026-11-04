@@ -27,7 +27,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::ControlExpositionLayout;
-use super::inspector::{SidebarInspectorAdapter, SIDEBAR_INSPECTOR_SPEC};
+use super::inspector::{SidebarInspectorAdapter, SIDEBAR_INSPECTOR_SPEC, sidebar_motion_report};
 use super::template::render_control_exposition_card;
 
 #[derive(Clone, Copy)]
@@ -241,6 +241,9 @@ impl SidebarControlExposition {
             &SIDEBAR_INSPECTOR_SPEC,
             SidebarInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(sidebar_motion_report([("Properties", sidebar_control.clone())]), cx);
+        });
 
         let control_open_cell = control_open.clone();
         let observe_subscription = cx.observe(&sidebar_control, {

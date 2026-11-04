@@ -21,7 +21,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::inspector::{ResizablePanelsInspectorAdapter, RESIZABLE_PANELS_INSPECTOR_SPEC};
+use super::inspector::{ResizablePanelsInspectorAdapter, RESIZABLE_PANELS_INSPECTOR_SPEC, resizable_panels_motion_report};
 use super::shell_theme_inspectors::ResizablePanelsThemeInspector;
 use super::template::render_control_exposition_card;
 
@@ -387,6 +387,18 @@ impl ResizablePanelsControlExposition {
             &RESIZABLE_PANELS_INSPECTOR_SPEC,
             ResizablePanelsInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                resizable_panels_motion_report([
+                    ("Horizontal", horizontal.clone()),
+                    ("Vertical", vertical.clone()),
+                    ("Controlled min/max", controlled.clone()),
+                    ("Animated transition", animated_panels.clone()),
+                    ("Instant", instant_panels.clone()),
+                ]),
+                cx,
+            );
+        });
 
         let subscriptions = Vec::new();
         horizontal.clone().on_event(cx, {

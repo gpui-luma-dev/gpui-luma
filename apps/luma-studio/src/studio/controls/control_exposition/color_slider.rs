@@ -24,6 +24,7 @@ use super::color_chrome_inspector::ColorChromeInspector;
 use super::color_exposition_common::slider_labeled_row;
 use super::event_stream::ControlEventStream;
 use super::inspector::color_chrome::COLOR_SLIDER_CHROME_PROFILES;
+use super::inspector::slider_motion_report;
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
@@ -319,6 +320,21 @@ impl ColorSliderControlExposition {
                 move || left_pane.clone().into_any_element()
             },
         );
+        chrome_inspector.update(cx, |inspector, cx| {
+            let pane = left_pane.read(cx);
+            let samples = [
+                ("Hue", pane.hue_slider.clone()),
+                ("Saturation", pane.saturation_slider.clone()),
+                ("Alpha", pane.alpha_slider.clone()),
+                ("RGB", pane.gradient_rgb.clone()),
+                ("HSL", pane.gradient_hsl.clone()),
+                ("Lab", pane.gradient_lab.clone()),
+                ("Red", pane.red_slider.clone()),
+                ("Green", pane.green_slider.clone()),
+                ("Blue", pane.blue_slider.clone()),
+            ];
+            inspector.set_motion_report(slider_motion_report(samples), cx);
+        });
 
         Self { look, entry, left_pane, chrome_inspector, inspector_split }
     }

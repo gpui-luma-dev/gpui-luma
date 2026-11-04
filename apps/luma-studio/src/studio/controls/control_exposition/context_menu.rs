@@ -11,7 +11,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_svg_static::Icon as LucideIcon;
 
 use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
-use super::inspector::{ContextMenuInspectorAdapter, CONTEXT_MENU_INSPECTOR_SPEC};
+use super::inspector::{ContextMenuInspectorAdapter, CONTEXT_MENU_INSPECTOR_SPEC, context_menu_motion_report};
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
@@ -122,6 +122,15 @@ impl ContextMenuControlExposition {
             &CONTEXT_MENU_INSPECTOR_SPEC,
             ContextMenuInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                context_menu_motion_report([
+                    ("Right-click target", preview.clone()),
+                    ("Text field", textfield_context_menu.clone()),
+                ]),
+                cx,
+            );
+        });
 
         preview.clone().on_event(cx, {
             let event_stream = event_stream.downgrade();

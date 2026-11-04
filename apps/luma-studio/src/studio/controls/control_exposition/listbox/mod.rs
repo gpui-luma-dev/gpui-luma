@@ -12,8 +12,9 @@ pub(super) mod vertical;
 
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::vstack;
+use gpui_luma::controls::listbox::ListBoxMotion;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use horizontal::HorizontalListExample;
@@ -27,7 +28,7 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::collection_theme_inspectors::ListBoxThemeInspector;
 use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
-use super::inspector::{ListBoxInspectorAdapter, LISTBOX_INSPECTOR_SPEC};
+use super::inspector::{ListBoxInspectorAdapter, LISTBOX_INSPECTOR_SPEC, listbox_motion_report};
 use super::inspector_split::InspectorSplitShell;
 use super::model::ControlExpositionLayout;
 use super::template::render_control_exposition_card;
@@ -141,6 +142,24 @@ impl ListBoxControlExposition {
             &LISTBOX_INSPECTOR_SPEC,
             ListBoxInspectorAdapter::shared(),
         );
+        let vertical = left_pane.read(cx).vertical.clone();
+        let horizontal = left_pane.read(cx).horizontal.clone();
+        let spectrum = left_pane.read(cx).spectrum.clone();
+        let filtering = left_pane.read(cx).filtering.clone();
+        let variable_height = left_pane.read(cx).variable_height.clone();
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                listbox_motion_report([
+                    ("Vertical", list_motion(vertical, VerticalListExample::captured_motion)),
+                    ("Horizontal", list_motion(horizontal, HorizontalListExample::captured_motion)),
+                    ("Spectrum", list_motion(spectrum, SpectrumListExample::captured_motion)),
+                    ("Filtering and sorting", list_motion(filtering, FilteringExample::captured_motion)),
+                    ("Content · eager", list_motion_index(variable_height.clone(), 0)),
+                    ("Content · virtualized", list_motion_index(variable_height, 1)),
+                ]),
+                cx,
+            );
+        });
         Self { look, entry, left_pane, theme_inspector, inspector_split }
     }
 
@@ -173,6 +192,20 @@ impl ListBoxControlExposition {
         sync_viewport_inspector(look, &self.theme_inspector, &self.inspector_split, cx);
         cx.notify();
     }
+}
+
+fn list_motion<T: 'static>(
+    entity: Entity<T>,
+    read: fn(&T) -> (bool, ListBoxMotion),
+) -> Arc<dyn Fn(&App) -> (bool, ListBoxMotion) + Send + Sync> {
+    Arc::new(move |cx| read(entity.read(cx)))
+}
+
+fn list_motion_index(
+    example: Entity<VariableHeightExample>,
+    index: usize,
+) -> Arc<dyn Fn(&App) -> (bool, ListBoxMotion) + Send + Sync> {
+    Arc::new(move |cx| example.read(cx).captured_motions(cx)[index].clone())
 }
 
 impl Render for ListBoxControlExposition {

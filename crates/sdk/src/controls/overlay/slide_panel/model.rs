@@ -97,6 +97,11 @@ impl SlidePanelState {
         self.set_motion_enabled(enabled);
         self
     }
+    /// Control-wide policy. `false` settles motion immediately and keeps [`Self::motion_profile`].
+    pub fn is_motion_enabled(&self) -> bool {
+        self.motion.enabled()
+    }
+
     pub fn set_motion_enabled(&mut self, enabled: bool) {
         self.motion.set_enabled(enabled);
         let profile = self.motion.resolve();

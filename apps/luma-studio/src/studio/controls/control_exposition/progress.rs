@@ -16,7 +16,7 @@ use crate::studio::controls::catalog::{ControlDocEntry, catalog_entry};
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
-use super::inspector::{ProgressInspectorAdapter, PROGRESS_INSPECTOR_SPEC};
+use super::inspector::{ProgressInspectorAdapter, PROGRESS_INSPECTOR_SPEC, progress_motion_report};
 use super::standalone_theme_inspectors::ProgressThemeInspector;
 use super::template::render_control_exposition_card;
 
@@ -219,9 +219,9 @@ impl ProgressControlExposition {
         let left_pane = cx.new(|_| ProgressExpositionLeftPane {
             look: look.clone(),
             entry,
-            linear_progress,
-            indeterminate_linear,
-            indeterminate_circular,
+            linear_progress: linear_progress.clone(),
+            indeterminate_linear: indeterminate_linear.clone(),
+            indeterminate_circular: indeterminate_circular.clone(),
             animate_button: animate_button.clone(),
         });
 
@@ -246,6 +246,16 @@ impl ProgressControlExposition {
             &PROGRESS_INSPECTOR_SPEC,
             ProgressInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                progress_motion_report([
+                    ("Linear", linear_progress),
+                    ("Indeterminate", indeterminate_linear),
+                    ("Indeterminate circular", indeterminate_circular),
+                ]),
+                cx,
+            );
+        });
 
         Self { look, entry, left_pane, theme_inspector, inspector_split }
     }

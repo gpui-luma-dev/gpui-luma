@@ -335,6 +335,11 @@ where
         Ok(())
     }
 
+    /// Control-wide policy. `false` settles motion immediately and keeps [`Self::motion_profile`].
+    pub fn motion_enabled(&self) -> bool {
+        self.model.motion_enabled
+    }
+
     pub fn set_motion_enabled(&mut self, motion_enabled: bool, cx: &mut Context<Self>) {
         if self.model.motion_enabled == motion_enabled {
             return;

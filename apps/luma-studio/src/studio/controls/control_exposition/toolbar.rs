@@ -22,7 +22,9 @@ use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::shell_theme_inspectors::ToolbarThemeInspector;
 use super::template::render_control_exposition_card;
-use super::inspector::{ToolbarInspectorAdapter, TOOLBAR_INSPECTOR_SPEC};
+use super::inspector::{
+    ControlGroupMotionReport, ToolbarInspectorAdapter, TOOLBAR_INSPECTOR_SPEC, control_group_motion_source,
+};
 
 pub struct ToolbarControlExposition {
     look: Arc<ShadcnLook>,
@@ -217,6 +219,15 @@ impl ToolbarControlExposition {
             &TOOLBAR_INSPECTOR_SPEC,
             ToolbarInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                Arc::new(ControlGroupMotionReport::new([(
+                    "Toolbar",
+                    control_group_motion_source(toolbar.read(cx).inner_group()),
+                )])),
+                cx,
+            );
+        });
 
         toolbar.clone().on_event(cx, {
             let event_stream = event_stream.downgrade();

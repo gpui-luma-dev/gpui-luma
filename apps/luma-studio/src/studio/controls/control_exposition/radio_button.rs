@@ -15,6 +15,7 @@ use super::event_stream::ControlEventStream;
 use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspector, ViewportInspectorPane};
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
+use super::inspector::StateMotionReport;
 use super::radio_button_theme_inspector::RadioButtonThemeInspector;
 use super::template::render_control_exposition_card;
 
@@ -155,6 +156,22 @@ impl RadioButtonControlExposition {
             &super::inspector::RADIO_BUTTON_INSPECTOR_SPEC,
             super::inspector::RadioButtonInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            inspector.set_motion_report(
+                Arc::new(StateMotionReport::new(
+                    "State",
+                    [
+                        ("Primary", primary_radio.clone()),
+                        ("Secondary", secondary_radio.clone()),
+                        ("Content only", content_only_radio.clone()),
+                    ],
+                    |radio| radio.motion_enabled(),
+                    |radio| radio.motion_profile().state.clone(),
+                    |look| look.motion_defaults().radio.state.clone(),
+                )),
+                cx,
+            );
+        });
 
         let mut subscriptions = Vec::new();
         subscriptions.extend(subscribe_radio(

@@ -189,6 +189,11 @@ impl Tabs {
         &self.motion
     }
 
+    /// Control-wide policy. `false` settles motion immediately and keeps [`Self::motion_profile`].
+    pub fn motion_enabled(&self) -> bool {
+        self.motion_enabled
+    }
+
     /// Replace or attach a panel for an existing item. Unknown IDs return false.
     /// Selection and running motion are preserved, including for disabled items.
     pub fn set_content(&mut self, id: impl Into<SharedString>, content: TabsContent, cx: &mut Context<Self>) -> bool {

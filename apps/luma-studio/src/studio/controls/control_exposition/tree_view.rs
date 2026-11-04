@@ -21,7 +21,9 @@ use super::exposition_inspector::{spawn_viewport_inspector, sync_viewport_inspec
 use super::inspector_split::InspectorSplitShell;
 use super::model::{ControlExpositionLayout};
 use super::template::render_control_exposition_card;
-use super::inspector::{TreeViewInspectorAdapter, TREE_VIEW_INSPECTOR_SPEC};
+use super::inspector::{
+    TreeViewInspectorAdapter, TREE_VIEW_INSPECTOR_SPEC, tree_view_motion_report, tree_view_motion_source,
+};
 
 const TREE_DEPTH: usize = 5;
 
@@ -212,6 +214,32 @@ impl TreeViewControlExposition {
             &TREE_VIEW_INSPECTOR_SPEC,
             TreeViewInspectorAdapter::shared(),
         );
+        theme_inspector.update(cx, |inspector, cx| {
+            let (state_updates, workspaces, positioning, selection, scale, file_tree) = {
+                let pane = left_pane.read(cx);
+                (
+                    pane.state_updates.clone(),
+                    pane.workspaces.clone(),
+                    pane.positioning.clone(),
+                    pane.selection.clone(),
+                    pane.scale.clone(),
+                    pane.tree.clone(),
+                )
+            };
+            let workspace_trees = workspaces.read(cx).trees();
+            inspector.set_motion_report(
+                tree_view_motion_report([
+                    ("File tree", tree_view_motion_source(file_tree)),
+                    ("State-preserving updates", tree_view_motion_source(state_updates.read(cx).tree())),
+                    ("Workspace left", tree_view_motion_source(workspace_trees[0].clone())),
+                    ("Workspace right", tree_view_motion_source(workspace_trees[1].clone())),
+                    ("Positioning", tree_view_motion_source(positioning.read(cx).tree())),
+                    ("Selection and ranges", tree_view_motion_source(selection.read(cx).tree())),
+                    ("Large tree", tree_view_motion_source(scale.read(cx).tree())),
+                ]),
+                cx,
+            );
+        });
 
         tree.clone().on_event(cx, {
             let event_stream = event_stream.downgrade();

@@ -255,6 +255,10 @@ where
         cx.notify();
     }
 
+    pub fn motion_enabled(&self) -> bool {
+        self.model.animated_selection
+    }
+
     pub fn set_motion_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.set_animated_selection(enabled, cx);
     }
