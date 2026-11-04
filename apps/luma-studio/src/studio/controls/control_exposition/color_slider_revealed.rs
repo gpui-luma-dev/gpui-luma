@@ -445,13 +445,19 @@ impl Render for ColorSliderRevealedPane {
                 ))
                 .child(self.event_stream.clone());
 
-            render_control_exposition_card(
-                look,
-                self.entry,
-                preview.into_any_element(),
-                None,
-                ControlExpositionLayout::BORDERLESS,
-            )
+            div()
+                .id("controls-doc-color-slider-revealed-left-pane")
+                .size_full()
+                .min_h(px(0.0))
+                .min_w(px(0.0))
+                .overflow_y_scroll()
+                .child(render_control_exposition_card(
+                    look,
+                    self.entry,
+                    preview.into_any_element(),
+                    None,
+                    ControlExpositionLayout::BORDERLESS,
+                ))
         })
     }
 }
