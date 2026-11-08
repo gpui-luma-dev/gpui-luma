@@ -8,10 +8,16 @@ bounds, theme synchronization, and callback readouts.
 
 ## Build and preview
 
-The workspace uses the published `xgpui` and `xgpui-platform` 1.0.0 crates.
+The workspace uses published `xgpui` 3.0.0 (based on GPUI 1.27.0) and
+`xgpui-platform` 2.0.2. All five Luma libraries are version 1.0.2.
 See [xgpui](https://xgpui.dev/) for framework documentation.
-This browser app uses `xgpui-web` 1.0.0, aliased as `gpui_web`; Rust imports
+This browser app uses `xgpui-web` 2.0.2, aliased as `gpui_web`; Rust imports
 retain the `gpui` name through the workspace dependency alias.
+
+See the [Luma 1.0.2 upgrade notes](../../docs/index.html#upgrade-1-0-2) for
+crate versions and keyboard API migration. Dependencies come from crates.io;
+no local xgpui path patches are required. Refresh and commit `Cargo.lock` after
+changing dependency requirements, before running recipes that use `--locked`.
 
 Requirements: Rust, Python 3, the `wasm32-unknown-unknown` target, and a
 `wasm-bindgen-cli` version matching `wasm-bindgen` in `Cargo.lock`.
