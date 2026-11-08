@@ -2,24 +2,19 @@ name: Check and deploy documentation site
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths: ["docs/**", "apps/docs-embed/**", "apps/common/**", "crates/**", "Cargo.*", ".github/workflows/docs.yml"]
-  push:
-    branches: [main]
-    paths: ["docs/**", "apps/docs-embed/**", "apps/common/**", "crates/**", "Cargo.*", ".github/workflows/docs.yml"]
 
 permissions:
   contents: read
 
 concurrency:
   group: docs-${{ github.ref }}
-  # Replace obsolete PR checks; allow a production deployment to finish.
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # Allow a manually requested production deployment to finish.
+  cancel-in-progress: false
 
 jobs:
   check:
     name: Browser checks
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -41,7 +36,8 @@ jobs:
 
   build:
     name: Build deployment runtime
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -85,7 +81,7 @@ jobs:
           path: docs/
 
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     permissions:
